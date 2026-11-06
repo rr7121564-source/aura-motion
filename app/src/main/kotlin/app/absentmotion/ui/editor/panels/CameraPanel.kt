@@ -56,6 +56,8 @@ import app.absentmotion.model.valueAt
 import app.absentmotion.model.withCameraFov
 import app.absentmotion.model.withCameraFrameScaled
 import app.absentmotion.ui.editor.PanelIcons
+import app.absentmotion.ui.editor.setSharedDepth
+import app.absentmotion.ui.editor.sharedDepthEnabled
 import app.absentmotion.ui.theme.Am
 import app.absentmotion.ui.theme.Swap
 import app.absentmotion.ui.theme.fadeBackground
@@ -140,8 +142,10 @@ internal fun CameraPanel(state: EditorState, layer: Layer, modifier: Modifier = 
                         NumberRow(zoomLabel, "${zoom.toInt()}", active == 1, perspective, { d -> active = 1; writeZoom(true) { it + d * size / 200f } }, { state.endGesture() },
                             { active = 1; state.askNumber(zoomLabel, zoom.toInt().toFloat(), "", cameraZoomOf(Angle.max, size), cameraZoomOf(Angle.min, size)) { v -> writeZoom(false) { v } } })
                         SwitchRow(stringResource(R.string.true_camera_frame), state.cameraFrameGuide) { state.cameraFrameGuide = it }
-                        if(!state.editingGroup) SwitchRow(stringResource(R.string.depth_enable),state.scene.node["trueDepth3D"]=="true") {on->
-                            state.edit {app.absentmotion.model.Scene(it.node.with("trueDepth3D",if(on)"true" else null))}
+                        if (!state.editingGroup) {
+                            SwitchRow(stringResource(R.string.depth_enable), state.scene.sharedDepthEnabled, state::setSharedDepth)
+                            Text(stringResource(R.string.depth_enable_hint), Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                color = Am.OnDarkDim, fontSize = 11.sp, lineHeight = 15.sp)
                         }
                     }
                     1 -> {

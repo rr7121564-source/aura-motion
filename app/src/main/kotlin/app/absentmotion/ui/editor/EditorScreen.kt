@@ -127,6 +127,7 @@ private fun EditorBody(state: EditorState, onExit: () -> Unit) {
     }
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Am.TopBar).systemBarsPadding().imePadding()) {
         val available = maxHeight
+        val landscape = maxWidth > maxHeight
         Column(Modifier.fillMaxSize()) {
             EditorTopBar(state, onExit, Modifier.fillMaxWidth().height(42.dp).enterFade().tutorialGuard(any = true))
             GroupBreadcrumb(state)
@@ -143,16 +144,20 @@ private fun EditorBody(state: EditorState, onExit: () -> Unit) {
             }
             val screen = LocalConfiguration.current
             val normalLower = if (isTablet(screen.smallestScreenWidthDp)) maxOf(280, screen.screenHeightDp * 2 / 5).dp else 280.dp
-            val wanted = if (state.motionPathOpen) maxOf(normalLower, minOf(420.dp, (screen.screenHeightDp * .5f).dp))
-                else if (state.colorGradeEditing || state.audioMotionEditing || state.particleEditing) maxOf(normalLower, 360.dp) else normalLower
+            val wanted = when {
+                state.rigEditing && landscape && available < 480.dp -> 114.dp
+                state.motionPathOpen -> maxOf(normalLower, minOf(420.dp, (screen.screenHeightDp * .5f).dp))
+                state.colorGradeEditing || state.audioMotionEditing || state.particleEditing -> maxOf(normalLower, 360.dp)
+                else -> normalLower
+            }
             val lower = lowerPanelHeight(available, wanted)
             val scroll = androidx.compose.foundation.rememberScrollState()
             LaunchedEffect(scroll) { androidx.compose.runtime.snapshotFlow { scroll.maxValue }.collect { scroll.scrollTo(it) } }
-            Box(Modifier.fillMaxWidth().height(lower).enterFade().background(Am.TimelineBg).tutorialTarget("timeline").verticalScroll(scroll, enabled = lower < wanted)) {
-                Box(Modifier.fillMaxWidth().height(wanted)) {
-                    Timeline(state, Modifier.fillMaxSize())
-                    LowerPanels(state, addLibrary)
+            Box(Modifier.fillMaxWidth().height(lower).enterFade().background(Am.TimelineBg).tutorialTarget("timeline")) {
+                Box(Modifier.fillMaxSize().verticalScroll(scroll, enabled = lower < wanted)) {
+                    Timeline(state, Modifier.fillMaxWidth().height(wanted))
                 }
+                LowerPanels(state, addLibrary)
             }
         }
     }
@@ -180,7 +185,7 @@ internal fun LowerPanels(state: EditorState, addLibrary: AddLibrary, top: Boolea
         Modifier.fillMaxSize(),
     ) {
         val lower = Modifier.align(if (top) Alignment.TopCenter else Alignment.BottomCenter).fillMaxWidth().pointerInput(Unit) {}.tutorialGuard(any = true)
-        val tall = top && !state.easingOpen && (state.panel == EditorPanel.Blending || state.panel == EditorPanel.Effects || state.panel == EditorPanel.AudioMotion)
+        val tall = top && !state.easingOpen && state.panel in setOf(EditorPanel.Blending, EditorPanel.Effects, EditorPanel.AudioMotion, EditorPanel.Library)
         when {
             state.motionPathOpen && state.selectedId != null -> MotionPathPanel(state, if (top) lower.fillMaxHeight() else lower.height(420.dp))
             state.framePhotoOpen -> FramePhotoPanel(state, if (top) lower.fillMaxHeight() else lower.height(260.dp))
@@ -192,7 +197,13 @@ internal fun LowerPanels(state: EditorState, addLibrary: AddLibrary, top: Boolea
             }
             state.volumeOpen && state.panel == EditorPanel.Tools -> key(state.selectedId) { VolumePanel(state, lower.height(PanelHeight).tutorialTarget("panel")) }
             state.panel == EditorPanel.Tools -> LayerTools(state, (if (top) lower else lower.height(PanelHeight)).tutorialTarget("tools"), side = top)
-            else -> LayerPanel(state, if (tall) lower.fillMaxHeight() else lower.height(if (state.colorGradeEditing || state.audioMotionEditing || state.particleEditing) 280.dp else PanelHeight).tutorialTarget("panel"))
+            else -> {
+                val height = when {
+                    state.colorGradeEditing || state.audioMotionEditing || state.particleEditing -> 280.dp
+                    else -> PanelHeight
+                }
+                LayerPanel(state, (if (tall) lower.fillMaxHeight() else lower.height(height)).tutorialTarget("panel"))
+            }
         }
     }
     Swap(state.keypad, Modifier.fillMaxSize(), rise = 0.dp) {

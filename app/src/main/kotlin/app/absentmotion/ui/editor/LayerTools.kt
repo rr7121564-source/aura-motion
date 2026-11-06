@@ -235,8 +235,11 @@ fun LayerTools(state: EditorState, modifier: Modifier = Modifier, side: Boolean 
             } else null,
         )
         val direct = more.filter { it.tool === Library || it.tool === Rig }
-        val baseRows = if (direct.isEmpty()) rows else listOf(direct + listOf(transform, effects)) + rows.map { row -> row.filterNot { it.tool === MoveTransform || it.tool === Effects } }.filter { it.isNotEmpty() }
-        val visibleRows = baseRows
+        val visibleRows = if (direct.isEmpty()) rows else {
+            listOf(listOf(transform, effects) + direct) + rows.map { row ->
+                row.filterNot { it.tool === MoveTransform || it.tool === Effects }
+            }.filter { it.isNotEmpty() }
+        }
         val extra = more.filterNot { it.tool === Library || it.tool === Rig }
         if (side) TileRows((visibleRows.flatten() + extra).chunked(2), 2)
         else if (extra.isEmpty()) TileRows(visibleRows, null)
@@ -292,7 +295,7 @@ private class Tool(@StringRes val label: Int, val icon: ImageVector, val iconY: 
 private class Tile(val tool: Tool, val enabled: Boolean = true, val active: Boolean = false, val onLongClick: (() -> Unit)? = null, val menu: (@Composable () -> Unit)? = null, val onClick: () -> Unit)
 
 private val Library = Tool(R.string.asset_tab, ChromeIcons.MediaTab, 18.1f)
-private val Rig = Tool(R.string.rig_viewport_title, PanelIcons.MoveTransform, 18.1f)
+private val Rig = Tool(R.string.rig_viewport_title, PanelIcons.Bone, 18.1f)
 private val ColorFill = Tool(R.string.layer_tool_fill_color, PanelIcons.PaintBucket, 18.1f)
 private val BorderShadow = Tool(R.string.layer_tool_frame_shadow, PanelIcons.BorderShadow, 18.1f)
 private val Blending = Tool(R.string.layer_tool_opacity_blend, PanelIcons.Blending, 18.3f)
@@ -390,12 +393,14 @@ fun LayerPanel(state: EditorState, modifier: Modifier = Modifier) {
         return
     }
     val target = if (named) known else state.keyTarget
-    var linking by remember(layer.id,target?.ref,panel) { mutableStateOf(false) }
-    val linkable=target?.ref?.let {ref->layer.numericChannels().any {it.ref==ref}}==true && layer.copySource==null
+    var linking by remember(layer.id, target?.ref, panel) { mutableStateOf(false) }
+    val linkable = target != null && layer.copySource == null && layer.numericChannels().any { it.ref == target.ref }
     Row(modifier.tutorialGuard(any = true).background(Am.Panel)) {
         Column(Modifier.width(168.px).heightIn(max = PanelHeight).fillMaxHeight()) {
-            FrameButton(PanelIcons.Back, stringResource(R.string.topbar_back), Modifier.weight(1f).fillMaxWidth()) { if(linking)linking=false else state.stepBack() }
-            if (target == null) {
+            FrameButton(PanelIcons.Back, stringResource(R.string.topbar_back), Modifier.weight(1f).fillMaxWidth()) {
+                if (linking) linking = false else state.stepBack()
+            }
+            if (target == null || linking) {
                 FrameButton(PanelIcons.Keyframe, stringResource(R.string.a11y_add_keyframe), Modifier.weight(1f).fillMaxWidth().dimmed(), enabled = false)
                 FrameButton(PanelIcons.Easing, stringResource(R.string.a11y_easing), Modifier.weight(1f).fillMaxWidth().dimmed(), enabled = false)
             } else {
@@ -407,19 +412,25 @@ fun LayerPanel(state: EditorState, modifier: Modifier = Modifier) {
             }
             if (move) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
-                    FrameButton(PanelIcons.More, stringResource(R.string.effects_more), Modifier.fillMaxSize()) { menuOpen = true }
+                    FrameButton(PanelIcons.More, stringResource(R.string.effects_more), Modifier.fillMaxSize(), enabled = !linking) { menuOpen = true }
                     Presence(menuOpen) { TransformMenu(state, if (anchor && tab == 0) 5 else tab, turn) { menuOpen = false } }
                 }
             } else {
                 Spacer(Modifier.weight(1f))
             }
-            if(linkable) androidx.compose.material3.TextButton({linking=!linking},Modifier.weight(1f).fillMaxWidth()) {
-                Text(stringResource(R.string.property_link_title),color=if(linking||layer.hasValueLink(target.ref))Am.Accent else Am.OnDark,fontSize=10.sp,maxLines=1)
+            if (linkable) {
+                InspectorIconButton(PanelIcons.Link, stringResource(R.string.property_link_title),
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = 5.dp, vertical = 3.dp),
+                    active = linking || layer.hasValueLink(target.ref)) {
+                    state.playing = false
+                    state.endGesture()
+                    linking = !linking
+                }
             }
         }
         Box(Modifier.weight(1f).fillMaxHeight().tutorialGuard().background(if (move) Am.PanelInset else Am.Panel)) {
             if (panel == EditorPanel.BorderShadow) BorderShadowTabs(Modifier.align(Alignment.CenterEnd).width(168.px).fillMaxHeight().background(Am.Panel))
-            if(linking && target!=null) PropertyLinkEditor(state,target.ref,Modifier.fillMaxSize()) {linking=false}
+            if (linking && target != null) PropertyLinkEditor(state, target.ref, Modifier.fillMaxSize()) { linking = false }
             else when (panel) {
                 EditorPanel.MoveTransform -> Swap(tab to anchor, Modifier.fillMaxSize().tutorialTarget("pad"), rise = 0.dp) { MoveTransformPanel(state, layer, tab, turn, Modifier.fillMaxSize(), anchor) }
                 EditorPanel.ColorFill -> ColorFillPanel(state, layer, Modifier.fillMaxSize())
@@ -435,7 +446,7 @@ fun LayerPanel(state: EditorState, modifier: Modifier = Modifier) {
             Box(Modifier.width(2.px).fillMaxHeight().background(PanelDark))
             if (move) Box(Modifier.align(Alignment.CenterEnd).width(2.px).fillMaxHeight().background(PanelDark))
         }
-        if (move) {
+        if (move && !linking) {
             Column(Modifier.width(168.px).fillMaxHeight().tutorialGuard()) {
                 val names = listOf(R.string.a11y_tab_move, R.string.a11y_tab_rotate, R.string.panel_size, R.string.a11y_tab_tilt, R.string.a11y_tab_skew, R.string.a11y_tab_pivot)
                 val icons = listOf(PanelIcons.TabMove, PanelIcons.TabRotate, PanelIcons.TabSize, PanelIcons.TabTilt, PanelIcons.TabSkew, PanelIcons.TabPivot)

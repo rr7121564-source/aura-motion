@@ -530,7 +530,7 @@ private class TimelineView(val state: EditorState, density: Density, private val
 
     fun timeScale() = TimeScale(nowMs, (size.width - PlayheadWidth.px) / 2f, dpPerSecond * scale / 1000f)
 
-    private val covered: Boolean get() = !wide && state.selectedId != null
+    private val covered: Boolean get() = !wide && !state.rigEditing && state.selectedId != null
 
     private val panelTop: Float get() = size.height - PanelHeight.px
 

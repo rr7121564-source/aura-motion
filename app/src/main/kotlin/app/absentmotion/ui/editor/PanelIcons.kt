@@ -28,6 +28,9 @@ internal object PanelIcons {
     val Blending = icon("Blending", width = 1.7f, stroke = "M8 9A7 7 0 1 0 22 9A7 7 0 1 0 8 9ZM2 15A7 7 0 1 0 16 15A7 7 0 1 0 2 15Z")
     val Crop = icon("Crop", width = 1.7f, stroke = "M7 2.5L7 17L21.5 17M2.5 7L17 7L17 21.5")
     val MoveTransform = icon("MoveTransform", width = 1.7f, stroke = "M5 3L5 19L21 19M5 19L11 13M2 6L5 3L8 6M18 16L21 19L18 22")
+    val Bone = icon("Bone", stroke = "M5 19L8 10L19 5L14 16ZM8 10L14 16M2.5 19A2.5 2.5 0 1 0 7.5 19A2.5 2.5 0 1 0 2.5 19M16.5 5A2.5 2.5 0 1 0 21.5 5A2.5 2.5 0 1 0 16.5 5")
+    val FlipJoint = icon("FlipJoint", stroke = "M3 12L12 5L21 12M3 12L12 19L21 12M3 12L21 12")
+    val AutoKey = icon("AutoKey", stroke = "M12 2L21 12L12 22L3 12ZM13 7L9.5 12.5L13.5 12.5L11 17")
     val EditShape = icon("EditShape", width = 1.7f, stroke = "M17 5A2 2 0 1 0 21 5A2 2 0 1 0 17 5ZM3 19A2 2 0 1 0 7 19A2 2 0 1 0 3 19ZM5 17A12 12 0 0 1 17 5")
     val Star = icon("Star", width = 1.7f, stroke = "M11.525 2.295A0.53 0.53 0 0 1 12.475 2.295L14.785 6.974A2.123 2.123 0 0 0 16.38 8.134L21.546 8.89A0.53 0.53 0 0 1 21.84 9.794L18.104 13.432" +
             "A2.123 2.123 0 0 0 17.493 15.31L18.375 20.45A0.53 0.53 0 0 1 17.604 21.01L12.986 18.582A2.122 2.122 0 0 0 11.013 18.582L6.396 21.01" +

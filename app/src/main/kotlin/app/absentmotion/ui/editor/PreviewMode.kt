@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ import app.absentmotion.library.PreviewQuality
 import androidx.compose.ui.res.stringResource
 import app.absentmotion.R
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import app.absentmotion.ui.theme.Am
 
@@ -58,8 +61,15 @@ internal fun PreviewModePanel(state: EditorState, modifier: Modifier = Modifier)
         ModeCell(cell, true, { state.gridMode = !state.gridMode }, stringResource(R.string.camera_grid)) { GridIcon(state.gridMode) }
         ModeCell(cell, selected, { state.soloMode = (state.soloMode + 1) % 3 }, stringResource(R.string.a11y_solo)) { SoloIcon(state.soloMode, selected) }
         ModeCell(cell, cameraToggle, { state.cameraMode = !state.cameraMode }, stringResource(R.string.camerapanel_tab_camera_view)) { CameraIcon(state.cameraMode, cameraToggle) }
-        ModeCell(cell,!state.editingGroup,{state.playing=false;state.edit {app.absentmotion.model.Scene(it.node.with("trueDepth3D",if(it.node["trueDepth3D"]=="true")null else "true"))}},stringResource(R.string.depth_enable)) {
-            Text("3D",color=if(state.scene.node["trueDepth3D"]=="true")Am.Accent else Am.OnDark,fontSize=12.sp)
+        val depth = state.scene.sharedDepthEnabled
+        val depthLabel = stringResource(R.string.depth_enable)
+        Box(cell.fillMaxWidth().padding(horizontal = 5.dp, vertical = 2.dp).clip(InspectorShape)
+            .background(if (depth) Am.Accent.copy(alpha = .16f) else Color.Transparent)
+            .semantics { contentDescription = depthLabel }
+            .toggleable(depth, enabled = !state.editingGroup, role = Role.Switch, onValueChange = state::setSharedDepth),
+            Alignment.Center) {
+            Icon(ChromeIcons.Model3d, null, Modifier.size(23.dp).alpha(if (state.editingGroup) DimAlpha else 1f),
+                tint = if (depth) Am.Accent else Am.OnDark)
         }
         val quality = state.settings.previewQuality
         ModeCell(cell, true, { state.settings.previewQuality = PreviewQuality.entries[(quality.ordinal + 1) % PreviewQuality.entries.size] }) {

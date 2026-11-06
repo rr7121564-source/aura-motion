@@ -3,14 +3,16 @@ package app.absentmotion.ui.editor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.*
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -18,12 +20,15 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.absentmotion.R
 import app.absentmotion.editor.*
 import app.absentmotion.model.*
 import app.absentmotion.ui.theme.Am
+import app.absentmotion.ui.theme.Presence
 import kotlinx.coroutines.launch
 import app.absentmotion.platform.Matrix
 import kotlinx.coroutines.flow.collectLatest
@@ -60,7 +65,8 @@ internal fun RigViewport(state: EditorState, scale: Float, offset: Offset, quad:
     val accent = Am.Accent
     val normal = Am.Gold
     DisposableEffect(Unit) { onDispose { state.endGesture() } }
-    Box(modifier) {
+    BoxWithConstraints(modifier) {
+        val compact = maxHeight < 190.dp && maxWidth >= 500.dp
         Canvas(Modifier.fillMaxSize().pointerInput(state) {
             awaitEachGesture {
                 val down = awaitFirstDown()
@@ -142,7 +148,7 @@ internal fun RigViewport(state: EditorState, scale: Float, offset: Offset, quad:
                 val normalAxis = Offset(-direction.y / length, direction.x / length) * minOf(9.dp.toPx(), length / 5)
                 val shoulder = a + direction * .18f
                 val shape = Path().apply { moveTo(a.x, a.y); lineTo((shoulder + normalAxis).x, (shoulder + normalAxis).y); lineTo(b.x, b.y); lineTo((shoulder - normalAxis).x, (shoulder - normalAxis).y); close() }
-                drawPath(shape, color.copy(alpha = .38f))
+                drawPath(shape, color.copy(alpha = .24f))
                 drawPath(shape, Color.Black.copy(alpha = .65f), style = Stroke(4.dp.toPx()))
                 drawPath(shape, color, style = Stroke(2.dp.toPx()))
                 drawCircle(Color.Black, 6.dp.toPx(), a)
@@ -157,33 +163,130 @@ internal fun RigViewport(state: EditorState, scale: Float, offset: Offset, quad:
             currentLines.forEach { line -> drawBone(screen(line.from), screen(line.to), if (state.rigBoneId == line.bone.id) accent else normal) }
             ghost?.let { drawBone(screen(it.first), screen(it.second), accent) }
         }
-        Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(Am.Panel.copy(alpha = .94f))) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-                listOf(R.string.rig_draw, R.string.rig_pose, R.string.rig_ik_mode).forEachIndexed { index, title ->
-                    TextButton({ state.endGesture(); state.rigTool = index }) { Text(stringResource(title), color = if (state.rigTool == index) Am.Accent else Am.OnDark, fontSize = 12.sp) }
+        val bone = state.rigBoneId?.let { state.scene.layerAt(it, state.sampleMs) }
+        RigToolbar(state, bone, compact, Modifier.align(Alignment.TopCenter))
+        if (bone != null) key(bone.id) {
+            val frames = bone.keyframes(PropRef.Rotation).map { state.scene.frameAt(bone.timeOf(it.t)) }.distinct()
+            if (frames.isNotEmpty()) {
+                val listState = rememberLazyListState(frames.indexOf(state.frame).coerceAtLeast(0))
+                LaunchedEffect(state.frame, frames) {
+                    val index = frames.indexOf(state.frame)
+                    if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
+                        listState.scrollToItem(index)
+                    }
                 }
-                if (state.rigTool == 0) TextButton({ state.rigBoneId?.let(state::bindViewportBone) }, enabled = state.rigBoneId != null && state.selected != null) {
-                    Text(stringResource(R.string.rig_bind_selected), color = Am.Accent, fontSize = 11.sp)
+                LazyRow(
+                    Modifier.align(if (compact) Alignment.BottomStart else Alignment.BottomCenter)
+                        .padding(if (compact) 4.dp else 8.dp).widthIn(max = if (compact) 254.dp else 480.dp)
+                        .clip(InspectorShape).background(Am.Panel.copy(alpha = .96f)),
+                    state = listState,
+                    contentPadding = PaddingValues(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(frames, key = { it }) { frame ->
+                        InspectorSegment(TimelineMath.timecode(frame, state.scene.fps), frame == state.frame,
+                            Modifier.height(36.dp).widthIn(min = 76.dp)) {
+                            state.frame = frame
+                        }
+                    }
                 }
-                val bone = state.rigBoneId?.let { state.scene.layerAt(it, state.sampleMs) }
-                BarButton(if (bone?.onKeyframe(PropRef.Rotation) == true) PanelIcons.KeyframeRemove else PanelIcons.Keyframe,
-                    stringResource(R.string.a11y_add_keyframe), Modifier.size(38.dp), enabled = bone != null) { state.toggleRigKey() }
-                TextButton({ state.rigKeyed = !state.rigKeyed }) { Text(stringResource(R.string.rig_auto_keys), color = if (state.rigKeyed) Am.Accent else Am.OnDarkDim, fontSize = 11.sp) }
-                if (state.rigTool == 2) TextButton({ state.rigFlip = !state.rigFlip }) { Text(stringResource(R.string.rig_flip), color = Am.OnDark, fontSize = 11.sp) }
-                TextButton({ state.deleteViewportBone() }, enabled = bone != null) { Text(stringResource(R.string.asset_remove), color = Am.OnDarkDim, fontSize = 11.sp) }
-                }
-                BarButton(PanelIcons.Check, stringResource(R.string.done), Modifier.size(42.dp)) { state.endGesture(); state.rigEditing = false; state.keyTarget = null }
             }
-            Text(stringResource(if (state.rigTool == 0) R.string.rig_draw_hint else R.string.rig_pose_hint), Modifier.padding(horizontal = 8.dp, vertical = 3.dp), color = Am.OnDarkDim, fontSize = 10.sp)
-            if (state.rigTool == 0) Text(state.selected?.label.orEmpty(), Modifier.padding(horizontal = 8.dp), color = Am.Accent, fontSize = 10.sp)
         }
-        val bone = state.rigBoneId?.let { state.scene.layer(it) }
-        if (bone != null) Row(Modifier.align(Alignment.BottomCenter).horizontalScroll(rememberScrollState()).background(Am.Panel.copy(alpha = .9f))) {
-            bone.keyframes(PropRef.Rotation).forEach { key ->
-                val frame = state.scene.frameAt(bone.timeOf(key.t))
-                TextButton({ state.frame = frame }) { Text("◆ ${bone.timeOf(key.t)}", color = if (frame == state.frame) Am.Accent else Am.OnDarkDim, fontSize = 11.sp) }
+    }
+}
+
+@Composable
+private fun RigToolbar(state: EditorState, bone: Layer?, compact: Boolean, modifier: Modifier) {
+    var menu by remember { mutableStateOf(false) }
+    var help by remember { mutableStateOf(false) }
+    val onKey = bone?.onKeyframe(PropRef.Rotation) == true
+    val artwork = state.selected
+    val status: @Composable RowScope.() -> Unit = {
+        Icon(PanelIcons.Bone, null, Modifier.padding(start = 6.dp, end = 5.dp).size(19.dp), tint = Am.Accent)
+        Column(Modifier.weight(1f).padding(end = 5.dp)) {
+            Text(stringResource(R.string.rig_viewport_title), color = Am.OnDark, fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(when {
+                bone != null -> stringResource(R.string.rig_selected_bone, bone.shownName())
+                artwork != null -> stringResource(R.string.rig_draw_short)
+                else -> stringResource(R.string.rig_pick_artwork)
+            }, color = Am.OnDarkDim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+    val actions: @Composable RowScope.() -> Unit = {
+        InspectorIconButton(PanelIcons.AutoKey, stringResource(R.string.rig_auto_keys), active = state.rigKeyed) {
+            state.endGesture()
+            state.rigKeyed = !state.rigKeyed
+        }
+        Box {
+            InspectorIconButton(PanelIcons.More, stringResource(R.string.rig_more)) { menu = true }
+            Presence(menu) {
+                MenuPopup(DropOrRise, { menu = false }) {
+                    MenuRow(stringResource(R.string.rig_help_toggle), trailing = PanelIcons.Check.takeIf { help }) {
+                        menu = false
+                        help = !help
+                    }
+                    MenuRow(stringResource(R.string.rig_delete_bone), icon = ChromeIcons.Trash, enabled = bone != null) {
+                        menu = false
+                        state.deleteViewportBone()
+                    }
+                }
             }
+        }
+        InspectorIconButton(PanelIcons.Check, stringResource(R.string.done), active = true) {
+            state.endGesture()
+            state.rigEditing = false
+            state.keyTarget = null
+        }
+    }
+    val controls: @Composable RowScope.() -> Unit = {
+        Row(Modifier.weight(if (compact) 1.6f else 1f).fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            listOf(R.string.rig_draw, R.string.rig_pose, R.string.rig_ik_mode).forEachIndexed { index, title ->
+                InspectorSegment(stringResource(title), state.rigTool == index, Modifier.weight(1f).fillMaxHeight()) {
+                    state.endGesture()
+                    state.rigTool = index
+                }
+            }
+        }
+        if (state.rigTool == 0) {
+            InspectorIconButton(PanelIcons.Link, stringResource(R.string.rig_bind_selected),
+                enabled = bone != null && artwork != null) {
+                bone?.id?.let(state::bindViewportBone)
+            }
+        }
+        if (state.rigTool == 2) {
+            InspectorIconButton(PanelIcons.FlipJoint, stringResource(R.string.rig_flip), active = state.rigFlip) {
+                state.rigFlip = !state.rigFlip
+            }
+        }
+        InspectorIconButton(
+            if (onKey) PanelIcons.KeyframeRemove else PanelIcons.Keyframe,
+            stringResource(if (onKey) R.string.a11y_remove_keyframe else R.string.a11y_add_keyframe),
+            enabled = bone != null, active = onKey,
+        ) { state.toggleRigKey() }
+    }
+    Column(
+        modifier.padding(if (compact) 4.dp else 8.dp).widthIn(max = if (compact) 720.dp else 480.dp)
+            .fillMaxWidth().clip(InspectorShape).background(Am.Panel.copy(alpha = .96f))
+            .pointerInput(Unit) {}.padding(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (compact) {
+            Row(Modifier.fillMaxWidth().height(44.dp), Arrangement.spacedBy(4.dp), Alignment.CenterVertically) {
+                status()
+                controls()
+                actions()
+            }
+        } else {
+            Row(Modifier.fillMaxWidth().height(44.dp), Arrangement.spacedBy(4.dp), Alignment.CenterVertically) {
+                status()
+                actions()
+            }
+            Row(Modifier.fillMaxWidth().height(44.dp), Arrangement.spacedBy(4.dp)) { controls() }
+        }
+        if (help) {
+            Text(stringResource(if (state.rigTool == 0) R.string.rig_draw_hint else R.string.rig_pose_hint),
+                Modifier.padding(5.dp), color = Am.OnDarkDim, fontSize = 11.sp, lineHeight = 15.sp, maxLines = if (compact) 2 else 5)
         }
     }
 }

@@ -33,6 +33,7 @@ import app.absentmotion.ui.editor.AboveLeft
 import app.absentmotion.ui.editor.ChromeIcons
 import app.absentmotion.ui.editor.DimAlpha
 import app.absentmotion.ui.editor.DropOrRise
+import app.absentmotion.ui.editor.InspectorIconButton
 import app.absentmotion.ui.editor.MenuPopup
 import app.absentmotion.ui.editor.MenuRow
 import app.absentmotion.ui.editor.PanelHeight
@@ -95,8 +96,8 @@ internal fun EffectsPanel(state: EditorState, modifier: Modifier) {
     val pathText = usable && definition.id == TEXT_PATH_ID
     val pinTarget = if (puppet) pin?.let { name -> instance.effectProperty(name)?.let { KeyTarget(PropRef.effect(index, name), it.valueAt(layer.t) ?: "0,0", "vec2") } } else null
     val target = pinTarget ?: active?.takeIf { usable && definition.shown(it, instance, layer.t) }?.let { KeyTarget(PropRef.effect(index, it.id), it.missingDefault, it.type) }
-    var linking by remember(layer.id,index,target?.ref) {mutableStateOf(false)}
-    val linkable=target?.ref?.let {ref->layer.numericChannels().any {it.ref==ref}}==true && layer.copySource==null
+    var linking by remember(layer.id, index, target?.ref) { mutableStateOf(false) }
+    val linkable = target != null && layer.copySource == null && layer.numericChannels().any { it.ref == target.ref }
     val point = active?.takeIf { it.kind == "point" && usable && !pathText }
     val adjust = remember(layer.id, index, point?.id, point?.label) {
         point?.let { param ->
@@ -116,7 +117,11 @@ internal fun EffectsPanel(state: EditorState, modifier: Modifier) {
         pathText -> textPathPoints(state, layer, index, instance, definition, active) { active = it; pin = null }
         else -> null
     }
-    SideEffect { state.keyTarget = target; state.pointAdjust = adjust; state.layerPoints = points }
+    SideEffect {
+        state.keyTarget = target
+        state.pointAdjust = adjust.takeUnless { linking }
+        state.layerPoints = points.takeUnless { linking }
+    }
     DisposableEffect(Unit) { onDispose { state.pointAdjust = null; state.layerPoints = null } }
     if (state.easingOpen) { EasingPanel(state, modifier); return }
     if (choosing) {
@@ -127,10 +132,12 @@ internal fun EffectsPanel(state: EditorState, modifier: Modifier) {
     }
     Row(modifier.background(Am.Panel)) {
         Column(Modifier.width(168.px).heightIn(max = PanelHeight).fillMaxHeight()) {
-            EffectFrameButton(PanelIcons.Back, stringResource(R.string.topbar_back), Modifier.weight(1f)) { if(linking)linking=false else state.stepBack() }
+            EffectFrameButton(PanelIcons.Back, stringResource(R.string.topbar_back), Modifier.weight(1f)) {
+                if (linking) linking = false else state.stepBack()
+            }
             val onKeyframe = target != null && layer.onKeyframe(target.ref)
-            EffectFrameButton(if (onKeyframe) PanelIcons.KeyframeRemove else PanelIcons.Keyframe, stringResource(if (onKeyframe) R.string.a11y_remove_keyframe else R.string.a11y_add_keyframe), Modifier.weight(1f), target != null) { state.toggleKeyframe() }
-            EffectFrameButton(PanelIcons.Easing, stringResource(R.string.a11y_easing), Modifier.weight(1f), target != null) { if (target != null && layer.easing(target.ref) != null) state.easingOpen = true else state.easingHint = true }
+            EffectFrameButton(if (onKeyframe) PanelIcons.KeyframeRemove else PanelIcons.Keyframe, stringResource(if (onKeyframe) R.string.a11y_remove_keyframe else R.string.a11y_add_keyframe), Modifier.weight(1f), target != null && !linking) { state.toggleKeyframe() }
+            EffectFrameButton(PanelIcons.Easing, stringResource(R.string.a11y_easing), Modifier.weight(1f), target != null && !linking) { if (target != null && layer.easing(target.ref) != null) state.easingOpen = true else state.easingHint = true }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 EffectFrameButton(PanelIcons.More, stringResource(R.string.effects_more), Modifier.fillMaxSize(), instance == null) { menu = true }
                 Presence(menu) {
@@ -143,12 +150,18 @@ internal fun EffectsPanel(state: EditorState, modifier: Modifier) {
                     }
                 }
             }
-            if(linkable) TextButton({linking=!linking},Modifier.weight(1f).fillMaxWidth()) {
-                Text(stringResource(R.string.property_link_title),color=if(linking||layer.hasValueLink(target.ref))Am.Accent else Am.OnDark,fontSize=10.sp,maxLines=1)
+            if (linkable) {
+                InspectorIconButton(PanelIcons.Link, stringResource(R.string.property_link_title),
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = 5.dp, vertical = 3.dp),
+                    active = linking || layer.hasValueLink(target.ref)) {
+                    state.playing = false
+                    state.endGesture()
+                    linking = !linking
+                }
             }
         }
         Swap(index, Modifier.weight(1f).fillMaxHeight(), rise = 0.dp) {
-            if(linking && target!=null) PropertyLinkEditor(state,target.ref,Modifier.fillMaxSize()) {linking=false}
+            if (linking && target != null) PropertyLinkEditor(state, target.ref, Modifier.fillMaxSize()) { linking = false }
             else if (instance == null) {
                 val scroll = rememberScrollState()
                 val marks = layer.aiMarks
@@ -164,7 +177,7 @@ internal fun EffectsPanel(state: EditorState, modifier: Modifier) {
                             }
                         }
                     }
-                    if(layer.kind !in setOf("audio","camera","nullobj")) key(layer.id) {RepeatedCopiesControls(state,layer)}
+                    if (layer.kind !in setOf("audio", "camera", "nullobj")) key(layer.id) { RepeatedCopiesControls(state, layer) }
                     Box(Modifier.padding(6.5.dp).fillMaxWidth().height(37.dp).clip(RowShape).background(Am.Button)
                         .clickable { state.playing = false; state.effectBrowserOpen = true }, contentAlignment = Alignment.Center) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
