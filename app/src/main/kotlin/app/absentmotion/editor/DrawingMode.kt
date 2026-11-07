@@ -23,9 +23,6 @@ import app.absentmotion.model.parseSvgPath
 import app.absentmotion.model.strokes
 import app.absentmotion.model.withContours
 import app.absentmotion.model.withHoles
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.tan
 import kotlin.random.Random
 
 sealed class DrawingMode(val layerId: Long, val created: Boolean) {
@@ -167,31 +164,10 @@ suspend fun EditorState.convertToOutline() {
 }
 
 fun Scene.worldMatrix(id: Long, timeMs: Int): Matrix? {
-    fun effective(l: Layer, depth: Int): FloatArray {
-        val c = floatArrayOf(l.location[0], l.location[1], l.pivot[0], l.pivot[1], l.scale[0], l.scale[1], l.transform("rotation", 0f)[0])
-        val parent = l.node["parent"]?.toLongOrNull()?.takeIf { it != l.id }?.let { layerAt(it, timeMs) }
-        if (parent == null || depth > 16) return c
-        val p = effective(parent, depth + 1)
-        val vx = (c[0] + c[2] - p[2]) * p[4]
-        val vy = (c[1] + c[3] - p[3]) * p[5]
-        val a = Math.toRadians(p[6].toDouble())
-        val rx = (vx * cos(a) - vy * sin(a)).toFloat()
-        val ry = (vx * sin(a) + vy * cos(a)).toFloat()
-        c[0] = p[0] + rx - c[2] + p[2]
-        c[1] = p[1] + ry - c[3] + p[3]
-        c[4] *= p[4]; c[5] *= p[5]; c[6] += p[6]
-        return c
-    }
-    val layer = layerAt(id, timeMs) ?: return null
-    val e = effective(layer, 0)
-    val skew = layer.transform("skew", 0f, 0f)
-    return Matrix().apply {
-        setTranslate(e[0], e[1])
-        preRotate(e[6])
-        preSkew(tan(skew[0]), tan(skew[1]))
-        preScale(e[4], e[5])
-        preTranslate(-e[2], -e[3])
-    }
+    val layer = layer(id) ?: return null
+    val m = rigAffine(layer,timeMs)
+    return Matrix().apply { setValues(floatArrayOf(m.a.toFloat(),m.c.toFloat(),m.tx.toFloat(),
+        m.b.toFloat(),m.d.toFloat(),m.ty.toFloat(),0f,0f,1f)) }
 }
 
 internal fun Matrix.map(p: Pt): Pt = floatArrayOf(p.x, p.y).also { mapPoints(it) }.let { Pt(it[0], it[1]) }

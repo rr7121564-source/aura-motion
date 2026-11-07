@@ -44,7 +44,7 @@ fun XmlNode.withNativeBones(): XmlNode {
             if (binding == null) child else {
                 while (next in used) next--
                 val id=next--;used+=id
-                val attrs=mapOf("id" to "$id", "startTime" to (child["startTime"]?:"0"),"endTime" to (child["endTime"]?:"0")) +
+                val attrs=mapOf("id" to "$id", "trueAffineParent" to "true", "startTime" to (child["startTime"]?:"0"),"endTime" to (child["endTime"]?:"0")) +
                     (child["parent"]?.let { mapOf("parent" to it) }?:emptyMap())
                 helpers+=XmlNode("nullobj",attrs,listOf(binding.transform()))
                 child.with("parent","$id").withChild("trueRigBind",null)

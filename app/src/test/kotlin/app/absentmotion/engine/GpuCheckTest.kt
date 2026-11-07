@@ -11,6 +11,13 @@ class GpuCheckTest {
         assertFalse(GpuCheck.safeDevice("OnePlus","Nord CE5","Dimensity 8350"))
         assertFalse(GpuCheck.safeDevice("Samsung","other","SM8635"))
     }
+    @Test fun reportedPondVulkanCrashUsesGlWithoutChangingOtherMaliDevices() {
+        assertTrue(GpuCheck.safeDevice("Xiaomi","2409BRN2CG","",sdk=35))
+        assertTrue(GpuCheck.safeDevice("Redmi","Redmi","","pond",35))
+        assertFalse(GpuCheck.safeDevice("Xiaomi","2409BRN2CG","",sdk=34))
+        assertFalse(GpuCheck.safeDevice("Xiaomi","other","Mali-G57","other",35))
+        assertFalse(GpuCheck.safeDevice("Samsung","2409BRN2CG","","pond",35))
+    }
     private fun picture(mix: Int, color: (Int, Int) -> IntArray) = ByteArray(64 * 64 * 4).also { px ->
         for (y in 0 until 64) for (x in 0 until 64) {
             var c = color(x, y)

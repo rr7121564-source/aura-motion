@@ -26,6 +26,7 @@ class PortInstrumentation : Instrumentation() {
     private var depth017 = false
     private var next018 = false
     private var text018 = false
+    private var parent018 = false
     private var legacy = false
     private var legacyThumbs = false
     private var legacyGl = false
@@ -39,6 +40,7 @@ class PortInstrumentation : Instrumentation() {
         depth017 = arguments?.getString("depth017") == "true"
         next018 = arguments?.getString("next018") == "true"
         text018 = arguments?.getString("text018") == "true"
+        parent018 = arguments?.getString("parent018") == "true"
         legacyThumbs = arguments?.getString("legacy") == "thumbs"
         legacy = arguments?.getString("legacy") in setOf("true", "thumbs")
         legacyGl = arguments?.getString("backend") == "gl"
@@ -48,6 +50,13 @@ class PortInstrumentation : Instrumentation() {
         val report = JSONObject()
         try {
             val context = targetContext
+            if(parent018) {
+                val directory=File(context.filesDir,if(legacyGl) "parent018-gl-validation" else "parent018-validation").apply {mkdirs()}
+                NativeEngine(if(legacyGl) NativeEngine.Backend.GL else NativeEngine.Backend.GRAPHITE).use {engine->report.put("result",Parent018Probe.run(context,engine,directory))}
+                File(directory,"report.json").writeText(report.toString(2))
+                check(report.getJSONObject("result").getBoolean("ok")) {"Parent rotation deformed the child; see ${directory.path}/report.json"}
+                finish(0,Bundle().apply {putString("report",report.toString())});return
+            }
             if(text018) {
                 val directory=File(context.filesDir,if(legacyGl) "text018-gl-validation" else "text018-validation").apply {mkdirs()}
                 NativeEngine(if(legacyGl) NativeEngine.Backend.GL else NativeEngine.Backend.GRAPHITE).use {engine->report.put("result",Text018Probe.run(context,engine,directory))}

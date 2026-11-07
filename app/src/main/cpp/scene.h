@@ -171,6 +171,7 @@ struct Layer {
     bool placed = false;
     bool projected = false;
     bool pivotOffset = false;
+    bool affineParent = false;
     bool rigBone = false, rigLimits = false, rigIndependent = false, rigLocked = false, rigStopIK = false, rigPinned = false, rigFlip = false;
     float rigLength = 160, rigMin = -90, rigMax = 90, rigRest = 0, rigIndependentBase = 0;
     Anim rigTarget;
@@ -198,6 +199,7 @@ struct Placement {
     SkM44 tilt, space, turn;
     bool fullTransform = false;
     SkM44 model;
+    bool matrixInheritance = false;
 };
 
 struct Echo {

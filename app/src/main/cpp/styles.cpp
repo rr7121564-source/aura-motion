@@ -228,6 +228,10 @@ Placement OwnAt(const Layer& l, double timeMs) {
     const float tx = l.tilt.get(0, t, 0), ty = l.tilt.get(1, t, 0);
     if (tx != 0 || ty != 0) p.tilt = SkM44::Rotate({0, 1, 0}, -ty * kRadians) * SkM44::Rotate({1, 0, 0}, -tx * kRadians);
     ApplyMotion(l, timeMs, &p);
+    // Ordinary 2D links inherit size and angle as separate channels. Exact affine
+    // composition is still required for imported origins, rig binds and 3D/shear.
+    p.matrixInheritance = l.pivotOffset || l.affineParent || l.rigBone || p.tilt != SkM44() ||
+        l.skew.get(0,t,0) != 0 || l.skew.get(1,t,0) != 0;
     if(l.pivotOffset) { p.location+=p.pivot; p.fullTransform=true; }
     return p;
 }
@@ -278,21 +282,27 @@ void AdjustParent(const Layer& l, double timeMs, const Layer& parentLayer, const
         scale *= weight("scaleMode","scaleWeight");
     }
     if (rotate != 1 || scale != 1 || base != 0) {
-        SkM44 correction = Turn(parent.rotation * rotate + base) *
-            SkM44::Scale(ParentScaleRatio(parent.scale.fX,scale),ParentScaleRatio(parent.scale.fY,scale),1) * Turn(-parent.rotation);
-        if (scale == 0) {
-            // Nested rotated/nonuniform parents contain shear. Dividing the two
-            // scale fields cannot cancel their actual matrix, and omitted Z scale.
-            SkM44 linear = parent.fullTransform ? parent.model : ModelOf(parent,parentLayer,timeMs);
-            for (int i=0;i<3;i++) {linear.setRC(i,3,0);linear.setRC(3,i,0);}
-            linear.setRC(3,3,1);
-            SkM44 inverse;
-            if (linear.invert(&inverse)) correction=Turn(parent.rotation*rotate+base)*parent.tilt*inverse;
+        if (!own->matrixInheritance) {
+            own->rotation += parent.rotation * (rotate - 1) + base;
+            own->scale = {own->scale.fX * ParentScaleRatio(parent.scale.fX,scale), own->scale.fY * ParentScaleRatio(parent.scale.fY,scale)};
+            own->model = ModelOf(*own,l,timeMs);
+        } else {
+            SkM44 correction = Turn(parent.rotation * rotate + base) *
+                SkM44::Scale(ParentScaleRatio(parent.scale.fX,scale),ParentScaleRatio(parent.scale.fY,scale),1) * Turn(-parent.rotation);
+            if (scale == 0) {
+                // Nested rotated/nonuniform parents contain shear. Dividing the two
+                // scale fields cannot cancel their actual matrix, and omitted Z scale.
+                SkM44 linear = parent.fullTransform ? parent.model : ModelOf(parent,parentLayer,timeMs);
+                for (int i=0;i<3;i++) {linear.setRC(i,3,0);linear.setRC(3,i,0);}
+                linear.setRC(3,3,1);
+                SkM44 inverse;
+                if (linear.invert(&inverse)) correction=Turn(parent.rotation*rotate+base)*parent.tilt*inverse;
+            }
+            own->model = SkM44::Translate(own->location.fX,own->location.fY,own->z) * correction *
+                SkM44::Translate(-own->location.fX,-own->location.fY,-own->z) * own->model;
+            own->rotation += parent.rotation * (rotate - 1) + base;
+            own->scale = {own->scale.fX * ParentScaleRatio(parent.scale.fX,scale), own->scale.fY * ParentScaleRatio(parent.scale.fY,scale)};
         }
-        own->model = SkM44::Translate(own->location.fX,own->location.fY,own->z) * correction *
-            SkM44::Translate(-own->location.fX,-own->location.fY,-own->z) * own->model;
-        own->rotation += parent.rotation * (rotate - 1) + base;
-        own->scale = {own->scale.fX * ParentScaleRatio(parent.scale.fX,scale), own->scale.fY * ParentScaleRatio(parent.scale.fY,scale)};
     }
     for (const LayerEffect& e : l.effects) {
         if (e.hidden || e.id != "absent.parenthelper") continue;
@@ -345,24 +355,22 @@ Placement Effective(const std::vector<Layer>& siblings, const Layer& l, double t
     Placement p{};
     if (parent) {
         p = Effective(siblings, *parent, timeMs, depth + 1);
-        // A parent and its children share the same local origin and anchor matrix.
-        // Flattening rotation/scale and adding the parent's pivot again moves children
-        // around a different point as soon as the anchor is edited.
-        const bool full=true;
-        const SkM44 composed=full ? (p.fullTransform?p.model:ModelOf(p,*parent,timeMs))*(own.fullTransform?own.model:ModelOf(own,l,timeMs)) : SkM44();
-        const SkV4 offset = Turn(p.rotation) * p.tilt * SkV4{(own.location.fX + own.pivot.fX - p.pivot.fX) * p.scale.fX,
-                                                             (own.location.fY + own.pivot.fY - p.pivot.fY) * p.scale.fY, own.z, 0};
-        own.location = p.location + SkVector{offset.x, offset.y} - own.pivot + p.pivot;
+        const SkM44 parentModel = p.fullTransform ? p.model : ModelOf(p,*parent,timeMs);
+        own.matrixInheritance = own.matrixInheritance || p.matrixInheritance;
+        const SkM44 composed = own.matrixInheritance ? parentModel*(own.fullTransform?own.model:ModelOf(own,l,timeMs)) : SkM44();
+        // Map the child's anchor through the parent's complete transform exactly
+        // once. Rotating its geometry inside the parent's nonuniform scale would
+        // instead shear it, even though no skew was requested in the editor.
+        const SkV4 anchor = own.matrixInheritance ? composed.map(own.pivot.fX,own.pivot.fY,0,1) :
+            parentModel.map(own.location.fX,own.location.fY,own.z,1);
+        own.location = {anchor.x/anchor.w,anchor.y/anchor.w};
         own.scale = {own.scale.fX * p.scale.fX, own.scale.fY * p.scale.fY};
         if (p.tilt != SkM44()) own.tilt = Turn(-own.rotation) * p.tilt * Turn(own.rotation) * own.tilt;
         own.rotation += p.rotation;
-        own.z = p.z + offset.z;
-        if(full) {
-            own.fullTransform=true;own.model=composed;
-            const SkV4 anchor=composed.map(own.pivot.fX,own.pivot.fY,0,1);
-            own.location={anchor.x/anchor.w,anchor.y/anchor.w};own.z=anchor.z/anchor.w;
-            AdjustParent(l,timeMs,*parent,p,&own);
-        }
+        own.z = anchor.z/anchor.w;
+        own.fullTransform = true;
+        own.model = own.matrixInheritance ? composed : ModelOf(own,l,timeMs);
+        AdjustParent(l,timeMs,*parent,p,&own);
     }
     if (!FollowsPath(l)) return own;
     const Layer* source = PathSource(siblings, l);

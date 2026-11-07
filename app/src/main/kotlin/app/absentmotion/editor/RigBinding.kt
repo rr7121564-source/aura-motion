@@ -6,8 +6,17 @@ import kotlin.math.*
 private val IdentityRigFrame = Affine(1.0,0.0,0.0,1.0,0.0,0.0)
 internal fun RigBinding.affine() = Affine(a,b,c,d,tx,ty)
 
+private fun Layer.needsAffineParent(time: Int, fps: Int): Boolean {
+    val at=at(time,fps)
+    return isBone || rigBinding!=null || node["trueBone"]=="true" || node["trueAffineParent"]=="true" ||
+        node.child("transform")?.get("originMode")=="alight" || at.transform("skew",0f,0f).any {it!=0f} || at.tilt.any {it!=0f}
+}
+
 /** Match the native 2D parent matrix, including anchors, mirrored scale and shear. */
 internal fun Scene.rigAffine(layer: Layer, time: Int, depth: Int = 0): Affine {
+    // Ordinary links keep width/height and rotation independent. A bind matrix or
+    // an explicit affine transform must retain the exact product instead.
+    if(chain(layer).none {it.needsAffineParent(time,fps)}) return layerAffine(layer,time)
     val at=layer.at(time,fps)
     val l=at.location;val p=at.pivot;val s=at.scale;val skew=at.transform("skew",0f,0f)
     val imported=at.node.child("transform")?.get("originMode")=="alight"
@@ -36,7 +45,9 @@ internal fun Scene.withRigParent(id: Long,parentId: Long?,time: Int): Scene {
     val parent=parentId?.let(::layer)
     if(parentId!=null && parent==null) return this
     if(parent!=null && chain(parent).any { it.id==id }) return this
-    val oldFrame=rigParentAffine(art,time)
+    val detached=art.copy(node=art.node.with("parent",null).withChild("trueRigBind",null))
+    val ownInverse=rigAffine(detached,time).inverse()?:return this
+    val oldFrame=rigAffine(art,time)*ownInverse
     val inverse=(parent?.let { rigAffine(it,time) }?:IdentityRigFrame).inverse()?:return this
     val offset=inverse*oldFrame
     if(abs(offset.a*offset.d-offset.b*offset.c)<1e-12) return this

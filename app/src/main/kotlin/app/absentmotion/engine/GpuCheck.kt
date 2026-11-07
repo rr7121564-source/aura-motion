@@ -13,7 +13,7 @@ internal class GpuCheck(context: Context) {
 
     fun knownBad(gl: Boolean): Boolean = prefs.getString(key(gl), null) == "bad"
     fun failed(engine: NativeEngine) { prefs.edit().putString(key(engine.openGl),"bad").apply() }
-    fun preferSafeBackend():Boolean = safeDevice(Build.MANUFACTURER,Build.MODEL,if(Build.VERSION.SDK_INT>=31)Build.SOC_MODEL else "")
+    fun preferSafeBackend():Boolean = safeDevice(Build.MANUFACTURER,Build.MODEL,if(Build.VERSION.SDK_INT>=31)Build.SOC_MODEL else "",Build.DEVICE,Build.VERSION.SDK_INT)
 
     fun drawsRight(engine: NativeEngine): Boolean {
         val gl = engine.openGl
@@ -40,8 +40,12 @@ internal class GpuCheck(context: Context) {
     companion object {
         // Conservative default for the device family reported with preview corruption.
         // This is a workaround selection, not a claim about every Qualcomm driver.
-        internal fun safeDevice(manufacturer:String,model:String,soc:String):Boolean =
-            manufacturer.equals("OnePlus",true) && (model.contains("Nord 5",true) || soc.contains("SM8635",true))
+        internal fun safeDevice(manufacturer:String,model:String,soc:String,device:String="",sdk:Int=0):Boolean =
+            manufacturer.equals("OnePlus",true) && (model.contains("Nord 5",true) || soc.contains("SM8635",true)) ||
+                // Reported Android 15 pond driver SIGSEGV in mali-cmar-backe while
+                // am-engine presents a Vulkan frame. Prefer the checked GL path.
+                sdk>=35 && (manufacturer.equals("Xiaomi",true) || manufacturer.equals("Redmi",true)) &&
+                (model.equals("2409BRN2CG",true) || device.equals("pond",true))
         private const val URI = "absent-check://quad"
         private const val SIZE = 64
         private const val EMPTY = """<scene title="check" width="$SIZE" height="$SIZE" exportWidth="$SIZE" exportHeight="$SIZE" fps="30" totalTime="1000" bgcolor="#ff000000"></scene>"""

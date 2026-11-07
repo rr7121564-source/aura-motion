@@ -364,6 +364,7 @@ bool ParseLayer(const XmlNode& node, int fps, Layer* out) {
     l.endTime = std::max(l.startTime, IntAttr(*n, "endTime", 0));
     l.hidden = StrAttr(*n, "hidden") == "true";
     l.rigBone = StrAttr(*n, "trueBone") == "true";
+    l.affineParent = StrAttr(*n, "trueAffineParent") == "true";
     if (l.rigBone) {
         l.rigLength = std::clamp(FloatAttr(*n, "length", 160), 1.f, 10000.f);
         if (const XmlNode* rest = n->child("trueRest")) l.rigRest = ParseAnim(rest->child("rotation")).get(0, 0, 0);
