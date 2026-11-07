@@ -133,17 +133,23 @@ internal fun ObjectPage(state: EditorState, modifier: Modifier) {
             note?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
         }
     }
+    val psd = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            reading = true
+            try { state.importPsdFile(context, uri) } finally { reading = false }
+        }
+    }
     val svg = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             reading = true
             try { state.importSvgFile(context, uri) } finally { reading = false }
         }
     }
-    Swap(picking, modifier, rise = 0.dp) { if (picking) ElementPicker(state, Modifier.fillMaxSize()) else ObjectTiles(state, reading, { picking = true }, { svg.launch(arrayOf("image/svg+xml")) }) { models.launch(arrayOf("*/*")) } }
+    Swap(picking, modifier, rise = 0.dp) { if (picking) ElementPicker(state, Modifier.fillMaxSize()) else ObjectTiles(state, reading, { picking = true }, { svg.launch(arrayOf("image/svg+xml")) }, { psd.launch(arrayOf("*/*")) }) { models.launch(arrayOf("*/*")) } }
 }
 
 @Composable
-private fun ObjectTiles(state: EditorState, reading: Boolean, pick: () -> Unit, importSvg: () -> Unit, importModel: () -> Unit) {
+private fun ObjectTiles(state: EditorState, reading: Boolean, pick: () -> Unit, importSvg: () -> Unit, importPsd: () -> Unit, importModel: () -> Unit) {
     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ObjectTile(stringResource(R.string.camera), PanelIcons.Camera, Modifier.size(70.dp, 80.dp)) { state.addCamera() }
@@ -153,6 +159,7 @@ private fun ObjectTiles(state: EditorState, reading: Boolean, pick: () -> Unit, 
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ObjectTile(stringResource(R.string.structure_import_svg), ChromeIcons.ImportSvg, Modifier.size(70.dp, 80.dp), enabled = !reading, onClick = importSvg)
+            ObjectTile(stringResource(R.string.psd_import), TextIcons.Import, Modifier.size(70.dp, 80.dp), enabled = !reading, onClick = importPsd)
             ObjectTile(stringResource(R.string.structure_3d_model), ChromeIcons.Model3d, Modifier.size(70.dp, 80.dp), enabled = !reading, onClick = importModel)
             ObjectTile(stringResource(R.string.true_particles_title), PanelIcons.Particles, Modifier.size(70.dp, 80.dp)) { state.addParticles() }
         }

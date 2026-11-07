@@ -825,18 +825,26 @@ private fun VideoPage(
     warning: UiText?, slow: Boolean, use: UiText?, onUse: () -> Unit, onContinue: () -> Unit,
     onChange: (ExportSettings) -> Unit, onReason: (UiText) -> Unit, onAudio: () -> Unit, onHelp: () -> Unit, onBack: () -> Unit,
 ) {
-    val rates = (VideoFrameRates + scene.fps).distinct().sorted()
+    val rates = (VideoFrameRates + scene.fps + s.fps).distinct().sorted()
     val (w, h) = exportSize(scene, s.shortSide, even = true)
     PageFrame(stringResource(R.string.export_kind_video), onBack) {
         info()
         ScrollArea(Modifier.weight(1f).fillMaxWidth(), Am.SheetBg, PaddingValues(start = 15.dp, end = 15.dp, top = 16.dp, bottom = 20.dp), GroupGap) {
             naming()
             Field(stringResource(R.string.export_resolution_heading)) {
-                Box(Modifier.clip(RoundedCornerShape(4.dp)).background(Am.Card)) { ResolutionDropdown(s.shortSide, resolutionChoices(s, check), onReason) { onChange(s.copy(shortSide = it)) } }
+                app.absentmotion.ui.EditablePresetNumber(s.shortSide,stringResource(R.string.export_resolution_heading),VideoResolutions.map {it.shortSide to it.label},"px") {onChange(s.copy(shortSide=it,customResolution=true))}
             }
             Field(stringResource(R.string.export_format)) { Segments(containerChoices(s, check), s.container, { it.label }, onReason) { onChange(withContainer(s, it, check)) } }
             Field(stringResource(R.string.export_codec)) { Segments(codecChoices(s, check), s.codec, { it.shortName }, onReason) { onChange(s.copy(codec = it)) } }
-            Field(stringResource(R.string.export_frame_rate), "${s.fps}fps") {
+            Field(stringResource(R.string.export_encoder_mode)) {
+                Segments(listOf(Choice(false), Choice(true)), s.compatibleEncoder,
+                    { stringResource(if (it) R.string.export_encoder_compatible else R.string.export_encoder_auto) }, onReason) {
+                    onChange(s.copy(compatibleEncoder = it))
+                }
+                Hint(stringResource(R.string.export_encoder_compatible_hint))
+            }
+            Field(stringResource(R.string.export_frame_rate)) {
+                app.absentmotion.ui.EditablePresetNumber(s.fps,stringResource(R.string.export_frame_rate),rates.map {it to "$it fps"},"fps") {onChange(s.copy(fps=it,customFrameRate=true))}
                 ExportSlider(rates.indexOf(s.fps).coerceAtLeast(0).toFloat() / (rates.size - 1)) { onChange(s.copy(fps = rates[(it * (rates.size - 1)).roundToInt()])) }
                 Ends("${rates.first()}fps", "${rates.last()}fps")
             }
@@ -1077,10 +1085,12 @@ private fun OptionsPage(kind: ExportKind, scene: Scene, s: ExportSettings, onRea
     }
     if (kind == ExportKind.FrameAs) return
     val (w, h) = exportSize(scene, s.shortSide, even = false)
-    Chips(stringResource(if (kind == ExportKind.Gif) R.string.export_size else R.string.export_resolution), "${w}x$h") {
-        (if (kind == ExportKind.Gif) GifResolutions else VideoResolutions).forEach { Chip(it.label, s.shortSide == it.shortSide) { onChange(s.copy(shortSide = it.shortSide)) } }
+    Field(stringResource(if (kind == ExportKind.Gif) R.string.export_size else R.string.export_resolution),"${w}x$h") {
+        app.absentmotion.ui.EditablePresetNumber(s.shortSide,stringResource(R.string.export_resolution),(if(kind==ExportKind.Gif) GifResolutions else VideoResolutions).map {it.shortSide to it.label},"px") {onChange(s.copy(shortSide=it,customResolution=true))}
     }
-    Chips(stringResource(R.string.export_frame_rate)) { rates.forEach { Chip("${it}fps", s.fps == it) { onChange(s.copy(fps = it)) } } }
+    Field(stringResource(R.string.export_frame_rate)) {
+        app.absentmotion.ui.EditablePresetNumber(s.fps,stringResource(R.string.export_frame_rate),rates.map {it to "$it fps"},"fps") {onChange(s.copy(fps=it,customFrameRate=true))}
+    }
     Field(stringResource(R.string.export_interpolation), onHelp = onHelp) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FrameInterpolation.entries.forEach {

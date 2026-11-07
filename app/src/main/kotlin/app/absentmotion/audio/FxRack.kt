@@ -71,8 +71,8 @@ internal class SafeLimiter(rate: Int, releaseMs: Double = 100.0) : ClipFx {
     override fun process(buf: FloatArray, frames: Int) {
         var top = 0f
         for (k in 0 until frames) {
-            val l = buf[2 * k]
-            val r = buf[2 * k + 1]
+            val l = buf[2 * k].let {if(it.isNaN()) 0f else it.coerceIn(-Float.MAX_VALUE,Float.MAX_VALUE)}
+            val r = buf[2 * k + 1].let {if(it.isNaN()) 0f else it.coerceIn(-Float.MAX_VALUE,Float.MAX_VALUE)}
             val p = maxOf(abs(l), abs(r))
             if (p > top) top = p
             val want = if (p > ceiling) ceiling / p else 1f

@@ -87,6 +87,7 @@ internal suspend fun EditorState.addPicked(context: Context, uri: Uri, video: Bo
     val type = runCatching { context.contentResolver.getType(uri) }.getOrNull().orEmpty()
     val name = uri.lastPathSegment.orEmpty()
     when {
+        isPsd(context, uri) -> importPsdFile(context, uri)
         svg || type == "image/svg+xml" || name.endsWith(".svg", ignoreCase = true) -> importSvgFile(context, uri)
         video == null && type.startsWith("audio/") -> audioDeclaration(context, uri)?.let { keepCopy(context, it) }?.takeIf { it.duration > 0 }?.let { addAudio(it) } ?: unsupportedPick(context)
         video != true && !type.startsWith("video/") && looksLikeGif(context, uri) && addGif(context, uri) -> Unit

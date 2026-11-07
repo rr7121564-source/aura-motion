@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "Hỗ trợ lớp cha",
+      "description": "Điều chỉnh xoay và tỷ lệ kế thừa trong khi vị trí vẫn đi theo lớp cha.",
+      "params": {
+        "scaleMode": {
+          "label": "Kế thừa tỷ lệ",
+          "options": [
+            "Bình thường",
+            "Khóa",
+            "Có trọng số"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Trọng số tỷ lệ"
+        },
+        "rotateMode": {
+          "label": "Kế thừa xoay",
+          "options": [
+            "Bình thường",
+            "Khóa",
+            "Có trọng số"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Trọng số xoay"
+        },
+        "autoRotate": {
+          "label": "Hướng ra xa lớp cha",
+          "options": [
+            "Tắt",
+            "Trục X",
+            "Trục Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Độ lệch quỹ đạo"
+        }
+      },
+      "presets": {
+        "keep-upright": "Giữ hướng",
+        "keep-size": "Giữ kích thước",
+        "double-rotation": "Xoay gấp đôi"
+      }
     }
   }
 }

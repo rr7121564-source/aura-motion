@@ -84,6 +84,7 @@ internal class VideoDecoder(private val context: Context, private val uri: Strin
     private var currentPts = Long.MIN_VALUE
     private var positioned = false
     private var queued = false
+    private var closed = false
     private var flushable = false
     private var format: MediaFormat
     private var hdr = false
@@ -170,7 +171,9 @@ internal class VideoDecoder(private val context: Context, private val uri: Strin
                 if (exact) return null
             }
             if (held < 0) return current
-            return show(decoder, held, heldPts, wanted, exact).also { held = -1 }
+            val index=held
+            held=-1
+            return show(decoder, index, heldPts, wanted, exact)
         } finally {
             if (held >= 0) decoder.releaseOutputBuffer(held, false)
         }
@@ -212,9 +215,11 @@ internal class VideoDecoder(private val context: Context, private val uri: Strin
     private fun drainImages() { frames?.drain() }
 
     override fun close() {
-        current?.close(); current = null
+        if (closed) return
+        closed=true
+        runCatching { current?.close() }; current = null
         runCatching { codec?.stop() }; runCatching { codec?.release() }; codec = null
-        frames?.close(); frames = null
-        extractor.release()
+        runCatching { frames?.close() }; frames = null
+        runCatching { extractor.release() }
     }
 }

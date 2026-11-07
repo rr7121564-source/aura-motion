@@ -44908,6 +44908,50 @@
           ]
         }
       }
+    },
+    "parenthelper": {
+      "name": "父级辅助",
+      "description": "分别控制旋转和缩放的继承。锁定模式保持子图层的角度或大小，同时位置继续跟随父级。",
+      "params": {
+        "scaleMode": {
+          "label": "缩放继承",
+          "options": [
+            "正常",
+            "锁定",
+            "权重"
+          ]
+        },
+        "scaleWeight": {
+          "label": "缩放权重"
+        },
+        "rotateMode": {
+          "label": "旋转继承",
+          "options": [
+            "正常",
+            "锁定",
+            "权重"
+          ]
+        },
+        "rotateWeight": {
+          "label": "旋转权重"
+        },
+        "autoRotate": {
+          "label": "朝向父级外侧",
+          "options": [
+            "关闭",
+            "X 轴",
+            "Y 轴"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "轨道偏移"
+        }
+      },
+      "presets": {
+        "keep-upright": "保持方向",
+        "keep-size": "保持大小",
+        "double-rotation": "双倍旋转"
+      }
     }
   },
   "categories": {

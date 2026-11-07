@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.absentmotion.R
 import app.absentmotion.editor.EditorState
+import app.absentmotion.editor.ungroupSelected
 import app.absentmotion.model.groupScene
 import app.absentmotion.ui.theme.Am
 
@@ -44,6 +45,10 @@ internal fun GroupTiming(state: EditorState) {
         "off" to R.string.true_group_continue,
     )
     Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        InspectorAction(stringResource(R.string.ungroup_action), PanelIcons.Unlink, Modifier.fillMaxWidth()) {
+            state.ungroupSelected()?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+        }
         Text(stringResource(R.string.true_group_timing), color = Am.OnDark, fontSize = 12.sp)
         for (row in options.chunked(3)) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((method, label) in row) {

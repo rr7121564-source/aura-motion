@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "Üst katman yardımcısı",
+      "description": "Konum üst katmanı izlerken devralınan dönüşü ve ölçeği denetler.",
+      "params": {
+        "scaleMode": {
+          "label": "Ölçek devralma",
+          "options": [
+            "Normal",
+            "Kilitli",
+            "Ağırlıklı"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Ölçek ağırlığı"
+        },
+        "rotateMode": {
+          "label": "Dönüş devralma",
+          "options": [
+            "Normal",
+            "Kilitli",
+            "Ağırlıklı"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Dönüş ağırlığı"
+        },
+        "autoRotate": {
+          "label": "Üst katmandan dışarı yönelt",
+          "options": [
+            "Kapalı",
+            "X ekseni",
+            "Y ekseni"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Yörünge kaydırma"
+        }
+      },
+      "presets": {
+        "keep-upright": "Yönü koru",
+        "keep-size": "Boyutu koru",
+        "double-rotation": "Çift dönüş"
+      }
     }
   }
 }

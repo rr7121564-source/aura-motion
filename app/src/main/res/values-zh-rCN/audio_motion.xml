@@ -20,7 +20,7 @@
     <string name="true_audio_bass">低频</string>
     <string name="true_audio_mid">中频</string>
     <string name="true_audio_high">高频</string>
-    <string name="true_audio_amount">幅度：% 或度 / 像素</string>
+    <string name="true_audio_amount" formatted="false">幅度：% 或度 / 像素</string>
     <string name="true_audio_amount_percent">缩放增量，%</string>
     <string name="true_audio_gain">灵敏度</string>
     <string name="true_audio_gate">噪声阈值</string>

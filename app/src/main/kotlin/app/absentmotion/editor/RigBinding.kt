@@ -14,10 +14,16 @@ internal fun Scene.rigAffine(layer: Layer, time: Int, depth: Int = 0): Affine {
     val scale=Affine.scale(s[0].toDouble(),s[1].toDouble())
     val shear=Affine.skew(tan(skew[0].toDouble()),tan(skew[1].toDouble()))
     val own=Affine.translate((l[0]+if(imported)p[0] else 0f).toDouble(),(l[1]+if(imported)p[1] else 0f).toDouble()) *
-        Affine.rotate((at.transform("rotation",0f)[0]+at.pathAngle()).toDouble()) *
+        Affine.rotate((at.constrainedAngle(at.transform("rotation",0f)[0])+at.pathAngle()).toDouble()) *
         (if(imported) scale*shear else shear*scale) * Affine.translate(-p[0].toDouble(),-p[1].toDouble())
     val parent=if(depth<32) layer.node["parent"]?.toLongOrNull()?.let(::layer)?.let { rigAffine(it,time,depth+1) } else null
-    return (parent?:IdentityRigFrame)*(layer.rigBinding?.affine()?:IdentityRigFrame)*own
+    val composed = (parent?:IdentityRigFrame)*(layer.rigBinding?.affine()?:IdentityRigFrame)*own
+    val options = layer.boneOptions
+    if (parent == null || !layer.isBone || !options.independent) return composed
+    val angle = Math.toDegrees(atan2(parent.b,parent.a))
+    val anchor = composed.map(Pt(p[0],p[1]))
+    return Affine.translate(anchor.x.toDouble(),anchor.y.toDouble()) * Affine.rotate(options.independentBase-angle) *
+        Affine.translate(-anchor.x.toDouble(),-anchor.y.toDouble()) * composed
 }
 
 internal fun Scene.rigParentAffine(layer: Layer,time: Int): Affine =

@@ -381,7 +381,8 @@ internal object CaptionModel {
         val digest = MessageDigest.getInstance("SHA-256")
         if (append) part.inputStream().use { DigestInputStream(it, digest).drain() }
         val digesting = DigestInputStream(input, digest)
-        java.io.FileOutputStream(part, append).use { output ->
+        var oversized=false
+        try { java.io.FileOutputStream(part, append).use { output ->
             val buffer = ByteArray(64 * 1024)
             var done = if (append) part.length() else 0L
             while (true) {
@@ -390,11 +391,11 @@ internal object CaptionModel {
                 if (count < 0) break
                 output.write(buffer, 0, count)
                 done += count
-                if (done > bytes) part.delete()
+                if (done > bytes) oversized=true
                 check(done <= bytes) { AppText.get(wrong) }
                 progress(done.toFloat() / bytes)
             }
-        }
+        } } finally { if(oversized) part.delete() }
         check(part.length() == bytes) { AppText.get(R.string.ai_download_incomplete) }
         val intact = hex(digest.digest()) == sha256
         if (!intact) part.delete()

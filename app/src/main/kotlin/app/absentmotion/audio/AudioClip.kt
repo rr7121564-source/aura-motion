@@ -17,7 +17,8 @@ import app.absentmotion.model.layerTracks
 
 val GainRef = PropRef(PropRef.Kind.Child, "gain")
 
-const val MAX_GAIN = 1.5f
+/** Only the drag slider range; numeric gain is unrestricted. */
+const val GAIN_SLIDER_MAX = 1.5f
 
 val Layer.gain: Float get() = element(GainRef)?.valueAt(t)?.finiteFloat() ?: 1f
 
@@ -42,7 +43,7 @@ internal class AudioClip(layer: Layer, val uri: String, private val track: Layer
     private val length = (layer.endTime - layer.startTime).coerceAtLeast(1).toFloat()
 
     fun gainAt(projectMs: Double): Float =
-        gainLayer.copy(t = (((track?.timeAt(projectMs, false, false)?.ms ?: projectMs) - gainLayer.startTime) / length).toFloat()).gain.coerceIn(0f, MAX_GAIN)
+        gainLayer.copy(t = (((track?.timeAt(projectMs, false, false)?.ms ?: projectMs) - gainLayer.startTime) / length).toFloat()).gain.coerceAtLeast(0f)
 
     fun mediaAt(projectMs: Double): Double = timing.mediaMs((track?.timeAt(projectMs, false, false)?.ms ?: projectMs) - gainLayer.startTime)
 

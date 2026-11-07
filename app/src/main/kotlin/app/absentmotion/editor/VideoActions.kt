@@ -70,11 +70,16 @@ fun EditorState.applySpeedCurve(points: List<CurvePoint>?) {
         .coerceIn(scene.frameAt(after.startTime), scene.frameAt(after.endTime))
 }
 
-val EditorState.keyLayer: Layer? get() = selected?.let {
+val EditorState.keyLayer: Layer? get() = (if(rigEditing) rigBoneId?.let {scene.layerAt(it,sampleMs)} else selected)?.let {
     if (keyTarget?.ref == SpeedRef) it.atVideoTime(sampleMs, scene.fps) else it
 }
 
 internal fun EditorState.editKeyValue(key: Any? = null, change: (Layer) -> Layer) {
+    if (rigEditing) {
+        val id=rigBoneId ?: return
+        edit(key) {it.update(id,sampleMs,change)}
+        return
+    }
     if (keyTarget?.ref != SpeedRef) { editSelected(key, change); return }
     editSelected(key) { original ->
         val changed = change(original.atVideoTime(sampleMs, scene.fps))

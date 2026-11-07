@@ -6305,6 +6305,50 @@
      "label": "طاقت"
     }
    }
+  },
+  "parenthelper": {
+   "name": "پیرنٹ مددگار",
+   "description": "مقام پیرنٹ کی پیروی کرتے ہوئے گردش اور سائز کی وراثت کو کنٹرول کرتا ہے۔",
+   "params": {
+    "scaleMode": {
+     "label": "سائز کی وراثت",
+     "options": [
+      "معمول",
+      "مقفل",
+      "وزنی"
+     ]
+    },
+    "scaleWeight": {
+     "label": "سائز کا وزن"
+    },
+    "rotateMode": {
+     "label": "گردش کی وراثت",
+     "options": [
+      "معمول",
+      "مقفل",
+      "وزنی"
+     ]
+    },
+    "rotateWeight": {
+     "label": "گردش کا وزن"
+    },
+    "autoRotate": {
+     "label": "پیرنٹ سے باہر کی سمت",
+     "options": [
+      "بند",
+      "X محور",
+      "Y محور"
+     ]
+    },
+    "radiusAdjust": {
+     "label": "مدار کی منتقلی"
+    }
+   },
+   "presets": {
+    "keep-upright": "سمت برقرار رکھیں",
+    "keep-size": "سائز برقرار رکھیں",
+    "double-rotation": "دوگنی گردش"
+   }
   }
  }
 }

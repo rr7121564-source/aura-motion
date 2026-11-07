@@ -397,6 +397,11 @@ JNIEXPORT jboolean JNICALL JNI_FN(nativeSetModel)(JNIEnv* env, jclass, jbyteArra
         am::SetModel(key, nullptr);
         return true;
     }
+    if (!normals || !uvs || !colors || !triangles || !slots) return false;
+    const jsize vertices=env->GetArrayLength(positions)/3, corners=env->GetArrayLength(triangles);
+    if (vertices <= 0 || vertices > 2000000 || env->GetArrayLength(positions) != vertices*3 ||
+        env->GetArrayLength(normals) != vertices*3 || env->GetArrayLength(uvs) != vertices*2 ||
+        env->GetArrayLength(colors) != vertices || corners < 0 || corners > 6000000 || corners%3 != 0 || env->GetArrayLength(slots) != corners/3) return false;
     auto floats = [&](jfloatArray a) {
         std::vector<float> v((size_t)env->GetArrayLength(a));
         env->GetFloatArrayRegion(a, 0, (jsize)v.size(), v.data());
@@ -417,7 +422,10 @@ JNIEXPORT jboolean JNICALL JNI_FN(nativeSetModel)(JNIEnv* env, jclass, jbyteArra
     model->slots = ints(slots);
     model->twoSided = twoSided;
     const size_t count = model->positions.size() / 3;
-    const bool ok = model->positions.size() == count * 3 && model->normals.size() == count * 3 && model->uvs.size() == count * 2 &&
+    const auto finite=[](float x) { return std::isfinite(x); };
+    const bool ok = !env->ExceptionCheck() && std::all_of(model->positions.begin(),model->positions.end(),finite) &&
+                    std::all_of(model->normals.begin(),model->normals.end(),finite) && std::all_of(model->uvs.begin(),model->uvs.end(),finite) &&
+                    model->positions.size() == count * 3 && model->normals.size() == count * 3 && model->uvs.size() == count * 2 &&
                     model->colors.size() == count && model->triangles.size() % 3 == 0 && model->slots.size() == model->triangles.size() / 3 &&
                     std::all_of(model->triangles.begin(), model->triangles.end(), [&](int i) { return i >= 0 && (size_t)i < count; });
     if (ok) am::SetModel(key, std::move(model));

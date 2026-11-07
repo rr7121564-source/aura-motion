@@ -318,12 +318,47 @@ bool Colored(const SkFont& font) {
     }
     return entry->second;
 }
+void DrawGlyphRun(SkCanvas* canvas,const SkGlyphID* glyphs,const SkPoint* positions,size_t count,
+                  SkPoint origin,const SkFont& font,const SkPaint& paint) {
+    const float size=font.getSize();
+    if (!(size>512) || !std::isfinite(size)) {
+        canvas->drawGlyphs({glyphs,count},{positions,count},origin,font,paint);
+        return;
+    }
+    // Raster glyph strikes have finite local-coordinate limits even when the
+    // final on-screen text is small. Keep shaping positions in their original
+    // units, but draw a canonical font through the equivalent canvas transform.
+    constexpr float canonical=128;
+    const float inverse=canonical/size;
+    SkFont normalized=font;
+    normalized.setSize(canonical);
+    if(!Colored(font)) {
+        // Paths also keep filter passes and the unfiltered text on the same
+        // geometry, independent of the offscreen glyph strike's raster size.
+        for(size_t i=0;i<count;i++) if(auto path=normalized.getPath(glyphs[i])) {
+            SkMatrix matrix=SkMatrix::Scale(size/canonical,size/canonical);
+            matrix.postTranslate(origin.fX+positions[i].fX,origin.fY+positions[i].fY);
+            canvas->drawPath(path->makeTransform(matrix),paint);
+        }
+        return;
+    }
+    std::vector<SkPoint> points;
+    points.reserve(count);
+    for(size_t i=0;i<count;i++) points.push_back({positions[i].fX*inverse,positions[i].fY*inverse});
+    canvas->save();
+    canvas->translate(origin.fX,origin.fY);
+    canvas->scale(size/canonical,size/canonical);
+    SkPaint scaled=paint;
+    if(auto filter=paint.refImageFilter()) scaled.setImageFilter(filter->makeWithLocalMatrix(SkMatrix::Scale(inverse,inverse)));
+    canvas->drawGlyphs({glyphs,count},{points.data(),count},{0,0},normalized,scaled);
+    canvas->restore();
+}
 void DrawRuns(SkCanvas* canvas, TextLayout& text, bool colored, const SkPaint& paint) {
     EachParagraph(text, [&](Paragraph& paragraph, float x, float y) {
         paragraph.visit([&](int, const Paragraph::VisitorInfo* info) {
             if (!info || Colored(info->font) != colored) return;
-            canvas->drawGlyphs({info->glyphs, (size_t)info->count}, {info->positions, (size_t)info->count},
-                               {x + info->origin.fX, y + info->origin.fY}, info->font, paint);
+            DrawGlyphRun(canvas,info->glyphs,info->positions,(size_t)info->count,
+                         {x+info->origin.fX,y+info->origin.fY},info->font,paint);
         });
     });
 }
@@ -735,7 +770,7 @@ void DrawGlyphs(SkCanvas* canvas, const std::vector<Glyph>& glyphs, SkColor4f co
         else if (g.blur > 0.05f) paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle, g.blur));
         canvas->save();
         canvas->concat(g.matrix);
-        canvas->drawGlyphs({&g.id, 1}, {&g.at, 1}, {0, 0}, g.font, paint);
+        DrawGlyphRun(canvas,&g.id,&g.at,1,{0,0},g.font,paint);
         canvas->restore();
     }
     if (opacity < 1) canvas->restore();

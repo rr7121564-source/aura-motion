@@ -44776,6 +44776,50 @@
       },
       "name": "True Color Grade (Classic)",
       "description": "Primary color grading, tonal color wheels and RGB curves. Open Color grading in True Motion tools for the visual editor."
+    },
+    "parenthelper": {
+      "name": "Помощник привязки",
+      "description": "Управляет наследованием масштаба и поворота. Режим «Заблокирован» сохраняет размер или угол объекта, пока его положение следует за родителем.",
+      "params": {
+        "scaleMode": {
+          "label": "Наследование масштаба",
+          "options": [
+            "Обычное",
+            "Заблокировано",
+            "С весом"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Вес масштаба"
+        },
+        "rotateMode": {
+          "label": "Наследование поворота",
+          "options": [
+            "Обычное",
+            "Заблокировано",
+            "С весом"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Вес поворота"
+        },
+        "autoRotate": {
+          "label": "Направить от родителя",
+          "options": [
+            "Выключено",
+            "Ось X",
+            "Ось Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Смещение орбиты"
+        }
+      },
+      "presets": {
+        "keep-upright": "Сохранить направление",
+        "keep-size": "Сохранить размер",
+        "double-rotation": "Двойной поворот"
+      }
     }
   }
 }

@@ -1,0 +1,109 @@
+{
+  "id": "parenthelper",
+  "name": "Parent Helper",
+  "category": "move",
+  "native": true,
+  "description": "Controls inherited rotation and scale while keeping the child on its parent orbit. Use Normal, Locked, or a custom weight independently for each channel.",
+  "params": [
+    {
+      "id": "scaleMode",
+      "label": "Scale inheritance",
+      "type": "choice",
+      "default": 0,
+      "options": [
+        "Normal",
+        "Locked",
+        "Weighted"
+      ]
+    },
+    {
+      "id": "scaleWeight",
+      "label": "Scale weight",
+      "type": "float",
+      "default": 1,
+      "min": -10,
+      "max": 10,
+      "step": 0.01,
+      "percent": true,
+      "when": {
+        "scaleMode": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "rotateMode",
+      "label": "Rotation inheritance",
+      "type": "choice",
+      "default": 0,
+      "options": [
+        "Normal",
+        "Locked",
+        "Weighted"
+      ]
+    },
+    {
+      "id": "rotateWeight",
+      "label": "Rotation weight",
+      "type": "float",
+      "default": 1,
+      "min": -10,
+      "max": 10,
+      "step": 0.01,
+      "percent": true,
+      "when": {
+        "rotateMode": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "autoRotate",
+      "label": "Point away from parent",
+      "type": "choice",
+      "default": 0,
+      "options": [
+        "Off",
+        "X axis",
+        "Y axis"
+      ]
+    },
+    {
+      "id": "radiusAdjust",
+      "label": "Orbit offset",
+      "type": "float",
+      "default": 0,
+      "min": -10000,
+      "max": 10000,
+      "step": 1,
+      "pixels": true,
+      "when": {
+        "autoRotate": [
+          1,
+          2
+        ]
+      }
+    }
+  ],
+  "presets": [
+    {
+      "name": "Keep upright",
+      "params": {
+        "rotateMode": 1
+      }
+    },
+    {
+      "name": "Keep size",
+      "params": {
+        "scaleMode": 1
+      }
+    },
+    {
+      "name": "Double rotation",
+      "params": {
+        "rotateMode": 2,
+        "rotateWeight": 2
+      }
+    }
+  ]
+}

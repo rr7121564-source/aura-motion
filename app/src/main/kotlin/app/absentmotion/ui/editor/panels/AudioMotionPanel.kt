@@ -73,6 +73,7 @@ internal fun AudioMotionPanel(state: EditorState, modifier: Modifier) {
     var previewBase by remember(layer.id) { mutableStateOf(state.scene) }
     val previewOwner = remember(layer.id) { Any() }
     val context = LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val scope = rememberCoroutineScope()
     val signature = remember(state.scene, settings.source, settings.respectVolume) { AudioMotion.signature(state.scene, settings.source, settings.respectVolume) }
     val current = profile?.takeIf { it.signature == signature }
@@ -121,7 +122,7 @@ internal fun AudioMotionPanel(state: EditorState, modifier: Modifier) {
             }
             state.previewVisuals(previewOwner, before, shown.first, shown.second)
         } catch (e: CancellationException) { throw e }
-        catch (e: Exception) { state.clearVisualPreview(previewOwner); error = e.message ?: context.getString(R.string.true_audio_unreadable) }
+        catch (e: Exception) { state.clearVisualPreview(previewOwner); error = e.message ?: resources.getString(R.string.true_audio_unreadable) }
     }
 
     fun number(label: String, value: Float, range: ClosedFloatingPointRange<Float>, change: (Float) -> Unit) {
@@ -138,12 +139,12 @@ internal fun AudioMotionPanel(state: EditorState, modifier: Modifier) {
         job = scope.launch {
             try {
                 val result = state.engine.audioEffectProfile(before, source, volume, force) { progress = it }
-                check(AudioMotion.signature(state.scene, source, volume) == result.signature) { context.getString(R.string.true_audio_changed) }
+                check(AudioMotion.signature(state.scene, source, volume) == result.signature) { resources.getString(R.string.true_audio_changed) }
                 profile = result
                 if (force) state.engine.refreshAudioEffects()
-                if (result.data.peak(AudioEnvelope.Band.Full) < 1e-6f) note = context.getString(R.string.true_audio_silent)
+                if (result.data.peak(AudioEnvelope.Band.Full) < 1e-6f) note = resources.getString(R.string.true_audio_silent)
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error = e.message ?: context.getString(R.string.true_audio_unreadable) }
+            catch (e: Exception) { error = e.message ?: resources.getString(R.string.true_audio_unreadable) }
             finally { busy = false }
         }
     }
@@ -160,27 +161,27 @@ internal fun AudioMotionPanel(state: EditorState, modifier: Modifier) {
         val sampled = response
         val analyzed = current
         if (!useEffect && AudioMotion.keyCount(chosen, before.fps, config.keyRate) > AudioMotion.MAX_KEYS) {
-            error = context.getString(R.string.true_audio_many_keys); return
+            error = resources.getString(R.string.true_audio_many_keys); return
         }
         busy = true; error = null; note = null
         job = scope.launch {
             try {
                 if (!useEffect && config.mode == AudioMotion.Mode.Envelope) {
-                    check(analyzed != null && sampled != null) { context.getString(R.string.true_audio_analyze_first) }
-                    check(analyzed.sourcesUnchanged(context)) { context.getString(R.string.true_audio_changed) }
+                    check(analyzed != null && sampled != null) { resources.getString(R.string.true_audio_analyze_first) }
+                    check(analyzed.sourcesUnchanged(context)) { resources.getString(R.string.true_audio_changed) }
                 }
                 val result = withContext(Dispatchers.Default) { before.update(chosen.id) {
                     if (useEffect) AudioReactive.put(it, config, editedIndex ?: AudioReactive.index(it, config.property))
                     else AudioMotion.bake(before, if (editedIndex != null) it.removeEffect(editedIndex) else AudioReactive.remove(it, config.property), config, sampled)
                 } }
-                check(state.scene == before) { context.getString(R.string.true_audio_changed) }
+                check(state.scene == before) { resources.getString(R.string.true_audio_changed) }
                 state.edit { result }
                 if (useEffect) {
                     state.effectIndex = editedIndex ?: AudioReactive.index(result.layer(chosen.id)!!, config.property)
-                    note = context.getString(R.string.true_audio_effect_applied)
-                } else note = context.getString(R.string.true_audio_applied, result.layer(chosen.id)!!.keyframes(config.property.ref).size)
+                    note = resources.getString(R.string.true_audio_effect_applied)
+                } else note = resources.getString(R.string.true_audio_applied, result.layer(chosen.id)!!.keyframes(config.property.ref).size)
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error = e.message ?: context.getString(R.string.true_audio_unreadable) }
+            catch (e: Exception) { error = e.message ?: resources.getString(R.string.true_audio_unreadable) }
             finally { busy = false }
         }
     }
@@ -258,7 +259,7 @@ internal fun AudioMotionPanel(state: EditorState, modifier: Modifier) {
                     Button({
                         val before = state.scene
                         state.edit { AudioMotion.addMarkers(it, current.beats) }
-                        note = context.getString(R.string.true_audio_markers_added, state.scene.bookmarks.size - before.bookmarks.size)
+                        note = resources.getString(R.string.true_audio_markers_added, state.scene.bookmarks.size - before.bookmarks.size)
                     }, Modifier.fillMaxWidth(), enabled = !busy && current.beats.isNotEmpty(), colors = audioButtonColors()) { Text(stringResource(R.string.true_audio_add_detected)) }
                 }
                 AudioCheck(stringResource(R.string.true_audio_manual_grid), manual, !busy) { manual = it }
@@ -270,7 +271,7 @@ internal fun AudioMotionPanel(state: EditorState, modifier: Modifier) {
                         val grid = AudioMotion.grid(layer.startTime.coerceAtLeast(0), minOf(layer.endTime + 1, state.scene.totalTime + 1), bpm, settings.offsetMs)
                         val before = state.scene
                         state.edit { AudioMotion.addMarkers(it, grid) }
-                        note = context.getString(R.string.true_audio_markers_added, state.scene.bookmarks.size - before.bookmarks.size)
+                        note = resources.getString(R.string.true_audio_markers_added, state.scene.bookmarks.size - before.bookmarks.size)
                     }, Modifier.fillMaxWidth(), enabled = !busy, colors = audioButtonColors()) { Text(stringResource(R.string.true_audio_add_grid)) }
                 }
             }

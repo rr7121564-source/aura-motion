@@ -6305,6 +6305,50 @@
      "label": "強さ"
     }
    }
+  },
+  "parenthelper": {
+   "name": "親子関係ヘルパー",
+   "description": "位置は親に追従したまま、回転と拡大率の継承を調整します。",
+   "params": {
+    "scaleMode": {
+     "label": "拡大率の継承",
+     "options": [
+      "通常",
+      "固定",
+      "重み付き"
+     ]
+    },
+    "scaleWeight": {
+     "label": "拡大率の重み"
+    },
+    "rotateMode": {
+     "label": "回転の継承",
+     "options": [
+      "通常",
+      "固定",
+      "重み付き"
+     ]
+    },
+    "rotateWeight": {
+     "label": "回転の重み"
+    },
+    "autoRotate": {
+     "label": "親から外側へ向ける",
+     "options": [
+      "オフ",
+      "X 軸",
+      "Y 軸"
+     ]
+    },
+    "radiusAdjust": {
+     "label": "軌道のオフセット"
+    }
+   },
+   "presets": {
+    "keep-upright": "向きを維持",
+    "keep-size": "大きさを維持",
+    "double-rotation": "回転を2倍"
+   }
   }
  }
 }

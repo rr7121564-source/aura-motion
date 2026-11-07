@@ -123,7 +123,7 @@ object CrashLogs {
         val app = context.applicationContext
         activities = app.getSystemService(ActivityManager::class.java)
         val code = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).versionCodeLong }.getOrDefault(0L)
-        about = "AbsentMotion ${versionName(app)} ($code)\nAndroid ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}"
+        about = "True Motion ${versionName(app)} ($code)\nAndroid ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}"
         folder = File(app.filesDir, "crashlogs")
         publish()
         val previous = Thread.getDefaultUncaughtExceptionHandler()
@@ -182,6 +182,19 @@ object CrashLogs {
     @RequiresApi(30)
     private fun recordExits(app: Context, prefs: SharedPreferences, dir: File) {
         val infos = runCatching { app.getSystemService(ActivityManager::class.java).getHistoricalProcessExitReasons(app.packageName, 0, 0) }.getOrDefault(emptyList())
+        val nativeExport = infos.filter { it.reason == ApplicationExitInfo.REASON_CRASH_NATIVE &&
+            it.processStateSummary?.decodeToString().orEmpty().startsWith("exporting video") }
+            .maxOfOrNull { it.timestamp } ?: 0L
+        if (nativeExport > prefs.getLong("safeExportAfter",0L) && nativeExport > System.currentTimeMillis()-7*24*60*60*1000L) {
+            // A native abort cannot be caught. Offer a safer next attempt without deleting any project or media.
+            val export = app.getSharedPreferences("export_settings",Context.MODE_PRIVATE)
+            runCatching {
+                val video = org.json.JSONObject(export.getString("Video",null) ?: "{}")
+                video.put("compatibleEncoder",true)
+                export.edit().putString("Video",video.toString()).apply()
+                prefs.edit().putLong("safeExportAfter",nativeExport).apply()
+            }
+        }
         val seen = prefs.getLong("exitsSeen", -1L)
         if (seen >= 0) {
             val exits = infos.map { Exit(it.timestamp, it.reason, it.importance, it.processStateSummary?.decodeToString().orEmpty()) }
@@ -212,10 +225,10 @@ object CrashLogs {
         append("Exit: ").append(kindOf(info.reason)).append(", importance ").append(info.importance).append('\n')
         info.description?.let { append("Description: ").append(it).append('\n') }
         if (info.pss > 0 || info.rss > 0) append("Memory: pss ").append(info.pss / 1024).append(" MB, rss ").append(info.rss / 1024).append(" MB\n")
-        val trace = runCatching { info.traceInputStream?.use { it.readAtMost(4 * MaxDetail) } }.getOrNull()
+        val trace = runCatching { info.traceInputStream?.use { it.readAtMost(8 * 1024 * 1024) } }.getOrNull()
         if (trace != null && trace.isNotEmpty()) {
             append('\n')
-            append(if (info.reason == ApplicationExitInfo.REASON_ANR) trace.decodeToString().take(MaxDetail) else readableStrings(trace, MaxDetail))
+            append(if (info.reason == ApplicationExitInfo.REASON_ANR) trace.decodeToString().take(MaxDetail) else nativeTrace(trace,MaxDetail) ?: readableStrings(trace, MaxDetail))
         }
     }
 }

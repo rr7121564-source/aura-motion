@@ -53,7 +53,7 @@ fun XmlNode.withNativeBones(): XmlNode {
         // Never split a clipping-mask stack with an internal transform node.
         return copy(children=compiled+helpers)
     }
-    return if (name == "bone") copy(name = "nullobj", children = children) else if (children == this.children) this else copy(children = children)
+    return if (name == "bone") copy(name = "nullobj", attrs = attrs + ("trueBone" to "true"), children = children) else if (children == this.children) this else copy(children = children)
 }
 
 fun Scene.boneAncestors(ids: Set<Long>): List<Layer> {

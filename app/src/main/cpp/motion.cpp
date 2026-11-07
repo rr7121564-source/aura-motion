@@ -21,7 +21,8 @@ constexpr double kTau = 6.283185307179586;
 
 const char* const kMotionIds[] = {"absent.autoshake", "absent.randomdisplace", "absent.randomjitter", "absent.oscillate",
                                   "absent.swing", "absent.spin", "absent.pulsesize", "absent.pulseopacity",
-                                  "absent.echo", "absent.videofeedback", "absent.timequant", "absent.shutterblur", "absent.motionblur", "absent.movealongpath", "lab.true.audioMotion"};
+                                  "absent.echo", "absent.videofeedback", "absent.timequant", "absent.shutterblur", "absent.motionblur", "absent.movealongpath", "lab.true.audioMotion", "absent.parenthelper",
+                                  "tmold.com.alightcreative.effects.scaleassist", "com.alightcreative.effects.scaleassist", "amz.com.alightcreative.effects.scaleassist", "absent.scaleassist"};
 
 thread_local bool gFastShutter = false;
 
@@ -407,6 +408,16 @@ void ApplyMotion(const Layer& l, double timeMs, Placement* p) {
     const double s = Seconds(l, timeMs);
     bool repeated = false;
     for (const LayerEffect& e : l.effects) {
+        if(!e.hidden && (e.id=="tmold.com.alightcreative.effects.scaleassist" || e.id=="com.alightcreative.effects.scaleassist" ||
+                        e.id=="amz.com.alightcreative.effects.scaleassist" || e.id=="absent.scaleassist")) {
+            const int axis=std::clamp((int)std::lround(e.value("axis",t,3)),0,3);
+            const float scale=e.value("scale",t,1),damp=e.value("damp",t,1);
+            const float x=axis==1 ? 1 : scale;
+            const float y=axis==0 ? 1 : axis==1 ? scale : axis==2 ? scale*damp : 1-(scale-1)*damp;
+            const float scaledX=p->scale.fX*x,scaledY=p->scale.fY*y;
+            if(std::isfinite(scaledX) && std::isfinite(scaledY)) p->scale={scaledX,scaledY};
+            continue;
+        }
         if(!e.hidden && LegacyScript(e.id)) { ApplyLegacy(l,e,timeMs,p); continue; }
         if (!e.hidden && e.id == "lab.true.audioMotion" && e.audioSignal) {
             const int target = (int)std::lround(e.value("target", t, 0));

@@ -64,6 +64,7 @@ internal object PanelIcons {
     val TabSize = icon("TabSize", stroke = "M12 3L5 3A2 2 0 0 0 3 5L3 19A2 2 0 0 0 5 21L19 21A2 2 0 0 0 21 19L21 12M14 15L9 15L9 10M16 3L21 3L21 8M21 3L9 15")
     val TabPivot = icon("TabPivot", stroke = "M12 2.5L12 7.5M12 16.5L12 21.5M2.5 12L7.5 12M16.5 12L21.5 12M12 8.5A3.5 3.5 0 1 1 12 15.5A3.5 3.5 0 1 1 12 8.5Z")
     val Pin = icon("Pin", stroke = "M12 21.5L12 13.5M12 3A5 5 0 1 1 12 13A5 5 0 1 1 12 3Z")
+    val BoneSettings = icon("Bone settings", stroke = "M4 5L20 5M4 12L20 12M4 19L20 19M8 2L8 8M16 9L16 15M10 16L10 22")
     val TabSkew = icon("TabSkew", stroke = "M9.5 6.5L20.5 6.5L14.5 17.5L3.5 17.5ZM3.5 6.5L3.5 8.1M3.5 9.5L3.5 11.1M3.5 12.5L3.5 14.1M3.5 15.5L3.5 17.1")
     val Link = icon("Link", stroke = "M9 17L7 17A5 5 0 0 1 7 7L9 7M15 7L17 7A5 5 0 1 1 17 17L15 17M8 12L16 12")
     val Unlink = icon("Unlink", stroke = "M9 17L7 17A5 5 0 0 1 7 7M15 7L17 7A5 5 0 0 1 21 15M8 12L12 12M2 2L22 22")

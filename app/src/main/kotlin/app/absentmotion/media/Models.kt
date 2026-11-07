@@ -36,6 +36,9 @@ internal fun modelFileName(value: String): String = value.substringAfterLast('/'
 fun parseModel(name: String, bytes: ByteArray, open: (String) -> ByteArray?): Mesh {
     val mesh = if (name.substringAfterLast('.').lowercase() == "obj") ObjReader.read(bytes.toString(Charsets.UTF_8), open) else GltfReader.read(bytes, open)
     require(mesh.triangleCount > 0) { AppText.get(R.string.model_err_no_triangles) }
+    require(mesh.positions.all(Float::isFinite) && mesh.normals.all(Float::isFinite) && mesh.uvs.all(Float::isFinite)) {
+        AppText.get(R.string.model_err_accessor)
+    }
     return mesh
 }
 

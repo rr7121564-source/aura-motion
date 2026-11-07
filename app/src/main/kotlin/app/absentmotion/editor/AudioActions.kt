@@ -2,7 +2,6 @@ package app.absentmotion.editor
 
 import app.absentmotion.audio.AUDIO_FX_TAG
 import app.absentmotion.audio.GainRef
-import app.absentmotion.audio.MAX_GAIN
 import app.absentmotion.audio.mutes
 import app.absentmotion.model.Layer
 import app.absentmotion.model.MediaDeclaration
@@ -40,5 +39,7 @@ fun EditorState.extractAudio() {
     panel = EditorPanel.Tools
 }
 
-fun EditorState.setGain(value: Float, key: Any? = null) =
-    editSelected(key) { it.withValue(GainRef, formatFloats(floatArrayOf(value.coerceIn(0f, MAX_GAIN)))) }
+fun EditorState.setGain(value: Float, key: Any? = null) {
+    if (!value.isFinite()) return
+    editSelected(key) { it.withValue(GainRef, formatFloats(floatArrayOf(value.coerceAtLeast(0f)))) }
+}

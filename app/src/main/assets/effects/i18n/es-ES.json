@@ -6305,6 +6305,50 @@
      "label": "Intensidad"
     }
    }
+  },
+  "parenthelper": {
+   "name": "Ayuda de parentesco",
+   "description": "Controla la rotación y la escala heredadas mientras la posición sigue al padre.",
+   "params": {
+    "scaleMode": {
+     "label": "Herencia de escala",
+     "options": [
+      "Normal",
+      "Bloqueado",
+      "Ponderado"
+     ]
+    },
+    "scaleWeight": {
+     "label": "Peso de escala"
+    },
+    "rotateMode": {
+     "label": "Herencia de rotación",
+     "options": [
+      "Normal",
+      "Bloqueado",
+      "Ponderado"
+     ]
+    },
+    "rotateWeight": {
+     "label": "Peso de rotación"
+    },
+    "autoRotate": {
+     "label": "Orientar desde el padre",
+     "options": [
+      "Desactivado",
+      "Eje X",
+      "Eje Y"
+     ]
+    },
+    "radiusAdjust": {
+     "label": "Desplazamiento orbital"
+    }
+   },
+   "presets": {
+    "keep-upright": "Mantener orientación",
+    "keep-size": "Mantener tamaño",
+    "double-rotation": "Doble rotación"
+   }
   }
  }
 }

@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "Pembantu induk",
+      "description": "Mengawal putaran dan skala yang diwarisi semasa kedudukan mengikut induk.",
+      "params": {
+        "scaleMode": {
+          "label": "Pewarisan skala",
+          "options": [
+            "Normal",
+            "Dikunci",
+            "Berwajaran"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Berat skala"
+        },
+        "rotateMode": {
+          "label": "Pewarisan putaran",
+          "options": [
+            "Normal",
+            "Dikunci",
+            "Berwajaran"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Berat putaran"
+        },
+        "autoRotate": {
+          "label": "Arah menjauhi induk",
+          "options": [
+            "Mati",
+            "Paksi X",
+            "Paksi Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Anjakan orbit"
+        }
+      },
+      "presets": {
+        "keep-upright": "Kekalkan arah",
+        "keep-size": "Kekalkan saiz",
+        "double-rotation": "Putaran berganda"
+      }
     }
   }
 }

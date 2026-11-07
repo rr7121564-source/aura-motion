@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_encoder_mode">Режим кодирования</string>
+    <string name="export_encoder_auto">Автоматически</string>
+    <string name="export_encoder_compatible">Совместимый</string>
+    <string name="export_encoder_compatible_hint">Передаёт готовые пиксели и предпочитает программный кодек. Помогает при сбое кодека. Экспорт может идти дольше.</string>
+    <string name="psd_import">Импорт PSD</string>
+    <string name="psd_importing">Импорт слоёв PSD…</string>
+    <string name="psd_image">Изображение PSD</string>
+    <string name="psd_import_warnings">Импортировано с замечаниями — %1$d. Текст и смарт-объекты используют сохранённое растровое изображение.</string>
+    <string name="psd_import_failed">Не удалось импортировать PSD. Нужен PSD v1, RGB, 8 бит на канал.</string>
+    <string name="psd_import_memory">Для этого PSD недостаточно памяти. Уменьши его размер или число слоёв.</string>
+    <string name="ungroup_action">Разгруппировать</string>
+    <string name="ungroup_controller">%1$s · трансформация</string>
+    <string name="ungroup_not_group">Сначала выбери группу.</string>
+    <string name="ungroup_compositing">Чтобы сохранить результат, сначала убери общие эффекты, маску и смешивание группы.</string>
+    <string name="ungroup_timing">Перед разгруппировкой верни обычное время группы без изменения скорости и повторов.</string>
+    <string name="rig_bone_settings">Настройки кости</string>
+    <string name="rig_choose_bone">Нажми на кость в предпросмотре, чтобы её настроить.</string>
+    <string name="rig_bone_name">Имя кости</string>
+    <string name="rig_bone_length">Исходная длина</string>
+    <string name="rig_bone_angle">Угол</string>
+    <string name="rig_angle_limits">Ограничить угол сустава</string>
+    <string name="rig_min_angle">Минимум от исходного</string>
+    <string name="rig_max_angle">Максимум от исходного</string>
+    <string name="rig_independent_angle">Независимый угол</string>
+    <string name="rig_pin_tip">Закрепить конец кости</string>
+    <string name="rig_pin_hint">Конец остаётся у цели при просмотре и экспорте. Перетаскивай закреплённый конец, чтобы анимировать цель.</string>
+    <string name="rig_ik_root">Начало цепи IK на этой кости</string>
+    <string name="rig_lock_bone">Заблокировать кость для позы</string>
+    <string name="rig_reset_bone">Сбросить позу кости</string>
+    <string name="rig_reset_all">Сбросить все позы</string>
+    <string name="rig_unbind_artwork">Отвязать выбранный слой</string>
+    <string name="rig_constraints_hint">IK двигает цепь с учётом ограничений суставов. Независимый угол сохраняет направление стопы или кисти при повороте родителя.</string>
+    <string name="rig_key_rotation">Поворот</string>
+    <string name="rig_key_position">Положение</string>
+    <string name="rig_key_scale">Масштаб</string>
+    <string name="rig_key_target">Цель IK</string>
+    <string name="psd_import_layer_count">Импортировано слоёв PSD — %1$d.</string>
+    <string name="psd_import_single">В этом PSD сохранён один слой. Отдельных исходных слоёв в файле нет.</string>
+</resources>

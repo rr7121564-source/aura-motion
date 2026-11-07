@@ -177,6 +177,9 @@ data class ExportSettings(
     val interpolationLevel: SmoothLevel = SmoothLevel.Medium,
     val motionBlur: MotionBlur = MotionBlur.Off,
     val alightPackage: Boolean = true,
+    val compatibleEncoder: Boolean = false,
+    val customResolution: Boolean = false,
+    val customFrameRate: Boolean = false,
 ) {
     val smoothing: Smoothing get() = Smoothing(interpolation, interpolationLevel, motionBlur)
 }
@@ -194,13 +197,16 @@ fun defaultSettings(kind: ExportKind, scene: Scene): ExportSettings = when (kind
 fun resolutionLabel(shortSide: Int): String = VideoResolutions.firstOrNull { it.shortSide == shortSide }?.label ?: "${shortSide}p"
 
 fun exportSize(scene: Scene, shortSide: Int, even: Boolean): Pair<Int, Int> {
-    val scale = shortSide.toFloat() / minOf(scene.width, scene.height).coerceAtLeast(1)
-    fun side(v: Int) = (v * scale).roundToInt().let { if (even) (it + 1) and 1.inv() else it }.coerceAtLeast(2)
+    val scale = shortSide.toDouble() / minOf(scene.width, scene.height).coerceAtLeast(1)
+    fun side(v: Int): Int {
+        val pixels=(v*scale).coerceIn(2.0,(Int.MAX_VALUE-1).toDouble()).roundToInt()
+        return if(even) (pixels+1) and 1.inv() else pixels
+    }
     return side(scene.width) to side(scene.height)
 }
 
 fun frameCount(scene: Scene, fps: Int): Int =
-    if (fps == scene.fps) scene.lastFrame + 1 else (((scene.totalTime + 1L) * fps + 999) / 1000).toInt().coerceAtLeast(1)
+    (((scene.totalTime+1L)*fps+999)/1000).coerceIn(1,Int.MAX_VALUE.toLong()).toInt()
 
 fun frameTimeMs(scene: Scene, fps: Int, index: Int): Int = if (fps == scene.fps) scene.frameStart(index) else (index * 1000L / fps).toInt()
 

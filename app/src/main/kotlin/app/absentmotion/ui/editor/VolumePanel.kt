@@ -37,7 +37,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.absentmotion.audio.GainRef
-import app.absentmotion.audio.MAX_GAIN
+import app.absentmotion.audio.GAIN_SLIDER_MAX
 import app.absentmotion.audio.audioEffects
 import app.absentmotion.audio.gain
 import app.absentmotion.editor.EditorState
@@ -87,7 +87,7 @@ private fun VolumeMain(state: EditorState, layer: Layer, modifier: Modifier, ope
         EasingPanel(state, modifier)
         return
     }
-    val percent = (layer.gain * 100).roundToInt()
+    val percent = (layer.gain * 100).coerceAtMost(Float.MAX_VALUE)
     val volumeLabel = stringResource(R.string.volume_volume)
     Column(modifier.background(Am.Panel).padding(start = 62.px, top = 42.px, end = 62.px)) {
         Row(Modifier.fillMaxWidth().height(107.px).clip(BarShape).background(Am.Button)) {
@@ -118,11 +118,11 @@ private fun VolumeMain(state: EditorState, layer: Layer, modifier: Modifier, ope
                 VolumeSlider(percent, state, Modifier.width(440.px).height(113.px))
                 Spacer(Modifier.width(23.px))
                 Box(Modifier.width(158.px).height(101.px).clip(RoundedCornerShape(4.dp)).background(ValueBox).clickable {
-                    state.keypad = KeypadRequest(listOf(KeypadField(volumeLabel, layer.gain * 100, "%", 0f, MAX_GAIN * 100)), 0) { values ->
-                        state.setGain(values[0].coerceIn(0f, MAX_GAIN * 100) / 100f)
+                    state.keypad = KeypadRequest(listOf(KeypadField(volumeLabel, percent, "%", 0f, Float.MAX_VALUE)), 0) { values ->
+                        state.setGain(values[0].coerceAtLeast(0f) / 100f)
                     }
                 }, Alignment.Center) {
-                    Text("$percent", color = Am.OnDark, fontSize = 14.sp, maxLines = 1)
+                    Text(app.absentmotion.ui.editor.panels.formatPlain(percent), color = Am.OnDark, fontSize = 14.sp, maxLines = 1)
                 }
             }
         }
@@ -130,14 +130,14 @@ private fun VolumeMain(state: EditorState, layer: Layer, modifier: Modifier, ope
 }
 
 @Composable
-private fun VolumeSlider(percent: Int, state: EditorState, modifier: Modifier) {
-    Canvas(modifier.sliderSemantics(percent / 100f, 0f..MAX_GAIN) { state.setGain((it * 100).roundToInt() / 100f, "gain"); state.endGesture() }.pointerInput(state) {
+private fun VolumeSlider(percent: Float, state: EditorState, modifier: Modifier) {
+    Canvas(modifier.sliderSemantics((percent / 100f).coerceIn(0f,GAIN_SLIDER_MAX), 0f..GAIN_SLIDER_MAX) { state.setGain((it * 100).roundToInt() / 100f, "gain"); state.endGesture() }.pointerInput(state) {
         awaitEachGesture {
             val down = awaitFirstDown()
             fun update(x: Float) {
                 val pad = SliderPad.toPx()
                 val fraction = ((x - pad) / (size.width - 2 * pad).coerceAtLeast(1f)).coerceIn(0f, 1f)
-                state.setGain((fraction * MAX_GAIN * 100).roundToInt() / 100f, "gain")
+                state.setGain((fraction * GAIN_SLIDER_MAX * 100).roundToInt() / 100f, "gain")
             }
             down.consume()
             update(down.position.x)
@@ -152,7 +152,7 @@ private fun VolumeSlider(percent: Int, state: EditorState, modifier: Modifier) {
     }) {
         val pad = SliderPad.toPx()
         val cy = size.height / 2
-        val x = pad + (size.width - 2 * pad) * (percent / (MAX_GAIN * 100)).coerceIn(0f, 1f)
+        val x = pad + (size.width - 2 * pad) * (percent / (GAIN_SLIDER_MAX * 100)).coerceIn(0f, 1f)
         val thickness = 6.px.toPx()
         drawLine(TrackOff, Offset(pad, cy), Offset(size.width - pad, cy), thickness, StrokeCap.Round)
         drawLine(VolumeGreen, Offset(pad, cy), Offset(x, cy), thickness, StrokeCap.Round)

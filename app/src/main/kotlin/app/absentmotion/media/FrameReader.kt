@@ -26,6 +26,7 @@ internal class FrameReader(context: Context, uri: String) : Closeable {
     private val info = MediaCodec.BufferInfo()
     private var queued = false
     private var positioned = false
+    private var closed = false
     private var lastPts = 0L
     val timestamps: LongArray
     var colorStandard = 0
@@ -115,10 +116,12 @@ internal class FrameReader(context: Context, uri: String) : Closeable {
     }
 
     override fun close() {
+        if (closed) return
+        closed=true
         runCatching { codec?.stop() }
         runCatching { codec?.release() }
         codec = null
-        extractor.release()
+        runCatching { extractor.release() }
     }
 
     private companion object {

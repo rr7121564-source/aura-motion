@@ -31465,5 +31465,42 @@
         "to": "overdrawOn"
       }
     }
+  },
+  "com.alightcreative.effects.parenthelper": {
+    "to": "parenthelper",
+    "params": {
+      "scaleMode": {
+        "to": "scaleMode"
+      },
+      "scaleWeight": {
+        "to": "scaleWeight"
+      },
+      "rotateMode": {
+        "to": "rotateMode"
+      },
+      "rotateWeight": {
+        "to": "rotateWeight"
+      },
+      "autoRotate": {
+        "to": "autoRotate"
+      },
+      "radiusAdjust": {
+        "to": "radiusAdjust"
+      }
+    }
+  },
+  "com.alightcreative.effects.scaleassist": {
+    "to": "legacy-954728cb0c8b",
+    "params": {
+      "axis": {
+        "to": "axis"
+      },
+      "scale": {
+        "to": "scale"
+      },
+      "damp": {
+        "to": "damp"
+      }
+    }
   }
 }

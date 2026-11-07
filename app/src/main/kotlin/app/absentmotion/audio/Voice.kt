@@ -56,11 +56,11 @@ internal class Voice {
             val j = p.toInt()
             Resampler.sample(win, j, (p - j).toFloat(), quality, step, sample, sinc)
             val t = clipMs0 + k * dtMs
-            var gain = (g0 + (g1 - g0) * k * inv) * (minOf(t, clipLenMs - t) / RAMP_MS).coerceIn(0.0, 1.0).toFloat()
+            var gain = (g0 + (g1 - g0) * (k * inv)) * (minOf(t, clipLenMs - t) / RAMP_MS).coerceIn(0.0, 1.0).toFloat()
             if (k < fade) gain *= k / fade.toFloat()
             val at = 2 * (from + k)
-            dst[at] += sample[0] * gain
-            dst[at + 1] += sample[1] * gain
+            dst[at] = addSample(dst[at],sample[0],gain)
+            dst[at + 1] = addSample(dst[at+1],sample[1],gain)
         }
         if (ghostOk) for (k in 0 until fade) {
             val p = lastEnd + lastStep * k - ghostBase
@@ -68,8 +68,8 @@ internal class Voice {
             Resampler.sample(ghost, j, (p - j).toFloat(), quality, lastStep, sample, sinc)
             val gain = lastGain * (1f - k / fade.toFloat())
             val at = 2 * (from + k)
-            dst[at] += sample[0] * gain
-            dst[at + 1] += sample[1] * gain
+            dst[at] = addSample(dst[at],sample[0],gain)
+            dst[at + 1] = addSample(dst[at+1],sample[1],gain)
         }
         lastEnd = pos0 + step * count
         lastStep = step
@@ -78,6 +78,12 @@ internal class Voice {
     }
 
     companion object {
+        private fun addSample(current: Float,sample: Float,gain: Float): Float {
+            val result=current+sample*gain
+            if(result.isFinite()) return result
+            val precise=current.toDouble()+sample.toDouble()*gain
+            return if(precise.isNaN()) 0f else precise.coerceIn(-Float.MAX_VALUE.toDouble(),Float.MAX_VALUE.toDouble()).toFloat()
+        }
         private const val XFADE = 128
         private const val RAMP_MS = 2.0
     }

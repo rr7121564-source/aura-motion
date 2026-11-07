@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "دستیار والد",
+      "description": "چرخش و اندازهٔ فرزند را هنگام دنبال کردن موقعیت والد کنترل می‌کند.",
+      "params": {
+        "scaleMode": {
+          "label": "وراثت اندازه",
+          "options": [
+            "عادی",
+            "قفل‌شده",
+            "وزن‌دار"
+          ]
+        },
+        "scaleWeight": {
+          "label": "وزن اندازه"
+        },
+        "rotateMode": {
+          "label": "وراثت چرخش",
+          "options": [
+            "عادی",
+            "قفل‌شده",
+            "وزن‌دار"
+          ]
+        },
+        "rotateWeight": {
+          "label": "وزن چرخش"
+        },
+        "autoRotate": {
+          "label": "جهت به بیرون از والد",
+          "options": [
+            "خاموش",
+            "محور X",
+            "محور Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "جابجایی مدار"
+        }
+      },
+      "presets": {
+        "keep-upright": "حفظ جهت",
+        "keep-size": "حفظ اندازه",
+        "double-rotation": "چرخش دوبرابر"
+      }
     }
   }
 }

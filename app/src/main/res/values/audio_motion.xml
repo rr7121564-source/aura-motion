@@ -20,7 +20,7 @@
     <string name="true_audio_bass">Bass</string>
     <string name="true_audio_mid">Mids</string>
     <string name="true_audio_high">Highs</string>
-    <string name="true_audio_amount">Amount: % or degrees / pixels</string>
+    <string name="true_audio_amount" formatted="false">Amount: % or degrees / pixels</string>
     <string name="true_audio_amount_percent">Scale boost, %</string>
     <string name="true_audio_gain">Sensitivity</string>
     <string name="true_audio_gate">Noise threshold</string>

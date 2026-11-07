@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "ตัวช่วยเลเยอร์แม่",
+      "description": "ควบคุมการสืบทอดการหมุนและขนาด โดยตำแหน่งยังติดตามเลเยอร์แม่",
+      "params": {
+        "scaleMode": {
+          "label": "สืบทอดขนาด",
+          "options": [
+            "ปกติ",
+            "ล็อก",
+            "ถ่วงน้ำหนัก"
+          ]
+        },
+        "scaleWeight": {
+          "label": "น้ำหนักขนาด"
+        },
+        "rotateMode": {
+          "label": "สืบทอดการหมุน",
+          "options": [
+            "ปกติ",
+            "ล็อก",
+            "ถ่วงน้ำหนัก"
+          ]
+        },
+        "rotateWeight": {
+          "label": "น้ำหนักการหมุน"
+        },
+        "autoRotate": {
+          "label": "ชี้ออกจากเลเยอร์แม่",
+          "options": [
+            "ปิด",
+            "แกน X",
+            "แกน Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "ระยะเยื้องวงโคจร"
+        }
+      },
+      "presets": {
+        "keep-upright": "คงทิศทาง",
+        "keep-size": "คงขนาด",
+        "double-rotation": "หมุนสองเท่า"
+      }
     }
   }
 }

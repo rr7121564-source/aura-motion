@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "Tulong sa parent",
+      "description": "Kinokontrol ang minanang ikot at laki habang sumusunod ang posisyon sa parent.",
+      "params": {
+        "scaleMode": {
+          "label": "Pagmana ng laki",
+          "options": [
+            "Normal",
+            "Naka-lock",
+            "May bigat"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Bigat ng laki"
+        },
+        "rotateMode": {
+          "label": "Pagmana ng ikot",
+          "options": [
+            "Normal",
+            "Naka-lock",
+            "May bigat"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Bigat ng ikot"
+        },
+        "autoRotate": {
+          "label": "Ituro palayo sa parent",
+          "options": [
+            "Patay",
+            "X axis",
+            "Y axis"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Paglipat ng orbit"
+        }
+      },
+      "presets": {
+        "keep-upright": "Panatilihin ang direksiyon",
+        "keep-size": "Panatilihin ang laki",
+        "double-rotation": "Dobleng ikot"
+      }
     }
   }
 }

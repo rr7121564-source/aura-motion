@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_encoder_mode">编码模式</string>
+    <string name="export_encoder_auto">自动</string>
+    <string name="export_encoder_compatible">兼容</string>
+    <string name="export_encoder_compatible_hint">传输渲染像素并优先使用软件编码器，适合编码器崩溃后的导出，速度可能较慢。</string>
+    <string name="psd_import">导入 PSD</string>
+    <string name="psd_importing">正在导入 PSD 图层…</string>
+    <string name="psd_image">PSD 图像</string>
+    <string name="psd_import_warnings">已导入，有 %1$d 项提示。文字和智能对象使用保存的栅格外观。</string>
+    <string name="psd_import_failed">无法导入此 PSD。请使用 PSD v1、RGB、每通道 8 位。</string>
+    <string name="psd_import_memory">内存不足，无法导入此 PSD。请减少尺寸或图层数量。</string>
+    <string name="ungroup_action">取消编组</string>
+    <string name="ungroup_controller">%1$s · 变换</string>
+    <string name="ungroup_not_group">请先选择一个组。</string>
+    <string name="ungroup_compositing">为保持外观，请先移除组效果、蒙版及组混合。</string>
+    <string name="ungroup_timing">取消编组前，请恢复组的正常时间，移除变速和循环。</string>
+    <string name="rig_bone_settings">骨骼设置</string>
+    <string name="rig_choose_bone">点击预览中的骨骼以编辑。</string>
+    <string name="rig_bone_name">骨骼名称</string>
+    <string name="rig_bone_length">静止长度</string>
+    <string name="rig_bone_angle">角度</string>
+    <string name="rig_angle_limits">关节角度限制</string>
+    <string name="rig_min_angle">相对静止最小角度</string>
+    <string name="rig_max_angle">相对静止最大角度</string>
+    <string name="rig_independent_angle">独立角度</string>
+    <string name="rig_pin_tip">固定骨骼末端</string>
+    <string name="rig_pin_hint">播放和导出时，末端保持在目标位置。拖动固定末端可为目标添加动画。</string>
+    <string name="rig_ik_root">在此骨骼结束 IK 链</string>
+    <string name="rig_lock_bone">在姿态工具中锁定骨骼</string>
+    <string name="rig_reset_bone">重置骨骼姿态</string>
+    <string name="rig_reset_all">重置所有姿态</string>
+    <string name="rig_unbind_artwork">解绑所选图层</string>
+    <string name="rig_constraints_hint">IK 在关节限制内移动骨链。独立角度可在父级旋转时保持脚或手的方向。</string>
+    <string name="rig_key_rotation">旋转</string>
+    <string name="rig_key_position">位置</string>
+    <string name="rig_key_scale">缩放</string>
+    <string name="rig_key_target">IK 目标</string>
+    <string name="psd_import_layer_count">已导入 %1$d 个 PSD 图层。</string>
+    <string name="psd_import_single">此 PSD 只保存了一个图层，文件中没有分开的原始图层。</string>
+</resources>

@@ -45,9 +45,15 @@ internal class PendingExports(private val file: File, private val mine: MutableS
     private fun replace(entries: List<String>) {
         val next = File(file.path + ".new")
         next.writeText(entries.joinToString("\n", postfix = "\n"))
-        if (!next.renameTo(file)) {
+        try {
+            try {
+                java.nio.file.Files.move(next.toPath(),file.toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE,java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                java.nio.file.Files.move(next.toPath(),file.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            }
+        } catch (e: IOException) {
             next.delete()
-            throw IOException("cannot replace " + file.name)
+            throw IOException("cannot replace " + file.name,e)
         }
     }
 

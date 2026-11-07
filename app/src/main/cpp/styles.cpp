@@ -36,6 +36,7 @@
 #include "drawing.h"
 #include "true_particles.h"
 #include "spectrum.h"
+#include "rig_math.h"
 #include "particles.h"
 #include "scene.h"
 #include "text.h"
@@ -250,6 +251,68 @@ SkM44 Turn(float degrees) { return SkM44::Rotate({0, 0, 1}, degrees * kRadians);
 
 constexpr int kMaxParentDepth = 16;
 
+thread_local const std::vector<Layer>* gRigList = nullptr;
+thread_local double gRigTime = -1;
+thread_local bool gRigSolving = false;
+thread_local std::unordered_map<int64_t,float> gRigAngles;
+
+Placement Effective(const std::vector<Layer>& siblings, const Layer& l, double timeMs, int depth);
+void SolvePinnedRig(const std::vector<Layer>& siblings, double timeMs);
+
+float ParentParam(const LayerEffect& effect, const char* name, float t, float fallback) {
+    for (const Property& p : effect.props) if (p.name == name) return p.anim.get(0,t,fallback);
+    return fallback;
+}
+
+void AdjustParent(const Layer& l, double timeMs, const Layer& parentLayer, const Placement& parent, Placement* own) {
+    float rotate = 1, scale = 1, base = 0;
+    if (l.rigBone && l.rigIndependent) { rotate = 0; base = l.rigIndependentBase; }
+    const float t = l.localTime(timeMs);
+    for (const LayerEffect& e : l.effects) {
+        if (e.hidden || e.id != "absent.parenthelper") continue;
+        auto weight = [&](const char* mode, const char* value) {
+            const float m = ParentParam(e,mode,t,0);
+            return m < .5f ? 1.f : m < 1.5f ? 0.f : std::clamp(ParentParam(e,value,t,1),-10.f,10.f);
+        };
+        rotate *= weight("rotateMode","rotateWeight");
+        scale *= weight("scaleMode","scaleWeight");
+    }
+    if (rotate != 1 || scale != 1 || base != 0) {
+        SkM44 correction = Turn(parent.rotation * rotate + base) *
+            SkM44::Scale(ParentScaleRatio(parent.scale.fX,scale),ParentScaleRatio(parent.scale.fY,scale),1) * Turn(-parent.rotation);
+        if (scale == 0) {
+            // Nested rotated/nonuniform parents contain shear. Dividing the two
+            // scale fields cannot cancel their actual matrix, and omitted Z scale.
+            SkM44 linear = parent.fullTransform ? parent.model : ModelOf(parent,parentLayer,timeMs);
+            for (int i=0;i<3;i++) {linear.setRC(i,3,0);linear.setRC(3,i,0);}
+            linear.setRC(3,3,1);
+            SkM44 inverse;
+            if (linear.invert(&inverse)) correction=Turn(parent.rotation*rotate+base)*parent.tilt*inverse;
+        }
+        own->model = SkM44::Translate(own->location.fX,own->location.fY,own->z) * correction *
+            SkM44::Translate(-own->location.fX,-own->location.fY,-own->z) * own->model;
+        own->rotation += parent.rotation * (rotate - 1) + base;
+        own->scale = {own->scale.fX * ParentScaleRatio(parent.scale.fX,scale), own->scale.fY * ParentScaleRatio(parent.scale.fY,scale)};
+    }
+    for (const LayerEffect& e : l.effects) {
+        if (e.hidden || e.id != "absent.parenthelper") continue;
+        const int axis = (int)std::lround(ParentParam(e,"autoRotate",t,0));
+        const float radius = ParentParam(e,"radiusAdjust",t,0);
+        const SkVector radial = own->location-parent.location;
+        const float length = radial.length();
+        if (length < .0001f || (axis == 0 && radius == 0)) continue;
+        if (axis != 0) {
+            const float angle = std::atan2(radial.fY,radial.fX)/kRadians - (axis == 2 ? 90 : 0);
+            own->model = SkM44::Translate(own->location.fX,own->location.fY,own->z) * Turn(angle-own->rotation) *
+                SkM44::Translate(-own->location.fX,-own->location.fY,-own->z) * own->model;
+            own->rotation = angle;
+        }
+        const SkVector shift = radial*(radius/length);
+        own->location += shift;
+        own->model = SkM44::Translate(shift.fX,shift.fY,0)*own->model;
+    }
+}
+
 SkMatrix MatrixOf(const Placement& p, const Layer& l, float t);
 int Fps();
 
@@ -264,7 +327,16 @@ const Layer* PathSource(const std::vector<Layer>& siblings, const Layer& l) {
 }
 
 Placement Effective(const std::vector<Layer>& siblings, const Layer& l, double timeMs, int depth) {
+    if (!gRigSolving && depth == 0) SolvePinnedRig(siblings,timeMs);
     Placement own = Own(l, timeMs);
+    if (l.rigBone) {
+        if (gRigList == &siblings && gRigTime == timeMs) {
+            const auto found = gRigAngles.find(l.id);
+            if (found != gRigAngles.end()) own.rotation = found->second;
+        }
+        own.rotation = RigClampAngle(own.rotation,l.rigRest,l.rigMin,l.rigMax,l.rigLimits);
+        if (own.fullTransform && !l.placed) own.model = ModelOf(own,l,timeMs);
+    }
     if (depth >= kMaxParentDepth) return own;
     const Layer* parent = nullptr;
     for (const Layer& s : siblings) {
@@ -289,6 +361,7 @@ Placement Effective(const std::vector<Layer>& siblings, const Layer& l, double t
             own.fullTransform=true;own.model=composed;
             const SkV4 anchor=composed.map(own.pivot.fX,own.pivot.fY,0,1);
             own.location={anchor.x/anchor.w,anchor.y/anchor.w};own.z=anchor.z/anchor.w;
+            AdjustParent(l,timeMs,*parent,p,&own);
         }
     }
     if (!FollowsPath(l)) return own;
@@ -304,6 +377,53 @@ Placement Effective(const std::vector<Layer>& siblings, const Layer& l, double t
             SkM44::Translate(-before.location.fX,-before.location.fY,-before.z)*before.model;
     }
     return own;
+}
+
+void SolvePinnedRig(const std::vector<Layer>& siblings, double timeMs) {
+    if (gRigList == &siblings && gRigTime == timeMs) return;
+    gRigList = &siblings; gRigTime = timeMs; gRigAngles.clear();
+    std::vector<const Layer*> targets;
+    for (const Layer& l : siblings) if (l.rigBone && l.rigPinned && l.activeAt(timeMs) && targets.size() < 16) targets.push_back(&l);
+    if (targets.empty()) return;
+    gRigSolving = true;
+    for (const Layer* tip : targets) {
+        const float angle = Own(*tip,timeMs).rotation;
+        if (!tip->rigLocked && std::abs(angle-tip->rigRest) < .01f) gRigAngles[tip->id] = angle+(tip->rigFlip ? -1 : 1);
+    }
+    auto find = [&](int64_t id) -> const Layer* { for (const Layer& l : siblings) if (l.id == id) return &l; return nullptr; };
+    auto model = [&](const Layer& l) { const Placement p = Effective(siblings,l,timeMs,1); return p.fullTransform ? p.model : ModelOf(p,l,timeMs); };
+    auto map = [](const SkM44& m, float x, float y) { const SkV4 p = m.map(x,y,0,1); return SkPoint{p.x/p.w,p.y/p.w}; };
+    for (int pass = 0; pass < 16; ++pass) {
+        float worst = 0;
+        for (const Layer* tip : targets) {
+            const float t = tip->localTime(timeMs);
+            const SkPoint target = {tip->rigTarget.get(0,t,0), tip->rigTarget.get(1,t,0)};
+            const Layer* joint = tip;
+            std::set<int64_t> seen;
+            for (int depth = 0; joint && joint->rigBone && depth < kMaxParentDepth && seen.insert(joint->id).second; ++depth) {
+                if (joint->rigLocked) break;
+                const SkPoint end = map(model(*tip),tip->rigLength,0);
+                worst = std::max(worst,(end-target).length());
+                const SkPoint origin = map(model(*joint),0,0);
+                const Layer* parent = find(joint->parent);
+                SkM44 inverse;
+                const SkM44 parentMatrix = parent ? model(*parent) : SkM44();
+                if (parentMatrix.invert(&inverse)) {
+                    const SkPoint a = map(inverse,end.fX,end.fY)-map(inverse,origin.fX,origin.fY);
+                    const SkPoint b = map(inverse,target.fX,target.fY)-map(inverse,origin.fX,origin.fY);
+                    if (a.length() > .0001f && b.length() > .0001f) {
+                        const float delta = std::atan2(a.fX*b.fY-a.fY*b.fX,a.fX*b.fX+a.fY*b.fY)/kRadians;
+                        const float current = gRigAngles.count(joint->id) ? gRigAngles[joint->id] : Own(*joint,timeMs).rotation;
+                        gRigAngles[joint->id] = RigClampAngle(current+delta,joint->rigRest,joint->rigMin,joint->rigMax,joint->rigLimits);
+                    }
+                }
+                if (joint->rigStopIK) break;
+                joint = parent;
+            }
+        }
+        if (worst < .25f) break;
+    }
+    gRigSolving = false;
 }
 
 SkMatrix MatrixOf(const Placement& p, const Layer& l, float t) {
@@ -1424,7 +1544,8 @@ bool SteadyPlacement(const std::vector<Layer>& siblings, const Layer& l, double 
                          !SteadyPlacement(*s.layers, *s.camera, from, to, 0))) return false;
         return SteadyPlacement(*s.layers, *s.layer, from, to, 0);
     }
-    if (!l.steps.empty() || std::any_of(l.effects.begin(), l.effects.end(), Changing)) return false;
+    if (!l.steps.empty() || std::any_of(l.effects.begin(), l.effects.end(), Changing) ||
+        std::any_of(siblings.begin(),siblings.end(),[](const Layer& bone) { return bone.rigPinned; })) return false;
     const float a = l.localTime(from), b = l.localTime(to);
     for (const Anim* anim : {&l.location, &l.pivot, &l.scale, &l.rotation, &l.tilt}) {
         if (!anim->steady(a, b)) return false;
@@ -1722,6 +1843,7 @@ void SetLayerBreak(const std::function<void()>* each) { gBreak = each; }
 bool ParticleEffect(const std::string& id) { return id == kParticles; }
 
 void SetLayerEffects(const LayerEffects* effects, const Scene* scene, bool world) {
+    gRigList = nullptr; gRigAngles.clear();
     gEffects = effects;
     gScene = scene;
     gWorld = world;
@@ -1743,6 +1865,7 @@ bool EffectOwnerMatrix(int64_t owner, double timeMs, SkMatrix* matrix) {
 int ProjectFps() { return Fps(); }
 
 SceneScope::SceneScope(const Scene& scene) : fPrevious(gScene) {
+    gRigList = nullptr; gRigAngles.clear();
     if (!gScene) gScene = &scene;
 }
 

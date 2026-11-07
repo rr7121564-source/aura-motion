@@ -19,6 +19,13 @@
 
 namespace am {
 
+static float FloatAttr(const XmlNode& node, const char* key, float fallback) {
+    const char* value = node.attr(key);
+    if (!value) return fallback;
+    const float f = strtof(value, nullptr);
+    return std::isfinite(f) ? f : fallback;
+}
+
 float Anim::get(int i, float t, float fallback) const {
     auto at = [&](const std::vector<float>& v) { return i < (int)v.size() ? v[i] : fallback; };
     if (keys.empty()) return value.empty() ? fallback : at(value);
@@ -356,6 +363,23 @@ bool ParseLayer(const XmlNode& node, int fps, Layer* out) {
     l.startTime = IntAttr(*n, "startTime", 0);
     l.endTime = std::max(l.startTime, IntAttr(*n, "endTime", 0));
     l.hidden = StrAttr(*n, "hidden") == "true";
+    l.rigBone = StrAttr(*n, "trueBone") == "true";
+    if (l.rigBone) {
+        l.rigLength = std::clamp(FloatAttr(*n, "length", 160), 1.f, 10000.f);
+        if (const XmlNode* rest = n->child("trueRest")) l.rigRest = ParseAnim(rest->child("rotation")).get(0, 0, 0);
+        if (const XmlNode* o = n->child("trueBoneOptions")) {
+            l.rigLimits = StrAttr(*o, "limits") == "true";
+            l.rigMin = std::clamp(FloatAttr(*o, "min", -90), -3600.f, 3600.f);
+            l.rigMax = std::clamp(FloatAttr(*o, "max", 90), l.rigMin, 3600.f);
+            l.rigIndependent = StrAttr(*o, "independent") == "true";
+            l.rigIndependentBase = FloatAttr(*o, "independentBase", 0);
+            l.rigLocked = StrAttr(*o, "locked") == "true";
+            l.rigStopIK = StrAttr(*o, "stopIK") == "true";
+        }
+        if (const XmlNode* target = n->child("trueRigTarget")) {
+            l.rigTarget = ParseAnim(target->child("point")); l.rigPinned = !l.rigTarget.empty(); l.rigFlip = StrAttr(*target,"flip") == "true";
+        }
+    }
     if (const XmlNode* t = n->child("transform")) {
         l.pivotOffset = StrAttr(*t,"originMode") == "alight";
         l.location = ParseAnim(t->child("location"));

@@ -184,6 +184,8 @@ class EditorState(
     var framePhotoOpen by mutableStateOf(false)
     var motionPathOpen by mutableStateOf(false)
     var rigEditing by mutableStateOf(false)
+    var rigSettingsOpen by mutableStateOf(false)
+    var rigKeyChannel by mutableIntStateOf(0)
     var rigBoneId by mutableStateOf<Long?>(null)
     var rigTool by mutableIntStateOf(0)
     var rigKeyed by mutableStateOf(true)
@@ -417,7 +419,7 @@ class EditorState(
         val valid = next.validGroupPath(groupPath)
         if (valid != groupPath) {
             groupPath = valid
-            while (groupViews.size > valid.size) groupViews.removeLast()
+            while (groupViews.size > valid.size) groupViews.removeAt(groupViews.lastIndex)
             playing = false
             clearSelection()
         }

@@ -160,13 +160,28 @@ internal fun RigViewport(state: EditorState, scale: Float, offset: Offset, quad:
                 val corners = List(4) { Offset(quad[it * 2], quad[it * 2 + 1]) * scale + offset }
                 for (index in corners.indices) drawLine(accent.copy(alpha = .6f), corners[index], corners[(index + 1) % 4], 1.dp.toPx())
             }
-            currentLines.forEach { line -> drawBone(screen(line.from), screen(line.to), if (state.rigBoneId == line.bone.id) accent else normal) }
+            currentLines.forEach { line ->
+                drawBone(screen(line.from), screen(line.to), if (state.rigBoneId == line.bone.id) accent else normal)
+                if (line.bone.rigPinned) {
+                    val tip = screen(line.to)
+                    drawCircle(accent,11.dp.toPx(),tip,style = Stroke(1.5.dp.toPx()))
+                    drawLine(accent,tip-Offset(15.dp.toPx(),0f),tip+Offset(15.dp.toPx(),0f),1.5.dp.toPx())
+                    drawLine(accent,tip-Offset(0f,15.dp.toPx()),tip+Offset(0f,15.dp.toPx()),1.5.dp.toPx())
+                }
+            }
             ghost?.let { drawBone(screen(it.first), screen(it.second), accent) }
         }
         val bone = state.rigBoneId?.let { state.scene.layerAt(it, state.sampleMs) }
+        SideEffect {
+            state.keyTarget=bone?.let { b ->
+                val ref=b.rigKeyRef(state.rigKeyChannel)
+                val fallback=when(ref) {PropRef.Location -> formatFloats(b.location);PropRef.Scale -> formatFloats(b.scale);else -> "0"}
+                KeyTarget(ref,b.element(ref)?.valueAt(b.t) ?: fallback,if(ref==PropRef.Rotation) "float" else "vec2")
+            }
+        }
         RigToolbar(state, bone, compact, Modifier.align(Alignment.TopCenter))
         if (bone != null) key(bone.id) {
-            val frames = bone.keyframes(PropRef.Rotation).map { state.scene.frameAt(bone.timeOf(it.t)) }.distinct()
+            val frames = bone.keyframes(bone.rigKeyRef(state.rigKeyChannel)).map { state.scene.frameAt(bone.timeOf(it.t)) }.distinct()
             if (frames.isNotEmpty()) {
                 val listState = rememberLazyListState(frames.indexOf(state.frame).coerceAtLeast(0))
                 LaunchedEffect(state.frame, frames) {
@@ -199,7 +214,7 @@ internal fun RigViewport(state: EditorState, scale: Float, offset: Offset, quad:
 private fun RigToolbar(state: EditorState, bone: Layer?, compact: Boolean, modifier: Modifier) {
     var menu by remember { mutableStateOf(false) }
     var help by remember { mutableStateOf(false) }
-    val onKey = bone?.onKeyframe(PropRef.Rotation) == true
+    val onKey = bone?.let { it.onKeyframe(it.rigKeyRef(state.rigKeyChannel)) } == true
     val artwork = state.selected
     val status: @Composable RowScope.() -> Unit = {
         Icon(PanelIcons.Bone, null, Modifier.padding(start = 6.dp, end = 5.dp).size(19.dp), tint = Am.Accent)
@@ -214,6 +229,9 @@ private fun RigToolbar(state: EditorState, bone: Layer?, compact: Boolean, modif
         }
     }
     val actions: @Composable RowScope.() -> Unit = {
+        InspectorIconButton(PanelIcons.BoneSettings,stringResource(R.string.rig_bone_settings),active = state.rigSettingsOpen) {
+            state.endGesture(); state.rigSettingsOpen = !state.rigSettingsOpen
+        }
         InspectorIconButton(PanelIcons.AutoKey, stringResource(R.string.rig_auto_keys), active = state.rigKeyed) {
             state.endGesture()
             state.rigKeyed = !state.rigKeyed
@@ -255,8 +273,12 @@ private fun RigToolbar(state: EditorState, bone: Layer?, compact: Boolean, modif
             }
         }
         if (state.rigTool == 2) {
+            InspectorIconButton(PanelIcons.Pin,stringResource(R.string.rig_pin_tip),enabled = bone != null,active = bone?.rigPinned == true) { state.toggleBonePin() }
             InspectorIconButton(PanelIcons.FlipJoint, stringResource(R.string.rig_flip), active = state.rigFlip) {
                 state.rigFlip = !state.rigFlip
+                if (bone?.rigPinned == true) state.edit { it.update(bone.id) { b ->
+                    b.copy(node=b.node.withChild("trueRigTarget",b.node.child("trueRigTarget")?.with("flip","${state.rigFlip}")))
+                } }
             }
         }
         InspectorIconButton(
@@ -264,6 +286,7 @@ private fun RigToolbar(state: EditorState, bone: Layer?, compact: Boolean, modif
             stringResource(if (onKey) R.string.a11y_remove_keyframe else R.string.a11y_add_keyframe),
             enabled = bone != null, active = onKey,
         ) { state.toggleRigKey() }
+        InspectorIconButton(PanelIcons.Easing,stringResource(R.string.a11y_easing),enabled = bone != null,active = state.easingOpen) {state.openRigTween()}
     }
     Column(
         modifier.padding(if (compact) 4.dp else 8.dp).widthIn(max = if (compact) 720.dp else 480.dp)

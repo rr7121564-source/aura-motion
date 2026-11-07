@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_encoder_mode">Encoder mode</string>
+    <string name="export_encoder_auto">Automatic</string>
+    <string name="export_encoder_compatible">Compatible</string>
+    <string name="export_encoder_compatible_hint">Uses pixel transfer and prefers a software encoder. Useful after a codec crash. Export can take longer.</string>
+    <string name="psd_import">Import PSD</string>
+    <string name="psd_importing">Importing PSD layers…</string>
+    <string name="psd_image">PSD image</string>
+    <string name="psd_import_warnings">Imported with %1$d notices. Text and smart objects use their saved raster appearance.</string>
+    <string name="psd_import_failed">Could not import this PSD. Use PSD v1, RGB, 8 bits per channel.</string>
+    <string name="psd_import_memory">Not enough memory for this PSD. Reduce its size or number of layers.</string>
+    <string name="ungroup_action">Ungroup</string>
+    <string name="ungroup_controller">%1$s · transform</string>
+    <string name="ungroup_not_group">Select a group first.</string>
+    <string name="ungroup_compositing">Remove group effects, masks and group blending before ungrouping to preserve the result.</string>
+    <string name="ungroup_timing">Restore normal group timing before ungrouping.</string>
+    <string name="rig_bone_settings">Bone settings</string>
+    <string name="rig_choose_bone">Tap a bone in the preview to edit it.</string>
+    <string name="rig_bone_name">Bone name</string>
+    <string name="rig_bone_length">Rest length</string>
+    <string name="rig_bone_angle">Angle</string>
+    <string name="rig_angle_limits">Joint angle limits</string>
+    <string name="rig_min_angle">Minimum from rest</string>
+    <string name="rig_max_angle">Maximum from rest</string>
+    <string name="rig_independent_angle">Independent angle</string>
+    <string name="rig_pin_tip">Pin bone tip</string>
+    <string name="rig_pin_hint">The tip stays at its target during playback and export. Drag the pinned tip to animate its target.</string>
+    <string name="rig_ik_root">Stop IK chain at this bone</string>
+    <string name="rig_lock_bone">Lock bone in pose tools</string>
+    <string name="rig_reset_bone">Reset bone pose</string>
+    <string name="rig_reset_all">Reset all poses</string>
+    <string name="rig_unbind_artwork">Unbind selected layer</string>
+    <string name="rig_constraints_hint">IK moves the chain within the joint limits. Independent angle keeps a foot or hand upright as its parent turns.</string>
+    <string name="rig_key_rotation">Rotation</string>
+    <string name="rig_key_position">Position</string>
+    <string name="rig_key_scale">Scale</string>
+    <string name="rig_key_target">IK target</string>
+    <string name="psd_import_layer_count">Imported %1$d PSD layers.</string>
+    <string name="psd_import_single">This PSD contains one saved layer. Separate source layers are not present in the file.</string>
+</resources>

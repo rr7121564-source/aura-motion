@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "প্যারেন্ট সহায়ক",
+      "description": "অবস্থান মূল স্তরকে অনুসরণ করার সময় ঘূর্ণন ও আকার নিয়ন্ত্রণ করে।",
+      "params": {
+        "scaleMode": {
+          "label": "আকার অনুসরণ",
+          "options": [
+            "স্বাভাবিক",
+            "লক করা",
+            "ওজনযুক্ত"
+          ]
+        },
+        "scaleWeight": {
+          "label": "আকারের ওজন"
+        },
+        "rotateMode": {
+          "label": "ঘূর্ণন অনুসরণ",
+          "options": [
+            "স্বাভাবিক",
+            "লক করা",
+            "ওজনযুক্ত"
+          ]
+        },
+        "rotateWeight": {
+          "label": "ঘূর্ণনের ওজন"
+        },
+        "autoRotate": {
+          "label": "মূল স্তর থেকে বাইরের দিকে",
+          "options": [
+            "বন্ধ",
+            "X অক্ষ",
+            "Y অক্ষ"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "কক্ষপথের সরণ"
+        }
+      },
+      "presets": {
+        "keep-upright": "দিক ধরে রাখুন",
+        "keep-size": "আকার ধরে রাখুন",
+        "double-rotation": "দ্বিগুণ ঘূর্ণন"
+      }
     }
   }
 }

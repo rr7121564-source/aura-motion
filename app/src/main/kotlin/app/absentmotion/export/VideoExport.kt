@@ -93,11 +93,27 @@ internal object EncoderTrouble {
     fun blameLast() { last?.let { bad += it } }
 }
 
+/** This firmware's vendor codec may abort from a finalizer after its buffer queue dies. */
+internal fun needsCompatibleExport(sdk: Int, device: String): Boolean =
+    sdk == 34 && device.lowercase(java.util.Locale.ROOT).let { it == "redwood" || it.startsWith("redwood_") }
+
+private fun ExportSettings.safeEncoder(): Boolean = compatibleEncoder || needsCompatibleExport(Build.VERSION.SDK_INT, Build.DEVICE)
+
+internal fun releaseCodec(codec: MediaCodec, started: Boolean = true) {
+    try {
+        if (started) runCatching { codec.stop() }.onFailure { Log.w("AMExport", "codec stop failed", it) }
+    } finally {
+        // Never leave a codec's native binder to the FinalizerDaemon, including failed starts.
+        runCatching { codec.release() }.onFailure { Log.w("AMExport", "codec release failed", it) }
+    }
+}
+
 internal fun openVideoEncoder(s: ExportSettings, width: Int, height: Int, hot: Boolean, note: (UiText) -> Unit = {}, bitrate: Int? = null): MediaCodec {
     val mime = s.codec.mime
     val infos = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos
         .filter { it.isEncoder && !it.alias && mime in it.supportedTypes && it.getCapabilitiesForType(mime).videoCapabilities?.isSizeSupported(width, height) == true }
-        .sortedWith(compareBy<MediaCodecInfo> { it.name in EncoderTrouble.bad }.thenByDescending { it.hardware })
+        .sortedWith(compareBy<MediaCodecInfo> { it.name in EncoderTrouble.bad }
+            .thenBy { if (s.safeEncoder()) it.hardware else !it.hardware })
     if (infos.isEmpty()) throw ExportError(txt(R.string.export_error_cannot_encode, s.codec.label, "${width}x$height"))
     var last: Throwable? = null
     for (info in infos) {
@@ -106,13 +122,15 @@ internal fun openVideoEncoder(s: ExportSettings, width: Int, height: Int, hot: B
         val rated = runCatching { caps.videoCapabilities!!.getSupportedFrameRatesFor(width, height).upper }.getOrDefault(0.0)
         val key = "${info.name} ${width}x$height ${s.fps}"
         val high = mime == MediaFormat.MIMETYPE_VIDEO_AVC && key !in HighRefused && caps.profileLevels.any { it.profile == MediaCodecInfo.CodecProfileLevel.AVCProfileHigh }
-        val codec = try { MediaCodec.createByCodecName(info.name) } catch (e: Exception) {
-            last = e
-            Log.w("AMExport", "cannot create ${info.name}", e)
-            continue
-        }
         var highFailed = false
         for (bestEffort in if (hot || rated < 2.0 * s.fps) listOf(true, false) else listOf(false, true)) for (profile in if (high) listOf(true, false) else listOf(false)) {
+            // A rejected configure can leave a vendor codec in a broken native state.
+            // Use a fresh instance rather than resetting and reusing that instance.
+            val codec = try { MediaCodec.createByCodecName(info.name) } catch (e: Exception) {
+                last = e
+                Log.w("AMExport", "cannot create ${info.name}", e)
+                continue
+            }
             try {
                 codec.configure(encoderFormat(info, caps, s, width, height, profile, bestEffort, hot, bitrate), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
                 Log.i("AMExport", "encoding with ${info.name}${if (profile) " (High)" else ""}${if (bestEffort) " at best effort" else ""}; rated for ${rated.toInt()} fps at ${width}x$height")
@@ -124,10 +142,9 @@ internal fun openVideoEncoder(s: ExportSettings, width: Int, height: Int, hot: B
                 last = e
                 if (profile) highFailed = true
                 Log.w("AMExport", "${info.name} refused ${width}x$height at ${s.fps} fps${if (profile) " (High)" else ""}${if (bestEffort) " at best effort" else ""}", e)
-                runCatching { codec.reset() }
+                releaseCodec(codec, started = false)
             }
         }
-        codec.release()
     }
     throw ExportError(txt(R.string.export_error_encoder_busy), last)
 }
@@ -165,7 +182,7 @@ private suspend fun encode(
     val failure = AtomicReference<Throwable>()
     fun fail(t: Throwable) { failure.compareAndSet(null, t); stop.set(true) }
     val mux = try { Mux(openSink(s.container, out, s.fps, fixedBt601(encoder.codecInfo), if (turn) 90 else 0), if (audio != null) 2 else 1, MuxBudgetBytes, stop::get, ::fail) }
-        catch (t: Throwable) { encoder.release(); throw t }
+        catch (t: Throwable) { releaseCodec(encoder,started = false); throw t }
     val videoDone = AtomicBoolean()
     val workers = ArrayList<Thread>()
     var surface: Surface? = null
@@ -217,8 +234,8 @@ private suspend fun encode(
             // expose unrelated storage to MediaCodec. Use the verified readback
             // path there; native ARM devices keep their usual GPU pipeline.
             val translated = Build.SUPPORTED_ABIS.any { it.startsWith("x86") }
-            Log.i("AMExport", "rendering $frames frames at ${width}x$height through ${if (translated) "pixel readback" else if (buffers) "encoder buffers" else "the swapchain"}")
-            if (translated) {
+            Log.i("AMExport", "rendering $frames frames at ${width}x$height through ${if (translated || s.safeEncoder()) "pixel readback" else if (buffers) "encoder buffers" else "the swapchain"}")
+            if (translated || s.safeEncoder()) {
                 val copy = EncoderCopy(input, turn = turn, pixels = true)
                 try {
                     eachFrame { k, presentNs ->
@@ -276,8 +293,8 @@ private suspend fun encode(
             stop.set(true)
             videoDone.set(true)
             workers.forEach { it.join() }
-            runCatching { encoder.stop() }; encoder.release(); surface?.release()
-            audioEncoder?.let { runCatching { it.stop() }; it.release() }
+            try { releaseCodec(encoder) } finally { surface?.release() }
+            audioEncoder?.let { releaseCodec(it) }
             mux.release()
             (audio as? java.io.Closeable)?.close()
         }
@@ -384,7 +401,7 @@ internal fun startEncoder(format: MediaFormat, label: String): MediaCodec {
             return codec
         } catch (e: Exception) {
             Log.w("AMExport", "$name refused $format", e)
-            codec.release()
+            releaseCodec(codec,started = false)
         }
     }
     throw ExportError(txt(R.string.export_error_audio_encoder, label))

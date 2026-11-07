@@ -39,23 +39,36 @@ private class ImageFrame(private val image: Image) : DecodedFrame {
 
 @RequiresApi(28)
 private class ImageFrames(width: Int, height: Int, count: Int) : DecodedFrames {
-    private val thread = HandlerThread("am-video-images").apply { start() }
+    private val thread = HandlerThread("am-video-images")
+    private val closed = java.util.concurrent.atomic.AtomicBoolean()
     private val images = LinkedBlockingQueue<Image>()
     private val reader = (if (Build.VERSION.SDK_INT >= 29) ImageReader.newInstance(width, height, ImageFormat.PRIVATE, count, HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE)
-        else ImageReader.newInstance(width, height, ImageFormat.PRIVATE, count)).apply {
-        setOnImageAvailableListener({ source ->
-            while (true) images.offer((try { source.acquireNextImage() } catch (_: IllegalStateException) { null }) ?: break)
-        }, Handler(thread.looper))
+        else ImageReader.newInstance(width, height, ImageFormat.PRIVATE, count))
+    init {
+        try {
+            thread.start()
+            reader.setOnImageAvailableListener({ source ->
+                while (true) {
+                    val image = (try { source.acquireNextImage() } catch (_: IllegalStateException) { null }) ?: break
+                    synchronized(images) { if (closed.get()) image.close() else images.offer(image) }
+                }
+            }, Handler(thread.looper))
+        } catch (e: Exception) {
+            try { reader.close() } finally { thread.quitSafely() }
+            throw e
+        }
     }
 
     override val surface: Surface get() = reader.surface
     override fun poll(timeoutNanos: Long): DecodedFrame? = images.poll(timeoutNanos, TimeUnit.NANOSECONDS)?.let(::ImageFrame)
     override fun drain() { generateSequence { images.poll() }.forEach { it.close() } }
     override fun close() {
-        reader.setOnImageAvailableListener(null, null)
-        reader.close()
-        thread.quitSafely()
-        drain()
+        if (!closed.compareAndSet(false,true)) return
+        try { reader.setOnImageAvailableListener(null, null) }
+        finally {
+            try { reader.close() }
+            finally { thread.quitSafely(); synchronized(images) { drain() } }
+        }
     }
 }
 
@@ -84,7 +97,10 @@ private class NdkFrame(private var image: Long) : DecodedFrame {
 
 private class NdkFrames(width: Int, height: Int, count: Int) : DecodedFrames {
     private var handle = NdkImages.open(width, height, count).also { check(it != 0L) { "cannot create a $width x $height image reader" } }
-    override val surface: Surface = checkNotNull(NdkImages.surface(handle)) { "the image reader has no surface" }
+    override val surface: Surface = NdkImages.surface(handle) ?: run {
+        NdkImages.close(handle);handle=0L
+        error("the image reader has no surface")
+    }
     override fun poll(timeoutNanos: Long): DecodedFrame? =
         NdkImages.poll(handle, TimeUnit.NANOSECONDS.toMillis(timeoutNanos).coerceAtLeast(0)).takeIf { it != 0L }?.let(::NdkFrame)
     override fun drain() = NdkImages.drain(handle)

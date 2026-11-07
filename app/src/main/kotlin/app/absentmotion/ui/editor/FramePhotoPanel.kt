@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun FramePhotoPanel(state: EditorState, modifier: Modifier) {
     val context = LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val scope = rememberCoroutineScope()
     var seconds by remember { mutableFloatStateOf(state.settings.defaultLayerDuration.toFloat()) }
     var job by remember { mutableStateOf<Job?>(null) }
@@ -55,7 +56,7 @@ internal fun FramePhotoPanel(state: EditorState, modifier: Modifier) {
             job = scope.launch {
                 try { state.captureFramePhoto(context, state.framePhotoSource, seconds) }
                 catch (cancelled: CancellationException) { throw cancelled }
-                catch (failure: Exception) { error = failure.message ?: context.getString(R.string.true_photo_cannot_capture) }
+                catch (failure: Exception) { error = failure.message ?: resources.getString(R.string.true_photo_cannot_capture) }
                 finally { job = null }
             }
         }, Modifier.fillMaxWidth().height(42.dp), enabled = !busy && (!state.framePhotoSource || source != null),

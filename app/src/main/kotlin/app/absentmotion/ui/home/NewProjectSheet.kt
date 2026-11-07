@@ -90,8 +90,8 @@ private val ListColor get() = Am.Navy
 private val ListLine get() = Am.NavyLine
 private val FieldShape = RoundedCornerShape(10.dp)
 private val SheetWidth = 384.dp
-private const val MIN_SIDE = 32
-private const val MAX_SIDE = 4096
+private const val MIN_SIDE = 1
+private const val MAX_SIDE = Int.MAX_VALUE
 
 private val Resolutions = listOf(
     2160 to "2160p (4k)", 1440 to "1440p (QHD)", 1080 to "1080p (FHD)", 720 to "720p (HD)",
@@ -133,7 +133,7 @@ private class Form(saved: NewProjectChoice, val titles: List<String>, val names:
         get() {
             if (aspect == CUSTOM) return side(customW) to side(customH)
             val (a, b) = Aspects.firstOrNull { it.key == aspect }?.let { it.w to it.h } ?: (1 to 1)
-            val long = ((resolution * maxOf(a, b) / minOf(a, b).toDouble()) / 2).roundToInt() * 2
+            val long = (resolution.toDouble() * maxOf(a, b) / minOf(a, b)).roundToInt().coerceAtLeast(1)
             return if (a >= b) long to resolution else resolution to long
         }
 
@@ -144,12 +144,12 @@ private class Form(saved: NewProjectChoice, val titles: List<String>, val names:
     }
 
     fun editWidth(text: String) {
-        customW = text.filter(Char::isDigit).take(4)
+        customW = text.filter(Char::isDigit).take(10)
         if (linked) customW.toIntOrNull()?.let { customH = (it / ratio).roundToInt().coerceIn(MIN_SIDE, MAX_SIDE).toString() }
     }
 
     fun editHeight(text: String) {
-        customH = text.filter(Char::isDigit).take(4)
+        customH = text.filter(Char::isDigit).take(10)
         if (linked) customH.toIntOrNull()?.let { customW = (it * ratio).roundToInt().coerceIn(MIN_SIDE, MAX_SIDE).toString() }
     }
 
@@ -373,20 +373,12 @@ private fun SizeRow(form: Form) {
 
 @Composable
 private fun ResolutionField(form: Form) {
-    DropdownField(Resolutions.firstOrNull { it.first == form.resolution }?.second ?: "${form.resolution}p") { close ->
-        Resolutions.forEachIndexed { i, (value, label) ->
-            PickRow(label, divider = i < Resolutions.lastIndex) { form.resolution = value; close() }
-        }
-    }
+    app.absentmotion.ui.EditablePresetNumber(form.resolution,stringResource(R.string.newproject_resolution),Resolutions,"px") {form.resolution=it}
 }
 
 @Composable
 private fun FrameRateField(form: Form) {
-    DropdownField("${form.fps} fps") { close ->
-        FrameRates.forEachIndexed { i, rate ->
-            PickRow("$rate fps", divider = i < FrameRates.lastIndex) { form.fps = rate; close() }
-        }
-    }
+    app.absentmotion.ui.EditablePresetNumber(form.fps,stringResource(R.string.menu_frame_rate),FrameRates.map {it to "$it fps"},"fps") {form.fps=it}
 }
 
 @Composable

@@ -20,7 +20,7 @@
     <string name="true_audio_bass">Низкие</string>
     <string name="true_audio_mid">Средние</string>
     <string name="true_audio_high">Высокие</string>
-    <string name="true_audio_amount">Сила: % или градусы / пиксели</string>
+    <string name="true_audio_amount" formatted="false">Сила: % или градусы / пиксели</string>
     <string name="true_audio_amount_percent">Прибавка масштаба, %</string>
     <string name="true_audio_gain">Чувствительность</string>
     <string name="true_audio_gate">Порог шума</string>

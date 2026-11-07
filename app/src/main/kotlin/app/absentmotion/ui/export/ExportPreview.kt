@@ -212,6 +212,10 @@ private fun VideoPreview(uri: Uri, large: Boolean = false, onTap: (() -> Unit)? 
     var stopped by remember { mutableStateOf(false) }
     var playWhenReady by remember { mutableStateOf(false) }
     var surface by remember { mutableStateOf<Surface?>(null) }
+    DisposableEffect(surface) {
+        val owned=surface
+        onDispose { owned?.release() }
+    }
     val asked = remember { arrayOfNulls<MediaPlayer>(1) }
     var sourced by remember { mutableStateOf<MediaPlayer?>(null) }
     val player = remember(attempt, stopped) {
@@ -304,7 +308,6 @@ private fun VideoPreview(uri: Uri, large: Boolean = false, onTap: (() -> Unit)? 
 
                                     override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
                                         runCatching { current?.setSurface(null) }
-                                        surface?.release()
                                         surface = null
                                         return true
                                     }

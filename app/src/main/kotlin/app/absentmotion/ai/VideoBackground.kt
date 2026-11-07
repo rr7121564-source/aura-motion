@@ -121,6 +121,7 @@ internal fun Yuv.argb(outWidth: Int, outHeight: Int, standard: Int = 0, fullRang
 private fun channel(v: Float): Int = v.roundToInt().coerceIn(0, 255)
 
 internal val MatteFollowedEffects = setOf(
+    "absent.parenthelper",
     "absent.autoshake", "absent.bend", "absent.box", "absent.bulge",
     "absent.circularripple", "absent.cross", "absent.cube", "absent.curl",
     "absent.cylinder", "absent.puppet", "absent.displacementmap", "absent.echo", "absent.ellipsoid",

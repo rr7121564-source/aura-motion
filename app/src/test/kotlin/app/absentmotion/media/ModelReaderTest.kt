@@ -18,6 +18,15 @@ import java.util.Base64
 import kotlin.math.sqrt
 
 class ModelReaderTest {
+    @Test fun nonFiniteGltfPositionsAreRejectedBeforeTheNativeRenderer() {
+        for(value in listOf(Float.NaN,Float.POSITIVE_INFINITY,Float.NEGATIVE_INFINITY)) {
+            val payload=ByteBuffer.allocate(36).order(ByteOrder.LITTLE_ENDIAN)
+            listOf(value,0f,0f,1f,0f,0f,0f,1f,0f).forEach {payload.putFloat(it)}
+            val uri="data:application/octet-stream;base64,"+Base64.getEncoder().encodeToString(payload.array())
+            val json="""{"asset":{"version":"2.0"},"buffers":[{"byteLength":36,"uri":"$uri"}],"bufferViews":[{"buffer":0,"byteLength":36}],"accessors":[{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3"}],"meshes":[{"primitives":[{"attributes":{"POSITION":0}}]}],"nodes":[{"mesh":0}],"scenes":[{"nodes":[0]}],"scene":0}"""
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {parseModel("bad.gltf",json.toByteArray()) {null}}
+        }
+    }
     private val cube = """
         mtllib box.mtl
         v -1 -1 -1

@@ -145,7 +145,7 @@ private fun EditorBody(state: EditorState, onExit: () -> Unit) {
             val screen = LocalConfiguration.current
             val normalLower = if (isTablet(screen.smallestScreenWidthDp)) maxOf(280, screen.screenHeightDp * 2 / 5).dp else 280.dp
             val wanted = when {
-                state.rigEditing && landscape && available < 480.dp -> 114.dp
+                state.rigEditing && !state.rigSettingsOpen && !state.easingOpen && landscape && available < 480.dp -> 114.dp
                 state.motionPathOpen -> maxOf(normalLower, minOf(420.dp, (screen.screenHeightDp * .5f).dp))
                 state.colorGradeEditing || state.audioMotionEditing || state.particleEditing -> maxOf(normalLower, 360.dp)
                 else -> normalLower
@@ -171,7 +171,14 @@ private val MinLower = 140.dp
 
 @Composable
 internal fun LowerPanels(state: EditorState, addLibrary: AddLibrary, top: Boolean = false, transitionHere: Boolean = true) {
-    if (state.rigEditing) return
+    if (state.rigEditing) {
+        if (state.easingOpen) app.absentmotion.ui.editor.panels.EasingPanel(state,Modifier.fillMaxSize())
+        else if (state.rigSettingsOpen) Box(Modifier.fillMaxSize()) {
+            RigSettingsPanel(state,Modifier.fillMaxSize())
+            state.keypad?.let { ValueKeypad(it,onClose = { state.keypad = null },Modifier.fillMaxSize()) }
+        }
+        return
+    }
     Swap(
         when {
             state.motionPathOpen && state.selectedId != null -> "motionPath"

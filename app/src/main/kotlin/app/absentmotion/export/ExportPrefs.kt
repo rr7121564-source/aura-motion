@@ -19,7 +19,7 @@ class ExportPrefs(context: Context) {
 }
 
 internal fun forScene(kind: ExportKind, saved: ExportSettings, fallback: ExportSettings): ExportSettings =
-    if (kind != ExportKind.Video) saved else saved.copy(shortSide = minOf(saved.shortSide, fallback.shortSide), fps = fallback.fps)
+    if (kind != ExportKind.Video) saved else saved.copy(shortSide = if(saved.customResolution) saved.shortSide else minOf(saved.shortSide, fallback.shortSide), fps = if(saved.customFrameRate) saved.fps else fallback.fps)
 
 internal fun settingsToJson(s: ExportSettings): JSONObject = JSONObject()
     .put("shortSide", s.shortSide).put("fps", s.fps).put("codec", s.codec.name).put("quality", s.quality.toDouble())
@@ -28,6 +28,8 @@ internal fun settingsToJson(s: ExportSettings): JSONObject = JSONObject()
     .put("audioCodec", s.audio.codec.name).put("audioKbps", s.audio.bitrateKbps).put("audioRate", s.audio.sampleRate)
     .put("audioChannels", s.audio.channels).put("interpolationLevel", s.interpolationLevel.name).put("motionBlur", s.motionBlur.name)
     .put("alightPackage", s.alightPackage)
+    .put("compatibleEncoder", s.compatibleEncoder)
+    .put("customResolution",s.customResolution).put("customFrameRate",s.customFrameRate)
 
 internal fun settingsFromJson(o: JSONObject, fallback: ExportSettings): ExportSettings {
     fun <E : Enum<E>> pick(key: String, values: List<E>, default: E): E = values.firstOrNull { it.name == o.optString(key) } ?: default
@@ -52,5 +54,8 @@ internal fun settingsFromJson(o: JSONObject, fallback: ExportSettings): ExportSe
         pick("interpolationLevel", SmoothLevel.entries, fallback.interpolationLevel),
         pick("motionBlur", MotionBlur.entries, fallback.motionBlur),
         o.optBoolean("alightPackage", fallback.alightPackage),
+        o.optBoolean("compatibleEncoder", fallback.compatibleEncoder),
+        o.optBoolean("customResolution",fallback.customResolution),
+        o.optBoolean("customFrameRate",fallback.customFrameRate),
     ).fixedFormat()
 }

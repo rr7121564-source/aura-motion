@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "مساعد الربط",
+      "description": "تحكم في دوران وحجم الطبقة التابعة مع استمرار اتباع موضع الأصل.",
+      "params": {
+        "scaleMode": {
+          "label": "وراثة الحجم",
+          "options": [
+            "عادي",
+            "مقفل",
+            "موزون"
+          ]
+        },
+        "scaleWeight": {
+          "label": "وزن الحجم"
+        },
+        "rotateMode": {
+          "label": "وراثة الدوران",
+          "options": [
+            "عادي",
+            "مقفل",
+            "موزون"
+          ]
+        },
+        "rotateWeight": {
+          "label": "وزن الدوران"
+        },
+        "autoRotate": {
+          "label": "الاتجاه بعيدًا عن الأصل",
+          "options": [
+            "إيقاف",
+            "المحور X",
+            "المحور Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "إزاحة المدار"
+        }
+      },
+      "presets": {
+        "keep-upright": "الحفاظ على الاتجاه",
+        "keep-size": "الحفاظ على الحجم",
+        "double-rotation": "مضاعفة الدوران"
+      }
     }
   }
 }

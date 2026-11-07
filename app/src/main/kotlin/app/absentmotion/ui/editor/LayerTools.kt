@@ -146,7 +146,7 @@ fun LayerTools(state: EditorState, modifier: Modifier = Modifier, side: Boolean 
     }
     Column(modifier.background(Am.Panel).verticalScroll(rememberScrollState()).padding(start = 62.px, top = 42.px, end = 62.px, bottom = 20.px)) {
         Row(Modifier.fillMaxWidth().height(107.px)) {
-            SmallTool(PanelIcons.Speed, stringResource(R.string.a11y_speed), Modifier.width(183.px), ToolShape, enabled = state.selected?.mediaFill?.video == true || state.selected?.kind == "audio") { state.panel = EditorPanel.Speed }
+            SmallTool(PanelIcons.Speed, stringResource(R.string.a11y_speed), Modifier.width(183.px), ToolShape, enabled = state.selected != null) { state.panel = EditorPanel.Speed }
             Spacer(Modifier.width(17.px))
             Row(Modifier.weight(1f).fillMaxHeight(), Arrangement.spacedBy(3.px)) {
                 val clip = state.selected
@@ -577,7 +577,7 @@ fun ValueKeypad(request: KeypadRequest, onClose: () -> Unit, modifier: Modifier 
     }
 }
 
-private const val MAX_DIGITS = 12
+private const val MAX_DIGITS = 40
 private val KeypadLabels get() = listOf(PanelGreen, Am.OnDark, Am.Cool)
 private val KeyShape = RoundedCornerShape(4.dp)
 

@@ -212,7 +212,7 @@ private fun EffectChoice(param: EffectParam, raw: String, enabled: Boolean, effe
     if (sheet && open) MotionSheet(param.label, { open = false }) {
         TileGrid(param.options.indices.toList()) { i, modifier ->
             val picture = pictures?.getOrNull(i)
-            Tile(param.options[i], i == chosen, modifier, { set(formatFloats(floatArrayOf(i.toFloat()))) }, picture?.let { p -> { drawCropped(p) } })
+            Tile(param.options[i], i == chosen, modifier, { set(formatFloats(floatArrayOf(param.optionValues[i]))) }, picture?.let { p -> { drawCropped(p) } })
         }
         Spacer(Modifier.height(12.dp))
     }

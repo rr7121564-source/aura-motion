@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "Bantuan induk",
+      "description": "Mengatur rotasi dan skala yang diwarisi saat posisi mengikuti induk.",
+      "params": {
+        "scaleMode": {
+          "label": "Pewarisan skala",
+          "options": [
+            "Normal",
+            "Terkunci",
+            "Berbobot"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Bobot skala"
+        },
+        "rotateMode": {
+          "label": "Pewarisan rotasi",
+          "options": [
+            "Normal",
+            "Terkunci",
+            "Berbobot"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Bobot rotasi"
+        },
+        "autoRotate": {
+          "label": "Arah menjauhi induk",
+          "options": [
+            "Mati",
+            "Sumbu X",
+            "Sumbu Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Pergeseran orbit"
+        }
+      },
+      "presets": {
+        "keep-upright": "Pertahankan arah",
+        "keep-size": "Pertahankan ukuran",
+        "double-rotation": "Rotasi ganda"
+      }
     }
   }
 }

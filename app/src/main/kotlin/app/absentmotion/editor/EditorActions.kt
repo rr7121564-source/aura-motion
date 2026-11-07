@@ -70,6 +70,9 @@ fun EditorState.addShape(def: ShapeDef) {
 
 fun EditorState.stepBack(): Boolean {
     when {
+        rigEditing && keypad != null -> keypad = null
+        rigEditing && easingOpen -> { endGesture(); easingOpen = false }
+        rigEditing && rigSettingsOpen -> { endGesture(); rigSettingsOpen = false }
         rigEditing -> { endGesture(); rigEditing = false; keyTarget = null }
         motionPathOpen -> { endGesture(); motionPathOpen = false }
         framePhotoOpen -> framePhotoOpen = false

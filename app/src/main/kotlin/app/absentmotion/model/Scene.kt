@@ -59,9 +59,9 @@ value class Scene(val node: XmlNode) {
     fun layerAt(id: Long, timeMs: Int): Layer? = layer(id)?.at(timeMs, fps)
 
     fun frameStart(frame: Int): Int = (frame * 1000L / fps).toInt()
-    fun frameAt(timeMs: Int): Int = frameOfMs(timeMs.toLong(), fps).toInt()
-    fun frameTime(frame: Int): Int = ((2 * frame + 1) * 500L / fps).toInt()
-    fun frameEnd(frame: Int): Int = frameStart(frame + 1) - 1
+    fun frameAt(timeMs: Int): Int = frameOfMs(timeMs.toLong(), fps).coerceIn(Int.MIN_VALUE.toLong(),Int.MAX_VALUE.toLong()).toInt()
+    fun frameTime(frame: Int): Int = ((2L * frame + 1) * 500L / fps).coerceIn(Int.MIN_VALUE.toLong(),Int.MAX_VALUE.toLong()).toInt()
+    fun frameEnd(frame: Int): Int = (((frame.toLong()+1)*1000/fps)-1).coerceIn(Int.MIN_VALUE.toLong(),Int.MAX_VALUE.toLong()).toInt()
     fun endTimeFor(frame: Int, durationMs: Int): Int = frameEnd(frameAt(frameStart(frame) + durationMs.coerceAtLeast(1) - 1))
     fun firstShownFrame(start: Int): Int = frameAt(start).let { if (frameTime(it) < start) it + 1 else it }
     fun lastShownFrame(end: Int): Int = frameAt(end).let { if (frameTime(it) > end) it - 1 else it }

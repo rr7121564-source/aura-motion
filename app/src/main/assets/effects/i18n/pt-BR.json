@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "Auxiliar de parentesco",
+      "description": "Controla a rotação e a escala herdadas enquanto a posição acompanha o pai.",
+      "params": {
+        "scaleMode": {
+          "label": "Herança de escala",
+          "options": [
+            "Normal",
+            "Bloqueado",
+            "Ponderado"
+          ]
+        },
+        "scaleWeight": {
+          "label": "Peso da escala"
+        },
+        "rotateMode": {
+          "label": "Herança de rotação",
+          "options": [
+            "Normal",
+            "Bloqueado",
+            "Ponderado"
+          ]
+        },
+        "rotateWeight": {
+          "label": "Peso da rotação"
+        },
+        "autoRotate": {
+          "label": "Apontar para fora do pai",
+          "options": [
+            "Desligado",
+            "Eixo X",
+            "Eixo Y"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "Deslocamento orbital"
+        }
+      },
+      "presets": {
+        "keep-upright": "Manter orientação",
+        "keep-size": "Manter tamanho",
+        "double-rotation": "Dobrar rotação"
+      }
     }
   }
 }

@@ -391,8 +391,8 @@ private fun LabelSwatch(colour: LabelColour?, chosen: Boolean) {
     }
 }
 
-private const val MIN_SIDE = 32
-private const val MAX_SIDE = 4096
+private const val MIN_SIDE = 1
+private const val MAX_SIDE = Int.MAX_VALUE
 private const val CUSTOM = "custom"
 
 private val Resolutions = listOf(
@@ -420,9 +420,8 @@ private fun sizeFor(aspect: Aspect, resolution: Int): Pair<Int, Int> {
     val short = minOf(aspect.w, aspect.h)
     val long = maxOf(aspect.w, aspect.h)
     if (short == long) return resolution to resolution
-    val res = minOf(resolution, MAX_SIDE * short / long)
-    val side = ((res * long / short.toDouble()) / 2).roundToInt() * 2
-    return if (aspect.w >= aspect.h) side to res else res to side
+    val side = (resolution.toDouble() * long / short).roundToInt().coerceAtLeast(1)
+    return if (aspect.w >= aspect.h) side to resolution else resolution to side
 }
 
 private fun aspectOf(width: Int, height: Int): String =
@@ -486,20 +485,12 @@ private fun SettingsPanel(state: EditorState, onDismiss: () -> Unit, modifier: M
                 CustomSize(scene.width, scene.height) { w, h -> change(width = w, height = h) }
             } else {
                 val ratio = Aspects.first { it.key == aspect }
-                Dropdown("${resolution}p") { close ->
-                    Resolutions.forEachIndexed { i, (short, label) ->
-                        PickRow(label, divider = i < Resolutions.lastIndex) { resize(ratio, short); close() }
-                    }
-                }
+                app.absentmotion.ui.EditablePresetNumber(resolution,stringResource(R.string.menu_resolution),Resolutions,"px") {resize(ratio,it)}
             }
         }
         Spacer(Modifier.height(10.dp))
         SettingRow(stringResource(R.string.menu_frame_rate)) {
-            Dropdown("${scene.fps} fps") { close ->
-                FrameRates.forEachIndexed { i, rate ->
-                    PickRow("$rate fps", divider = i < FrameRates.lastIndex) { change(fps = rate); close() }
-                }
-            }
+            app.absentmotion.ui.EditablePresetNumber(scene.fps,stringResource(R.string.menu_frame_rate),FrameRates.map {it to "$it fps"},"fps") {change(fps=it)}
         }
         Spacer(Modifier.height(10.dp))
         SettingRow(stringResource(R.string.menu_background)) {
@@ -669,9 +660,9 @@ private fun CustomSize(width: Int, height: Int, onChange: (Int, Int) -> Unit) {
     }
     DisposableEffect(Unit) { onDispose { commit() } }
     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-        SizeField(w, { w = it.filter(Char::isDigit).take(4); dirty = true }, { commit() }, Modifier.weight(1f))
+        SizeField(w, { w = it.filter(Char::isDigit).take(10); dirty = true }, { commit() }, Modifier.weight(1f))
         Text("x", Modifier.padding(horizontal = 8.dp), color = Am.OnDark, fontSize = 15.sp)
-        SizeField(h, { h = it.filter(Char::isDigit).take(4); dirty = true }, { commit() }, Modifier.weight(1f))
+        SizeField(h, { h = it.filter(Char::isDigit).take(10); dirty = true }, { commit() }, Modifier.weight(1f))
     }
 }
 

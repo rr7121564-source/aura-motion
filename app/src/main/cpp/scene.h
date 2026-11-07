@@ -171,6 +171,9 @@ struct Layer {
     bool placed = false;
     bool projected = false;
     bool pivotOffset = false;
+    bool rigBone = false, rigLimits = false, rigIndependent = false, rigLocked = false, rigStopIK = false, rigPinned = false, rigFlip = false;
+    float rigLength = 160, rigMin = -90, rigMax = 90, rigRest = 0, rigIndependentBase = 0;
+    Anim rigTarget;
     Sight sight;
 
     float value(const char* name, int i, float t, float fallback) const;

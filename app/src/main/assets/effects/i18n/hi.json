@@ -44200,6 +44200,50 @@
           "section": "Overdraw"
         }
       }
+    },
+    "parenthelper": {
+      "name": "पैरेंट सहायक",
+      "description": "स्थिति पैरेंट का अनुसरण करते समय घुमाव और आकार की विरासत नियंत्रित करें।",
+      "params": {
+        "scaleMode": {
+          "label": "आकार की विरासत",
+          "options": [
+            "सामान्य",
+            "लॉक",
+            "भारित"
+          ]
+        },
+        "scaleWeight": {
+          "label": "आकार का भार"
+        },
+        "rotateMode": {
+          "label": "घुमाव की विरासत",
+          "options": [
+            "सामान्य",
+            "लॉक",
+            "भारित"
+          ]
+        },
+        "rotateWeight": {
+          "label": "घुमाव का भार"
+        },
+        "autoRotate": {
+          "label": "पैरेंट से बाहर की ओर",
+          "options": [
+            "बंद",
+            "X अक्ष",
+            "Y अक्ष"
+          ]
+        },
+        "radiusAdjust": {
+          "label": "कक्षा विस्थापन"
+        }
+      },
+      "presets": {
+        "keep-upright": "दिशा बनाए रखें",
+        "keep-size": "आकार बनाए रखें",
+        "double-rotation": "दोगुना घुमाव"
+      }
     }
   }
 }

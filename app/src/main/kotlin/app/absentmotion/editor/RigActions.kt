@@ -74,6 +74,8 @@ internal fun Scene.rigAttachment(point: Pt, reach: Float, time: Int, preferred: 
 
 fun EditorState.openRig() {
     endGesture(); playing = false; cameraMode = false; addOpen = false; rigEditing = true
+    rigSettingsOpen = false
+    easingOpen = false
     rigBoneId = selected?.node?.get("parent")?.toLongOrNull()?.takeIf { scene.layer(it)?.isBone == true }
     panel = EditorPanel.Tools; keyTarget = null
     MultiSelect.clear()
@@ -96,7 +98,11 @@ internal fun EditorState.bindViewportBone(id: Long) {
 
 internal fun EditorState.poseViewportBone(id: Long, target: Pt, rootHandle: Boolean, allowIK: Boolean = true) {
     val bone = scene.layer(id)?.takeIf { it.isBone } ?: return
-    val at = bone.at(sampleMs, scene.fps)
+    if (bone.boneOptions.locked) return
+    if (!rootHandle && bone.rigPinned) {
+        edit("rig-pose") { it.update(id,sampleMs) { b -> b.withRigTarget(target,rigKeyed) } }
+        return
+    }
     if (rootHandle) {
         val p = scene.rigParentAffine(bone,sampleMs).inverse()?.map(target) ?: return
         edit("rig-pose") { s -> s.update(id, sampleMs) { b ->
@@ -105,23 +111,26 @@ internal fun EditorState.poseViewportBone(id: Long, target: Pt, rootHandle: Bool
         } }
         return
     }
-    val parent = bone.node["parent"]?.toLongOrNull()?.let { scene.layer(it) }
-    if (allowIK && rigTool == 2 && parent?.isBone == true && bone.rigBinding==null && abs(at.location[0] - parent.rigLength) < .01f && abs(at.location[1]) < .01f) {
-        val p = scene.rigParentAffine(parent,sampleMs).inverse()?.map(target) ?: return
-        val origin = parent.at(sampleMs, scene.fps).location
-        val a = solveTwoBoneIK(parent.rigLength, bone.rigLength, p.x - origin[0], p.y - origin[1], rigFlip)
-        edit("rig-pose") { s -> s.update(parent.id, sampleMs) { it.withRigRotation(a.root, rigKeyed) }.update(id, sampleMs) { it.withRigRotation(a.child, rigKeyed) } }
+    if (allowIK && rigTool == 2) {
+        edit("rig-pose") { it.withRigIK(id,target,sampleMs,rigKeyed,rigFlip) }
     } else {
         val p = scene.rigParentAffine(bone,sampleMs).inverse()?.map(target) ?: return
-        val location = at.location
+        val location = bone.at(sampleMs,scene.fps).location
         val angle = Math.toDegrees(atan2((p.y - location[1]).toDouble(), (p.x - location[0]).toDouble())).toFloat()
-        edit("rig-pose") { it.update(id, sampleMs) { b -> b.withRigRotation(angle, rigKeyed) } }
+        edit("rig-pose") { it.update(id, sampleMs) { b -> b.withRigRotation(b.constrainedAngle(angle), rigKeyed) } }
     }
 }
 
 internal fun EditorState.toggleRigKey() {
     val id = rigBoneId ?: return
-    edit { it.update(id, sampleMs) { bone -> bone.withKeyframeToggled(PropRef.Rotation, "0") } }
+    val bone=scene.layerAt(id,sampleMs) ?: return
+    val ref=bone.rigKeyRef(rigKeyChannel)
+    val fallback=when(ref) {
+        PropRef.Location -> formatFloats(bone.location)
+        PropRef.Scale -> formatFloats(bone.scale)
+        else -> bone.rigTarget()?.takeIf {rigKeyChannel==3}?.let {p->"${p.x},${p.y}"} ?: "0"
+    }
+    edit { it.update(id, sampleMs) { b -> b.withKeyframeToggled(ref,fallback) } }
     rigKeyed = true
 }
 
