@@ -6920,6 +6920,114 @@
           "label": "크기 가중치"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "캐릭터 애니메이터",
+      "description": "텍스트를 레이어로 분할하지 않고 문자, 단어 또는 줄을 변환합니다. 모두 또는 번호가 매겨진 범위(1부터 시작)를 선택합니다. 위치, 독립 X/Y 스케일, 회전, 피벗, 불투명도, 색조 및 프로그레시브 변환이 키프레임을 지원합니다. 개별 캐릭터의 독립적인 애니메이션을 위한 스택 효과입니다.",
+      "params": {
+        "unit": {
+          "label": "기준",
+          "section": "선택",
+          "options": [
+            "캐릭터",
+            "단어",
+            "라인"
+          ]
+        },
+        "selection": {
+          "label": "신청 대상",
+          "section": "선택",
+          "options": [
+            "전체",
+            "범위"
+          ]
+        },
+        "first": {
+          "label": "먼저",
+          "section": "선택"
+        },
+        "last": {
+          "label": "마지막",
+          "section": "선택"
+        },
+        "position": {
+          "label": "위치",
+          "section": "변신"
+        },
+        "scaleXY": {
+          "label": "규모",
+          "section": "변신"
+        },
+        "rotation": {
+          "label": "회전",
+          "section": "변신"
+        },
+        "pivot": {
+          "label": "피벗",
+          "section": "변신"
+        },
+        "anchor": {
+          "label": "앵커",
+          "section": "변신",
+          "options": [
+            "구성요소",
+            "레이어"
+          ]
+        },
+        "opacity": {
+          "label": "불투명도",
+          "section": "변신"
+        },
+        "tint": {
+          "label": "틴트",
+          "section": "변신"
+        },
+        "positionStep": {
+          "label": "캐릭터당 위치",
+          "section": "프로그레시브"
+        },
+        "rotationStep": {
+          "label": "캐릭터당 회전",
+          "section": "프로그레시브"
+        }
+      },
+      "presets": {
+        "one-letter": "한 글자",
+        "cascade": "캐스케이드"
+      }
+    },
+    "true-text-spacing": {
+      "name": "텍스트 간격 플러스",
+      "description": "추가 문자, 단어 및 줄 간격을 벡터 텍스트에 직접 애니메이션으로 적용합니다. 마크를 계속 결합하고 시각적인 오른쪽에서 왼쪽 순서를 존중합니다. 앵커는 왼쪽, 중앙 또는 오른쪽 가장자리를 고정된 상태로 유지합니다. 텍스트 정렬은 텍스트 레이어를 따릅니다.",
+      "params": {
+        "letter": {
+          "label": "문자 간격",
+          "section": "간격"
+        },
+        "word": {
+          "label": "단어 간격",
+          "section": "간격"
+        },
+        "line": {
+          "label": "줄 간격",
+          "section": "간격"
+        },
+        "anchor": {
+          "label": "앵커",
+          "section": "간격",
+          "options": [
+            "왼쪽",
+            "센터",
+            "그렇죠",
+            "텍스트 정렬"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "확장됨",
+        "tight": "타이트",
+        "wide-words": "넓은 단어"
+      }
     }
   }
 }

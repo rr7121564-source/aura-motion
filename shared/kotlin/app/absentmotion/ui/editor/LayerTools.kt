@@ -210,7 +210,7 @@ fun LayerTools(state: EditorState, modifier: Modifier = Modifier, side: Boolean 
                 listOf(presets, Tile(CameraMoves) { state.playing = false; moving = true }),
             )
             "model" -> listOf(
-                listOf(Tile(ModelOptions) { state.panel = EditorPanel.Model }, blending, grade),
+                listOf(Tile(ModelOptions) { state.modelRigTab = 0; state.panel = EditorPanel.Model }, blending, grade),
                 listOf(transform, presets, effects),
             )
             "light" -> listOf(listOf(Tile(LightOptions) { state.panel = EditorPanel.Light }, transform))

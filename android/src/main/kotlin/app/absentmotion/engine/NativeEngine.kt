@@ -108,8 +108,12 @@ class NativeEngine(backend: Backend) : AutoCloseable {
 
     fun shapeIcon(xml: String, size: Int, color: Int): ByteArray? = nativeShapeIcon(handle, xml.toByteArray(), size, color)
 
-    fun setModel(uri: String, mesh: app.absentmotion.media.Mesh?): Boolean =
-        nativeSetModel(uri.toByteArray(), mesh?.positions, mesh?.normals, mesh?.uvs, mesh?.colors, mesh?.triangles, mesh?.slots, mesh?.twoSided == true)
+    fun modelPose(layerId: Long, timeMs: Double, joints: Boolean = true): FloatArray? = nativeModelPose(handle, layerId, timeMs, joints)
+
+    fun setModel(uri: String, mesh: app.absentmotion.media.Mesh?): Boolean {
+        val rig = try { mesh?.rig?.packed() } catch (_: IllegalArgumentException) { return false } catch (_: OutOfMemoryError) { return false }
+        return nativeSetModel(uri.toByteArray(), mesh?.positions, mesh?.normals, mesh?.uvs, mesh?.colors, mesh?.triangles, mesh?.slots, mesh?.twoSided == true, rig)
+    }
 
     override fun close() {
         nativeDestroy(handle)
@@ -194,6 +198,7 @@ class NativeEngine(backend: Backend) : AutoCloseable {
         @JvmStatic private external fun nativePreviewStill(engine: Long, timeMs: Double, width: Int, height: Int, accurateBlur: Boolean): ByteArray?
         @JvmStatic private external fun nativeShapeIcon(engine: Long, xml: ByteArray, size: Int, color: Int): ByteArray?
         @JvmStatic private external fun nativeSetModel(uri: ByteArray, positions: FloatArray?, normals: FloatArray?, uvs: FloatArray?,
-                                                      colors: IntArray?, triangles: IntArray?, slots: IntArray?, twoSided: Boolean): Boolean
+                                                      colors: IntArray?, triangles: IntArray?, slots: IntArray?, twoSided: Boolean, rig: ByteArray?): Boolean
+        @JvmStatic private external fun nativeModelPose(engine: Long, layerId: Long, timeMs: Double, joints: Boolean): FloatArray?
     }
 }

@@ -44815,6 +44815,114 @@
           "label": "Bobot Skala"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animator Karakter",
+      "description": "Ubah karakter, kata, atau baris tanpa membagi teks menjadi beberapa lapisan. Pilih Semua atau rentang bernomor (mulai dari 1). Posisi, skala X/Y independen, rotasi, pivot, opacity, tint dan transformasi progresif mendukung keyframe. Efek tumpukan untuk animasi independen karakter individu.",
+      "params": {
+        "unit": {
+          "label": "Berdasarkan",
+          "section": "Seleksi",
+          "options": [
+            "Karakter",
+            "Kata",
+            "Garis"
+          ]
+        },
+        "selection": {
+          "label": "Lamar Ke",
+          "section": "Seleksi",
+          "options": [
+            "Semua",
+            "Jangkauan"
+          ]
+        },
+        "first": {
+          "label": "Pertama",
+          "section": "Seleksi"
+        },
+        "last": {
+          "label": "Terakhir",
+          "section": "Seleksi"
+        },
+        "position": {
+          "label": "Posisi",
+          "section": "Transformasi"
+        },
+        "scaleXY": {
+          "label": "Skala",
+          "section": "Transformasi"
+        },
+        "rotation": {
+          "label": "Rotasi",
+          "section": "Transformasi"
+        },
+        "pivot": {
+          "label": "Putaran",
+          "section": "Transformasi"
+        },
+        "anchor": {
+          "label": "Jangkar",
+          "section": "Transformasi",
+          "options": [
+            "Komponen",
+            "Lapisan"
+          ]
+        },
+        "opacity": {
+          "label": "Opasitas",
+          "section": "Transformasi"
+        },
+        "tint": {
+          "label": "Warna",
+          "section": "Transformasi"
+        },
+        "positionStep": {
+          "label": "Posisi per Karakter",
+          "section": "Progresif"
+        },
+        "rotationStep": {
+          "label": "Rotasi per Karakter",
+          "section": "Progresif"
+        }
+      },
+      "presets": {
+        "one-letter": "Satu Surat",
+        "cascade": "Kaskade"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Spasi Teks Ditambah",
+      "description": "Menganimasikan karakter tambahan, spasi kata dan baris langsung pada teks vektor. Terus menggabungkan tanda dan menghormati urutan visual kanan-ke-kiri. Jangkar menjaga tepi kiri, tengah atau kanan tetap; Perataan Teks mengikuti lapisan teks.",
+      "params": {
+        "letter": {
+          "label": "Spasi Karakter",
+          "section": "Jarak"
+        },
+        "word": {
+          "label": "Spasi Kata",
+          "section": "Jarak"
+        },
+        "line": {
+          "label": "Spasi Baris",
+          "section": "Jarak"
+        },
+        "anchor": {
+          "label": "Jangkar",
+          "section": "Jarak",
+          "options": [
+            "Kiri",
+            "Pusat",
+            "Benar",
+            "Perataan Teks"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Diperluas",
+        "tight": "Ketat",
+        "wide-words": "Kata-kata Luas"
+      }
     }
   }
 }

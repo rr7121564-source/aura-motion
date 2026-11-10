@@ -15,6 +15,7 @@
 #include "easing.h"
 #include "engine.h"
 #include "scene.h"
+#include "model_rig.h"
 #include "legacy.h"
 #include <mutex>
 #include "textanim.h"
@@ -385,6 +386,14 @@ JNIEXPORT jfloatArray JNICALL JNI_FN(nativeLayerMatrix)(JNIEnv* env, jclass, jlo
     return out;
 }
 
+JNIEXPORT jfloatArray JNICALL JNI_FN(nativeModelPose)(JNIEnv* env,jclass,jlong engine,jlong layerId,jdouble timeMs,jboolean joints) {
+    const auto values=engineOf(engine)->modelPose(layerId,timeMs,joints);
+    if(values.empty()) return nullptr;
+    auto out=env->NewFloatArray(jsize(values.size()));
+    if(!out) {env->ExceptionClear();return nullptr;}
+    env->SetFloatArrayRegion(out,0,jsize(values.size()),values.data());return out;
+}
+
 JNIEXPORT jfloatArray JNICALL JNI_FN(nativeLayerBounds)(JNIEnv* env, jclass, jlong engine, jlong layerId, jdouble timeMs) {
     float bounds[4];
     if (!engineOf(engine)->layerBounds(layerId, timeMs, bounds)) return nullptr;
@@ -449,7 +458,7 @@ JNIEXPORT jbyteArray JNICALL JNI_FN(nativeShapeIcon)(JNIEnv* env, jclass, jlong 
 }
 
 JNIEXPORT jboolean JNICALL JNI_FN(nativeSetModel)(JNIEnv* env, jclass, jbyteArray uri, jfloatArray positions, jfloatArray normals,
-                                                 jfloatArray uvs, jintArray colors, jintArray triangles, jintArray slots, jboolean twoSided) {
+                                                 jfloatArray uvs, jintArray colors, jintArray triangles, jintArray slots, jboolean twoSided, jbyteArray rigBytes) {
     std::string key((size_t)env->GetArrayLength(uri), '\0');
     env->GetByteArrayRegion(uri, 0, (jsize)key.size(), reinterpret_cast<jbyte*>(key.data()));
     if (!positions) {
@@ -480,6 +489,13 @@ JNIEXPORT jboolean JNICALL JNI_FN(nativeSetModel)(JNIEnv* env, jclass, jbyteArra
     model->triangles = ints(triangles);
     model->slots = ints(slots);
     model->twoSided = twoSided;
+    if (rigBytes) {
+        const jsize length=env->GetArrayLength(rigBytes);
+        if(length<=0 || length>128*1024*1024) return false;
+        std::vector<uint8_t> packed(size_t(length),0);
+        env->GetByteArrayRegion(rigBytes,0,length,reinterpret_cast<jbyte*>(packed.data()));
+        if(env->ExceptionCheck() || !(model->rig=am::ReadModelRig(packed,size_t(vertices)))) return false;
+    }
     const size_t count = model->positions.size() / 3;
     const auto finite=[](float x) { return std::isfinite(x); };
     const bool ok = !env->ExceptionCheck() && std::all_of(model->positions.begin(),model->positions.end(),finite) &&

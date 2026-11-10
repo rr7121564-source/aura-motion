@@ -225,6 +225,8 @@
     "contourstrips": {"photo": "portrait", "params": {"count": 24, "height": 2.5, "thickness": 0.4}},
     "ominodiffusion": {"photo": "portrait", "params": {"palette": 7, "steps": 30, "weight": 1.2}},
     "glowscan": {"photo": "landscape", "params": {"position": [0.0, 1.0], "blur": 16}, "animate": 16},
-    "ribbon": {"photo": "colour", "params": {"phase": [0, 3], "magnitude": 0.5, "width": 0.8, "tintAmount": 0.6}, "animate": 16}
+    "ribbon": {"photo": "colour", "params": {"phase": [0, 3], "magnitude": 0.5, "width": 0.8, "tintAmount": 0.6}, "animate": 16},
+    "true-text-animator": {"layout": "text", "text": "Animate Text", "params": {"selection": 1, "first": 1, "last": 7, "rotation": [-16, 18, -16], "scaleXY": [1.2, 0.9], "tint": "#ffffc23d"}, "animate": 20, "presets": {"one-letter": {"text": "TM", "textSize": 32, "still": true}, "cascade": {"text": "Cascade", "still": true}}},
+    "true-text-spacing": {"layout": "text", "text": "Text Spacing", "params": {"letter": [-2, 8, -2]}, "animate": 20, "presets": {"expanded": {"text": "SPACE", "still": true}, "tight": {"text": "TEXT", "still": true}, "wide-words": {"text": "GO GO", "textSize": 24, "still": true}}}
   }
 }

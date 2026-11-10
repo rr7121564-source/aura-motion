@@ -10,6 +10,7 @@
 #include "depth.h"
 #include "scene.h"
 #include "depth_context.h"
+#include "model_rig.h"
 
 namespace am {
 namespace {
@@ -35,11 +36,22 @@ void SetModel(const std::string& uri, std::shared_ptr<const Model> model) {
     else Models().erase(uri);
 }
 
+std::vector<float> ModelPoseNumbers(const Layer& layer,double timeMs,bool joints) {
+    const auto found=Models().find(layer.mediaUri);
+    if(found==Models().end()) return {};
+    const auto& model=*found->second;
+    if(model.rig) if(const auto pose=EvaluateModelRig(*model.rig,layer,timeMs)) return joints?pose->joints:pose->positions;
+    return joints?std::vector<float>{}:model.positions;
+}
+
 static void DrawModelImpl(SkCanvas* canvas, const Layer& l, double timeMs, float alpha, const MediaPictures& pictures, const Scene* scene, DepthContext* depth) {
     auto found = Models().find(l.mediaUri);
     Placement p;
     if (found == Models().end() || !l.projected || !SeenPlacement(l, timeMs, &p)) return;
     const Model& m = *found->second;
+    const auto pose=m.rig?EvaluateModelRig(*m.rig,l,timeMs):nullptr;
+    const auto& vertices=pose?pose->positions:m.positions;
+    const auto& normals=pose?pose->normals:m.normals;
     const float t = l.localTime(timeMs);
     const float size = l.value("size", 0, t, 200);
     const float seconds = (float)((l.steppedMs(timeMs) - l.startTime) / 1000);
@@ -58,9 +70,9 @@ static void DrawModelImpl(SkCanvas* canvas, const Layer& l, double timeMs, float
     const SkV3 light = scene?ViewDirection(l,timeMs,SkV3{std::cos(az)*std::cos(el),-std::sin(az)*std::cos(el),-std::sin(el)}).normalize():SkV3{std::cos(angle), -std::sin(angle), -1.2f}.normalize();
     const float ambient = scene?scene->lightAmbient:l.value("ambient", 0, t, 0.35f), intensity = scene?scene->lightIntensity:l.value("intensity", 0, t, 1);
 
-    const int count = (int)(m.positions.size() / 3);
+    const int count = (int)(vertices.size() / 3);
     std::vector<SkV4> clip(count);
-    for (int v = 0; v < count; v++) clip[v] = full.map(m.positions[v * 3], m.positions[v * 3 + 1], m.positions[v * 3 + 2], 1);
+    for (int v = 0; v < count; v++) clip[v] = full.map(vertices[v * 3], vertices[v * 3 + 1], vertices[v * 3 + 2], 1);
     auto screen = [&](int v) { return SkPoint{clip[v].x / clip[v].w, clip[v].y / clip[v].w}; };
 
     std::vector<Face> faces;
@@ -104,15 +116,15 @@ static void DrawModelImpl(SkCanvas* canvas, const Layer& l, double timeMs, float
                 const int v = m.triangles[f->index * 3 + i];
                 positions[out] = screen(v);
                 if (uvs) uvs[out] = {m.uvs[v * 2] * image->width(), m.uvs[v * 2 + 1] * image->height()};
-                const SkV4 n = turn.map(m.normals[v * 3], m.normals[v * 3 + 1], m.normals[v * 3 + 2], 0);
+                const SkV4 n = turn.map(normals[v * 3], normals[v * 3 + 1], normals[v * 3 + 2], 0);
                 const float length = SkV3{n.x, n.y, n.z}.length();
                 const float facing = length > 0 ? SkV3{n.x, n.y, n.z}.dot(light) / length * (f->back ? -1.0f : 1.0f) : 0.0f;
                 const float k = std::clamp(ambient + intensity * std::max(facing, 0.0f), 0.0f, 4.0f);
                 const uint32_t c = m.colors[v];
                 SkV3 illumination{k, k, k};
                 if (lights.count) {
-                    const SkV4 wn = worldTurn.map(m.normals[v * 3], m.normals[v * 3 + 1], m.normals[v * 3 + 2], 0);
-                    const SkV4 wp = worldPlace.map(m.positions[v * 3], m.positions[v * 3 + 1], m.positions[v * 3 + 2], 1);
+                    const SkV4 wn = worldTurn.map(normals[v * 3], normals[v * 3 + 1], normals[v * 3 + 2], 0);
+                    const SkV4 wp = worldPlace.map(vertices[v * 3], vertices[v * 3 + 1], vertices[v * 3 + 2], 1);
                     const float side = f->back ? -1.0f : 1.0f;
                     illumination = Illuminate(lights, {wn.x * side, wn.y * side, wn.z * side}, {wp.x + p.location.x(), wp.y + p.location.y(), wp.z + p.z});
                 }

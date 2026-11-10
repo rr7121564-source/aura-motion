@@ -73,6 +73,11 @@ internal fun Scene.rigAttachment(point: Pt, reach: Float, time: Int, preferred: 
 }
 
 fun EditorState.openRig() {
+    if (selected?.kind == "model" && selected?.node?.get("src") in app.absentmotion.media.ModelRigs.loaded.value) {
+        endGesture(); playing = false; addOpen = false; easingOpen = false; rigEditing = false
+        modelRigTab = 2; panel = EditorPanel.Model; keyTarget = null; MultiSelect.clear()
+        return
+    }
     endGesture(); playing = false; cameraMode = false; addOpen = false; rigEditing = true
     rigSettingsOpen = false
     easingOpen = false

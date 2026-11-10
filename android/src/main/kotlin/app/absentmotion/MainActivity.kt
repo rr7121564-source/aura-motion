@@ -362,8 +362,9 @@ class MainActivity : ComponentActivity() {
                     val job = coroutineContext.job
                     val importer = Importer.forApp(applicationContext, store)
                     for (uri in uris) try {
+                        val fromLink = uri.scheme == "file" && uri.path?.let { app.absentmotion.library.ProjectLinks.isDownload(cacheDir,java.io.File(it)) } == true
                         reports += importer.import { contentResolver.openInputStream(uri)?.let { stoppable(it, job) } }.map {
-                            if (!it.template) it else templates.adopt(store, it.id, engine)?.let { id -> it.copy(id = id) } ?: it.copy(template = false)
+                            if (fromLink) it.copy(template = false) else if (!it.template) it else templates.adopt(store, it.id, engine)?.let { id -> it.copy(id = id) } ?: it.copy(template = false)
                         }
                     } catch (e: kotlinx.coroutines.CancellationException) {
                         throw e
@@ -375,6 +376,9 @@ class MainActivity : ComponentActivity() {
             } finally {
                 if (overlay) opening = false
                 projectsChanged++
+                uris.filter { it.scheme == "file" }.forEach { uri -> uri.path?.let { path ->
+                    app.absentmotion.library.ProjectLinks.removeDownload(cacheDir, java.io.File(path))
+                } }
             }
             failure?.let { importFailed = it }
             if (reports.isNotEmpty()) imported = reports

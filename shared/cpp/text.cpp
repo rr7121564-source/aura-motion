@@ -47,7 +47,7 @@ struct TextLine {
 };
 struct TextLayout {
     std::string content, family, path, align, emoji, flags;
-    float size = 54, width = 512, height = 0, padTop = 0, letterSpacing = 0, lineSpacing = 1, lineHeight = 0;
+    float size = 54, width = 512, height = 0, padTop = 0, letterSpacing = 0, lineSpacing = 1, lineHeight = 0, layoutScale = 1;
     int weight = 400, index = 0;
     bool italic = false, imported = false, axes = false;
     sk_sp<FontCollection> fonts;
@@ -202,12 +202,12 @@ std::unique_ptr<Paragraph> paragraph(TextLayout& text, const std::string& conten
                                      bool rtl, float wordSpacing, bool prepared, float height = 0, bool tabular = false) {
     TextStyle style;
     style.setColor(SK_ColorWHITE);
-    style.setFontSize(text.size);
+    style.setFontSize(text.size / text.layoutScale);
     style.setFontStyle(SkFontStyle(text.weight, SkFontStyle::kNormal_Width,
         text.italic ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant));
     style.setFontFamilies({SkString(text.family)});
-    style.setLetterSpacing(text.letterSpacing * text.size);
-    style.setWordSpacing(wordSpacing);
+    style.setLetterSpacing(text.letterSpacing * text.size / text.layoutScale);
+    style.setWordSpacing(wordSpacing / text.layoutScale);
     if (tabular) style.addFontFeature(SkString("tnum"), 1);
     if (height > 0) {
         style.setHeight(height);
@@ -232,11 +232,14 @@ std::unique_ptr<Paragraph> paragraph(TextLayout& text, const std::string& conten
     }
     builder->addText(content.data() + done, content.size() - done);
     auto result = builder->Build();
-    result->layout(prepared ? std::max(text.width, text.size * content.size() * 2) : text.width);
+    result->layout((prepared ? std::max(text.width, text.size * content.size() * 2) : text.width) / text.layoutScale);
     return result;
 }
 void layout(TextLayout& text) {
     if (text.fonts) return;
+    // Shape huge fonts in canonical units as well as drawing them in canonical
+    // units. Glyph strike limits must not change advances, bounds or line wraps.
+    text.layoutScale = text.size > 512 ? text.size / 128 : 1;
     auto manager = systemFonts();
     text.fonts = sk_make_sp<FontCollection>();
     text.fonts->setDefaultFontManager(manager,
@@ -263,14 +266,16 @@ void layout(TextLayout& text) {
     } else {
         if (!face) face = manager->matchFamilyStyle(text.family.c_str(), SkFontStyle(text.weight, 5,
             text.italic ? SkFontStyle::kItalic_Slant : SkFontStyle::kUpright_Slant));
-        SkFont font(face, text.size);
+        SkFont font(face, text.size / text.layoutScale);
         SkFontMetrics metrics;
         font.getMetrics(&metrics);
+        metrics.fAscent *= text.layoutScale; metrics.fDescent *= text.layoutScale;
+        metrics.fTop *= text.layoutScale; metrics.fBottom *= text.layoutScale; metrics.fLeading *= text.layoutScale;
         const float natural = metrics.fDescent - metrics.fAscent + metrics.fLeading;
         text.lineHeight = text.lineSpacing != 1 && natural > 0 ? text.lineSpacing * natural / text.size : 0;
         text.paragraph = paragraph(text, text.content, false, 0, false, text.lineHeight);
         text.padTop = std::max(0.f, metrics.fAscent - metrics.fTop);
-        text.height = text.paragraph->getHeight() + text.padTop + std::max(0.f, metrics.fBottom - metrics.fDescent);
+        text.height = text.paragraph->getHeight() * text.layoutScale + text.padTop + std::max(0.f, metrics.fBottom - metrics.fDescent);
     }
 }
 }
@@ -313,13 +318,13 @@ std::shared_ptr<TextLayout> ParseText(const XmlNode& n) {
     return text;
 }
 namespace {
-bool OnPathBounds(const Layer& layer, float t, SkRect* bounds);
+bool AnimatedTextBounds(const Layer& layer, float t, SkRect* bounds);
 }
 SkPath TextPath(const Layer& layer, float t) {
     auto& text = *layer.text;
     layout(text);
     SkRect placed;
-    if (OnPathBounds(layer, t, &placed)) return SkPath::Rect(placed);
+    if (AnimatedTextBounds(layer, t, &placed)) return SkPath::Rect(placed);
     return SkPath::Rect(SkRect::MakeXYWH(-text.width / 2, -text.height / 2, text.width, text.height));
 }
 namespace {
@@ -327,18 +332,21 @@ template <typename F> void EachParagraph(TextLayout& text, F&& at) {
     if (text.paragraph) at(*text.paragraph, -text.width / 2, -text.height / 2 + text.padTop);
     for (auto& line : text.lines) {
         float x = -text.width / 2;
-        const float runWidth = line.paragraph->getMaxIntrinsicWidth();
+        const float runWidth = line.paragraph->getMaxIntrinsicWidth() * text.layoutScale;
         if (text.align == "center") x += (text.width - runWidth) / 2;
         else if (text.align == "right") x += text.width - runWidth;
-        at(*line.paragraph, x, line.baseline - text.height / 2 - line.paragraph->getAlphabeticBaseline());
+        at(*line.paragraph, x, line.baseline - text.height / 2 - line.paragraph->getAlphabeticBaseline() * text.layoutScale);
     }
 }
 template <typename F> void EachGlyph(TextLayout& text, F&& at) {
     EachParagraph(text, [&](Paragraph& paragraph, float x, float y) {
         paragraph.visit([&](int, const Paragraph::VisitorInfo* info) {
             if (!info) return;
+            SkFont font = info->font;
+            font.setSize(font.getSize() * text.layoutScale);
             for (int i = 0; i < info->count; i++) {
-                at(info->font, info->glyphs[i], x + info->origin.fX + info->positions[i].fX, y + info->origin.fY + info->positions[i].fY);
+                at(font, info->glyphs[i], x + (info->origin.fX + info->positions[i].fX) * text.layoutScale,
+                   y + (info->origin.fY + info->positions[i].fY) * text.layoutScale);
             }
         });
     });
@@ -395,8 +403,12 @@ void DrawRuns(SkCanvas* canvas, TextLayout& text, bool colored, const SkPaint& p
     EachParagraph(text, [&](Paragraph& paragraph, float x, float y) {
         paragraph.visit([&](int, const Paragraph::VisitorInfo* info) {
             if (!info || Colored(info->font) != colored) return;
-            DrawGlyphRun(canvas,info->glyphs,info->positions,(size_t)info->count,
-                         {x+info->origin.fX,y+info->origin.fY},info->font,paint);
+            SkFont font = info->font;
+            font.setSize(font.getSize() * text.layoutScale);
+            std::vector<SkPoint> positions(info->count);
+            for (int i = 0; i < info->count; ++i) positions[i] = info->positions[i] * text.layoutScale;
+            DrawGlyphRun(canvas,info->glyphs,positions.data(),(size_t)info->count,
+                         {x+info->origin.fX*text.layoutScale,y+info->origin.fY*text.layoutScale},font,paint);
         });
     });
 }
@@ -405,21 +417,26 @@ const SkRect& InkBounds(TextLayout& text) {
     text.inked = true;
     text.ink = SkRect::MakeXYWH(-text.width / 2, -text.height / 2, text.width, text.height);
     EachGlyph(text, [&](const SkFont& font, SkGlyphID glyph, float x, float y) {
+        SkFont measured = font;
+        const float scale = font.getSize() > 512 ? font.getSize() / 128 : 1;
+        measured.setSize(font.getSize() / scale);
         SkRect bounds;
-        font.getBounds({&glyph, 1}, {&bounds, 1}, nullptr);
-        text.ink.join(bounds.makeOffset(x, y));
+        measured.getBounds({&glyph, 1}, {&bounds, 1}, nullptr);
+        text.ink.join(SkMatrix::Scale(scale,scale).mapRect(bounds).makeOffset(x, y));
     });
     return text.ink;
 }
 }
 namespace {
 const char* const kTextIds[] = {"absent.textprogress", "absent.texttransform", "absent.textrandomizer", "absent.countupdown",
-                                "absent.timecode", "absent.textpath", "absent.textshake", "absent.textblips", "absent.fontweight"};
+                                "absent.timecode", "absent.textpath", "absent.textshake", "absent.textblips", "absent.fontweight",
+                                "truemotion.textanimator", "truemotion.textspacing"};
 
 struct Piece {
     Paragraph* paragraph;
     float x, y;
     int base, line;
+    float scale;
 };
 
 struct Glyph {
@@ -490,7 +507,7 @@ std::vector<Piece> Pieces(TextLayout& text, const Layer& l, float t, int fps, st
     *shown = Shown(l, t, fps, all, &tabular);
     std::vector<Piece> pieces;
     if (text.lines.empty()) {
-        pieces.push_back({Laid(text, 0, *shown, tabular), -text.width / 2, -text.height / 2 + text.padTop, 0, -1});
+        pieces.push_back({Laid(text, 0, *shown, tabular), -text.width / 2, -text.height / 2 + text.padTop, 0, -1, text.layoutScale});
         return pieces;
     }
     size_t base = 0;
@@ -498,10 +515,10 @@ std::vector<Piece> Pieces(TextLayout& text, const Layer& l, float t, int fps, st
         const size_t end = std::min(shown->find('\n', base), shown->size());
         Paragraph* p = Laid(text, (int)i, shown->substr(base, end - base), tabular);
         float x = -text.width / 2;
-        const float run = p->getMaxIntrinsicWidth();
+        const float run = p->getMaxIntrinsicWidth() * text.layoutScale;
         if (text.align == "center") x += (text.width - run) / 2;
         else if (text.align == "right") x += text.width - run;
-        pieces.push_back({p, x, text.lines[i].baseline - text.height / 2 - p->getAlphabeticBaseline(), (int)base, (int)i});
+        pieces.push_back({p, x, text.lines[i].baseline - text.height / 2 - p->getAlphabeticBaseline() * text.layoutScale, (int)base, (int)i, text.layoutScale});
         base = end + 1;
     }
     return pieces;
@@ -516,11 +533,14 @@ std::vector<Glyph> Collect(const std::vector<Piece>& pieces) {
             std::vector<SkScalar> widths(info->count);
             info->font.getBounds({info->glyphs, (size_t)info->count}, bounds, nullptr);
             info->font.getWidths({info->glyphs, (size_t)info->count}, widths);
+            SkFont font = info->font;
+            font.setSize(font.getSize() * piece.scale);
             for (int i = 0; i < info->count; i++) {
-                const SkPoint at = {piece.x + info->origin.fX + info->positions[i].fX, piece.y + info->origin.fY + info->positions[i].fY};
-                glyphs.push_back({info->font, info->glyphs[i], at, bounds[i].makeOffset(at.fX, at.fY), piece.base + (int)info->utf8Starts[i],
-                                  piece.line >= 0 ? piece.line : line});
-                glyphs.back().advance = widths[i];
+                const SkPoint at = {piece.x + (info->origin.fX + info->positions[i].fX) * piece.scale,
+                                    piece.y + (info->origin.fY + info->positions[i].fY) * piece.scale};
+                glyphs.push_back({font, info->glyphs[i], at, SkMatrix::Scale(piece.scale,piece.scale).mapRect(bounds[i]).makeOffset(at.fX, at.fY),
+                                  piece.base + (int)info->utf8Starts[i], piece.line >= 0 ? piece.line : line});
+                glyphs.back().advance = widths[i] * piece.scale;
             }
         });
     }
@@ -596,8 +616,77 @@ void Type(const LayerEffect& e, float t, float seconds, const std::string& shown
     }
 }
 
+
+// These operations retain shaped clusters (combining marks and joined glyphs)
+// and their vector paths. No intermediate bitmap or extra project layers.
+void CharacterTools(const LayerEffect& e, float t, const textanim::Segments& seg, std::vector<Glyph>* glyphs) {
+    int count = 0;
+    const auto units = Units(*glyphs, seg, Choice(e,"unit",t,0,2), &count);
+    const bool all = Choice(e,"selection",t,0,1) == 0;
+    const int first = (int)std::clamp(e.value("first",t,1),1.f,1000000.f)-1;
+    const int last = (int)std::clamp(e.value("last",t,1),1.f,1000000.f)-1;
+    std::vector<SkRect> boxes(count,SkRect::MakeEmpty());
+    for(size_t i=0;i<glyphs->size();++i) if(units[i]>=0) boxes[units[i]].join((*glyphs)[i].bounds);
+    const auto point = [&](const char* name, float a, float b) {
+        const Property* p = e.prop(name);
+        return SkPoint{p ? p->anim.get(0,t,a) : a,p ? p->anim.get(1,t,b) : b};
+    };
+    const SkPoint move=point("position",0,0), scale=point("scaleXY",1,1), pivot=point("pivot",0,0), step=point("positionStep",0,0);
+    const float angle=e.value("rotation",t,0), turn=e.value("rotationStep",t,0);
+    const Look look=Transform(e,t,1);
+    for(size_t i=0;i<glyphs->size();++i) {
+        const int u=units[i];
+        if(u<0 || (!all && (u<std::min(first,last) || u>std::max(first,last)))) continue;
+        Glyph& g=(*glyphs)[i];
+        const SkPoint c=(Choice(e,"anchor",t,0,1)==1?SkPoint{0,0}:boxes[u].isEmpty()?g.at:boxes[u].center())+pivot;
+        SkMatrix matrix=SkMatrix::Translate(-c.fX,-c.fY);
+        matrix.postScale(scale.fX,scale.fY);
+        matrix.postRotate(angle+turn*u);
+        matrix.postTranslate(c.fX+move.fX+step.fX*u,c.fY+move.fY+step.fY*u);
+        g.matrix.postConcat(matrix);g.alpha*=look.alpha;
+        if(look.tint.fA>0)g.tint=Blend(g.tint,look.tint);
+    }
+}
+
+void SpacingTools(const Layer& layer, const LayerEffect& e, float t, const textanim::Segments& seg, std::vector<Glyph>* glyphs) {
+    struct Cluster {float x=0; int word=-1;};
+    std::map<int,std::map<int,Cluster>> lines;
+    for(const Glyph& g:*glyphs) if(g.offset>=0 && g.offset<(int)seg.character.size()) {
+        const int c=seg.character[g.offset];
+        auto& line=lines[g.line];
+        const auto found=line.find(c);
+        if(found==line.end())line[c]={g.at.fX,seg.word[g.offset]};
+        else found->second.x=std::min(found->second.x,g.at.fX);
+    }
+    const float letter=e.value("letter",t,0),word=e.value("word",t,0),row=e.value("line",t,0);
+    int anchor=Choice(e,"anchor",t,3,3);
+    if(anchor==3)anchor=layer.text->align=="center"?1:layer.text->align=="right"?2:0;
+    std::map<std::pair<int,int>,SkPoint> shifts;
+    int lineIndex=0;
+    for(const auto& [lineId,clusters]:lines) {
+        std::vector<std::pair<int,Cluster>> visual(clusters.begin(),clusters.end());
+        std::sort(visual.begin(),visual.end(),[](const auto& a,const auto& b){return a.second.x<b.second.x;});
+        float dx=0;int previous=-1;
+        for(size_t i=0;i<visual.size();++i) {
+            const auto& [id,c]=visual[i];
+            if(i)dx+=letter;
+            if(c.word>=0) {if(previous>=0 && c.word!=previous)dx+=word;previous=c.word;}
+            shifts[{lineId,id}]={dx,lineIndex*row};
+        }
+        const float correction=anchor==1?dx/2:anchor==2?dx:0;
+        for(const auto& [id,c]:visual)shifts[{lineId,id}].fX-=correction;
+        ++lineIndex;
+    }
+    for(Glyph& g:*glyphs) if(g.offset>=0 && g.offset<(int)seg.character.size()) {
+        const auto shift=shifts.find({g.line,seg.character[g.offset]});
+        if(shift!=shifts.end())g.matrix.postTranslate(shift->second.fX,shift->second.fY);
+    }
+}
+
 void Apply(const Layer& l, float t, float seconds, const std::string& shown, const textanim::Segments& seg, std::vector<Glyph>* glyphs) {
     for (const LayerEffect& e : l.effects) {
+        if (!e.hidden && e.id == "truemotion.textanimator") { CharacterTools(e,t,seg,glyphs); continue; }
+        if (!e.hidden && e.id == "truemotion.textspacing") { SpacingTools(l,e,t,seg,glyphs); continue; }
         if (!e.hidden && e.id == "absent.textblips") {
             Type(e, t, seconds, shown, seg, glyphs);
             continue;
@@ -794,13 +883,12 @@ std::vector<Glyph> Animate(const Layer& l, float t, int fps) {
     return glyphs;
 }
 
-bool OnPathBounds(const Layer& layer, float t, SkRect* bounds) {
-    if (!PathEffect(layer)) return false;
+bool AnimatedTextBounds(const Layer& layer, float t, SkRect* bounds) {
+    if (!TextAnimated(layer)) return false;
     SkRect placed = SkRect::MakeEmpty();
     for (const Glyph& g : Animate(layer, t, ProjectFps())) {
-        SkRect box;
-        g.font.getBounds({&g.id, 1}, {&box, 1}, nullptr);
-        placed.join(g.matrix.mapRect(box.makeOffset(g.at.fX, g.at.fY)));
+        if (!(g.alpha > 0.002f)) continue;
+        placed.join(g.matrix.mapRect(g.bounds).makeOutset(3*g.blur,3*g.blur));
     }
     if (placed.isEmpty() || !placed.isFinite()) return false;
     *bounds = placed.makeOutset(2, 2);
@@ -845,6 +933,12 @@ bool TextEffect(const std::string& id) {
 bool TextAnimated(const Layer& layer) {
     return LegacyTextEffect(layer) || (layer.text && std::any_of(layer.effects.begin(), layer.effects.end(), [](const LayerEffect& e) { return !e.hidden && TextEffect(e.id) && e.id != "absent.fontweight"; }));
 }
+std::optional<SkPath> GlyphOutline(const SkFont& font, SkGlyphID glyph) {
+    if (!(font.getSize()>512)) return font.getPath(glyph);
+    SkFont canonical=font;canonical.setSize(128);
+    auto path=canonical.getPath(glyph);
+    return path?std::optional<SkPath>(path->makeTransform(SkMatrix::Scale(font.getSize()/128,font.getSize()/128))):std::nullopt;
+}
 SkPath TextGlyphPath(const Layer& layer, float t, int fps) {
     auto& text = *layer.text;
     layout(text);
@@ -854,13 +948,13 @@ SkPath TextGlyphPath(const Layer& layer, float t, int fps) {
             if (!(g.alpha > 0.002f) || Colored(g.font)) continue;
             SkMatrix m = SkMatrix::Translate(g.at.fX, g.at.fY);
             m.postConcat(g.matrix);
-            if (auto path = g.font.getPath(g.id)) b.addPath(*path, m);
+            if (auto path = GlyphOutline(g.font,g.id)) b.addPath(*path, m);
         }
         return b.detach();
     }
     EachGlyph(text, [&](const SkFont& font, SkGlyphID glyph, float x, float y) {
         if (Colored(font)) return;
-        if (auto path = font.getPath(glyph)) b.addPath(*path, SkMatrix::Translate(x, y));
+        if (auto path = GlyphOutline(font,glyph)) b.addPath(*path, SkMatrix::Translate(x, y));
     });
     return b.detach();
 }

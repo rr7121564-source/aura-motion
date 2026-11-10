@@ -1,0 +1,194 @@
+{
+  "id": "true-text-animator",
+  "runtimeId": "truemotion.textanimator",
+  "name": "Character Animator",
+  "category": "text",
+  "native": true,
+  "since": "5.0.3",
+  "description": "Transform characters, words or lines without splitting the text into layers. Select All or a numbered range (starting at 1). Position, independent X/Y scale, rotation, pivot, opacity, tint and progressive transforms support keyframes. Stack effects for independent animation of individual characters.",
+  "params": [
+    {
+      "id": "unit",
+      "label": "Based On",
+      "type": "choice",
+      "default": 0,
+      "options": [
+        "Character",
+        "Word",
+        "Line"
+      ],
+      "section": "Selection"
+    },
+    {
+      "id": "selection",
+      "label": "Apply To",
+      "type": "choice",
+      "default": 0,
+      "options": [
+        "All",
+        "Range"
+      ],
+      "section": "Selection"
+    },
+    {
+      "id": "first",
+      "label": "First",
+      "type": "float",
+      "default": 1,
+      "min": 1,
+      "max": 1000000,
+      "step": 1,
+      "section": "Selection",
+      "when": {
+        "selection": [
+          1
+        ]
+      }
+    },
+    {
+      "id": "last",
+      "label": "Last",
+      "type": "float",
+      "default": 1,
+      "min": 1,
+      "max": 1000000,
+      "step": 1,
+      "section": "Selection",
+      "when": {
+        "selection": [
+          1
+        ]
+      }
+    },
+    {
+      "id": "position",
+      "label": "Position",
+      "type": "point",
+      "default": [
+        0,
+        0
+      ],
+      "min": -100000,
+      "max": 100000,
+      "step": 0.1,
+      "section": "Transform",
+      "pixels": true
+    },
+    {
+      "id": "scaleXY",
+      "label": "Scale",
+      "type": "point",
+      "default": [
+        1,
+        1
+      ],
+      "min": -100,
+      "max": 100,
+      "step": 0.001,
+      "section": "Transform",
+      "percent": true
+    },
+    {
+      "id": "rotation",
+      "label": "Rotation",
+      "type": "angle",
+      "default": 0,
+      "min": -36000,
+      "max": 36000,
+      "step": 0.1,
+      "section": "Transform"
+    },
+    {
+      "id": "pivot",
+      "label": "Pivot",
+      "type": "point",
+      "default": [
+        0,
+        0
+      ],
+      "min": -100000,
+      "max": 100000,
+      "step": 0.1,
+      "section": "Transform",
+      "pixels": true
+    },
+    {
+      "id": "anchor",
+      "label": "Anchor",
+      "type": "choice",
+      "default": 0,
+      "options": [
+        "Component",
+        "Layer"
+      ],
+      "section": "Transform"
+    },
+    {
+      "id": "opacity",
+      "label": "Opacity",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.001,
+      "section": "Transform",
+      "percent": true
+    },
+    {
+      "id": "tint",
+      "label": "Tint",
+      "type": "color",
+      "default": "#00ffffff",
+      "section": "Transform"
+    },
+    {
+      "id": "positionStep",
+      "label": "Position per Character",
+      "type": "point",
+      "default": [
+        0,
+        0
+      ],
+      "min": -100000,
+      "max": 100000,
+      "step": 0.1,
+      "section": "Progressive",
+      "pixels": true
+    },
+    {
+      "id": "rotationStep",
+      "label": "Rotation per Character",
+      "type": "angle",
+      "default": 0,
+      "min": -36000,
+      "max": 36000,
+      "step": 0.1,
+      "section": "Progressive"
+    }
+  ],
+  "presets": [
+    {
+      "name": "One Letter",
+      "params": {
+        "selection": 1,
+        "first": 2,
+        "last": 2,
+        "rotation": -20,
+        "scaleXY": [
+          1.2,
+          1.2
+        ]
+      }
+    },
+    {
+      "name": "Cascade",
+      "params": {
+        "positionStep": [
+          6,
+          -6
+        ],
+        "rotationStep": 4
+      }
+    }
+  ]
+}

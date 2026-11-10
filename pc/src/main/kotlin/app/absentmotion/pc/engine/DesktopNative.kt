@@ -35,12 +35,13 @@ object DesktopNative {
     external fun still(handle: Long, timeMs: Double, width: Int, height: Int, accurate: Boolean): ByteArray?
     external fun stillInto(handle: Long, timeMs: Double, width: Int, height: Int, out: ByteArray): Boolean
     external fun setPixels(handle: Long, uri: String, width: Int, height: Int, argb: IntArray): Boolean
-    external fun setModel(uri: String, positions: FloatArray?, normals: FloatArray?, uvs: FloatArray?, colors: IntArray?, triangles: IntArray?, slots: IntArray?, twoSided: Boolean): Boolean
+    external fun setModel(uri: String, positions: FloatArray?, normals: FloatArray?, uvs: FloatArray?, colors: IntArray?, triangles: IntArray?, slots: IntArray?, twoSided: Boolean, rig: ByteArray?): Boolean
     external fun dropPicture(handle: Long, uri: String)
     external fun setCameraView(handle: Long, on: Boolean)
     external fun setAccurateBlur(handle: Long, on: Boolean)
     external fun propertyNumbers(handle: Long, layerId: Long, effect: Int, name: String, timeMs: Double): FloatArray?
     external fun layerMatrix(handle: Long, id: Long, timeMs: Double): FloatArray?
+    external fun modelPose(handle: Long, id: Long, timeMs: Double, joints: Boolean): FloatArray?
     external fun layerBounds(handle: Long, id: Long, timeMs: Double): FloatArray?
     external fun layerOutline(handle: Long, id: Long, timeMs: Double): String?
     external fun shapeIcon(handle: Long, xml: String, size: Int, color: Int): ByteArray?

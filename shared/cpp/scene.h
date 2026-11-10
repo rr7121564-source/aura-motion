@@ -350,13 +350,16 @@ SkRect MediaRect(const Layer& layer, const SkRect& bounds, int width, int height
 void DrawMedia(SkCanvas* canvas, const Layer& layer, const SkPath& path, float opacity,
                const MediaPictures& pictures);
 
+struct ModelRig;
 struct Model {
     std::vector<float> positions, normals, uvs;
     std::vector<uint32_t> colors;
     std::vector<int> triangles, slots;
     bool twoSided = false;
+    std::shared_ptr<const ModelRig> rig;
 };
 void SetModel(const std::string& uri, std::shared_ptr<const Model> model);
+std::vector<float> ModelPoseNumbers(const Layer& layer, double timeMs, bool joints);
 void DrawModel(SkCanvas* canvas, const Layer& layer, double timeMs, float alpha, const MediaPictures& pictures);
 struct DepthContext;
 void DrawModelDepth(SkCanvas* canvas, const Layer& layer, double timeMs, float alpha, const MediaPictures& pictures, const Scene& scene, DepthContext& depth);

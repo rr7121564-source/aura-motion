@@ -6920,6 +6920,114 @@
           "label": "Poids de l’échelle"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animateur de personnages",
+      "description": "Transformez des caractères, des mots ou des lignes sans diviser le texte en calques. Sélectionnez Tout ou une plage numérotée (commençant à 1). La position, l'échelle X/Y indépendante, la rotation, le pivotement, l'opacité, la teinte et les transformations progressives prennent en charge les images clés. Effets de pile pour une animation indépendante de personnages individuels.",
+      "params": {
+        "unit": {
+          "label": "Basé sur",
+          "section": "Sélection",
+          "options": [
+            "Caractère",
+            "Mot",
+            "Ligne"
+          ]
+        },
+        "selection": {
+          "label": "Postuler à",
+          "section": "Sélection",
+          "options": [
+            "Tous",
+            "Portée"
+          ]
+        },
+        "first": {
+          "label": "Premier",
+          "section": "Sélection"
+        },
+        "last": {
+          "label": "Dernier",
+          "section": "Sélection"
+        },
+        "position": {
+          "label": "Position",
+          "section": "Transformer"
+        },
+        "scaleXY": {
+          "label": "Échelle",
+          "section": "Transformer"
+        },
+        "rotation": {
+          "label": "Rotation",
+          "section": "Transformer"
+        },
+        "pivot": {
+          "label": "Pivoter",
+          "section": "Transformer"
+        },
+        "anchor": {
+          "label": "Ancre",
+          "section": "Transformer",
+          "options": [
+            "Composant",
+            "Couche"
+          ]
+        },
+        "opacity": {
+          "label": "Opacité",
+          "section": "Transformer"
+        },
+        "tint": {
+          "label": "Teinte",
+          "section": "Transformer"
+        },
+        "positionStep": {
+          "label": "Position par personnage",
+          "section": "Progressif"
+        },
+        "rotationStep": {
+          "label": "Rotation par personnage",
+          "section": "Progressif"
+        }
+      },
+      "presets": {
+        "one-letter": "Une lettre",
+        "cascade": "Cascade"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Espacement du texte Plus",
+      "description": "Animez des interlignes, des mots et des caractères supplémentaires directement sur du texte vectoriel. Continue de combiner les marques et respecte l'ordre visuel de droite à gauche. L'ancre maintient le bord gauche, central ou droit fixe ; L'alignement du texte suit le calque de texte.",
+      "params": {
+        "letter": {
+          "label": "Espacement des caractères",
+          "section": "Espacement"
+        },
+        "word": {
+          "label": "Espacement des mots",
+          "section": "Espacement"
+        },
+        "line": {
+          "label": "Espacement des lignes",
+          "section": "Espacement"
+        },
+        "anchor": {
+          "label": "Ancre",
+          "section": "Espacement",
+          "options": [
+            "Gauche",
+            "Centre",
+            "C'est vrai",
+            "Alignement du texte"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Agrandi",
+        "tight": "Serré",
+        "wide-words": "Mots larges"
+      }
     }
   }
 }

@@ -44815,6 +44815,114 @@
           "label": "Timbang ng scale"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Character Animator",
+      "description": "Baguhin ang mga character, salita o linya nang hindi hinahati ang teksto sa mga layer. Piliin ang Lahat o isang may bilang na hanay (nagsisimula sa 1). Position, independent X/Y scale, rotation, pivot, opacity, tint at progressive transforms support keyframes. Mga stack effect para sa independiyenteng animation ng mga indibidwal na character.",
+      "params": {
+        "unit": {
+          "label": "Batay Sa",
+          "section": "Pagpili",
+          "options": [
+            "Tauhan",
+            "Salita",
+            "Linya"
+          ]
+        },
+        "selection": {
+          "label": "Mag-apply Sa",
+          "section": "Pagpili",
+          "options": [
+            "Lahat",
+            "Saklaw"
+          ]
+        },
+        "first": {
+          "label": "Una",
+          "section": "Pagpili"
+        },
+        "last": {
+          "label": "Huli",
+          "section": "Pagpili"
+        },
+        "position": {
+          "label": "Posisyon",
+          "section": "Magbago"
+        },
+        "scaleXY": {
+          "label": "Iskala",
+          "section": "Magbago"
+        },
+        "rotation": {
+          "label": "Pag-ikot",
+          "section": "Magbago"
+        },
+        "pivot": {
+          "label": "Pivot",
+          "section": "Magbago"
+        },
+        "anchor": {
+          "label": "Angkla",
+          "section": "Magbago",
+          "options": [
+            "Bahagi",
+            "Layer"
+          ]
+        },
+        "opacity": {
+          "label": "Opacity",
+          "section": "Magbago"
+        },
+        "tint": {
+          "label": "Tint",
+          "section": "Magbago"
+        },
+        "positionStep": {
+          "label": "Posisyon bawat Karakter",
+          "section": "Progresibo"
+        },
+        "rotationStep": {
+          "label": "Pag-ikot bawat Character",
+          "section": "Progresibo"
+        }
+      },
+      "presets": {
+        "one-letter": "Isang Liham",
+        "cascade": "Kaskad"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Text Spacing Plus",
+      "description": "I-animate ang dagdag na character, salita at line spacing nang direkta sa vector text. Patuloy na pinagsasama-sama ang mga marka at nirerespeto ang pagkakasunod-sunod ng visual na kanan-pakaliwa. Pinapanatili ng anchor na maayos ang kaliwa, gitna o kanang gilid; Ang Text Alignment ay sumusunod sa text layer.",
+      "params": {
+        "letter": {
+          "label": "Spacing ng Character",
+          "section": "Spacing"
+        },
+        "word": {
+          "label": "Word Spacing",
+          "section": "Spacing"
+        },
+        "line": {
+          "label": "Line Spacing",
+          "section": "Spacing"
+        },
+        "anchor": {
+          "label": "Angkla",
+          "section": "Spacing",
+          "options": [
+            "Kaliwa",
+            "Gitna",
+            "Tama",
+            "Pag-align ng Teksto"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Pinalawak",
+        "tight": "Masikip",
+        "wide-words": "Malapad na Salita"
+      }
     }
   }
 }

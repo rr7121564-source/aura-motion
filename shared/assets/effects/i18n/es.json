@@ -44815,6 +44815,114 @@
           "label": "Peso de la escala"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animador de personajes",
+      "description": "Transforma caracteres, palabras o líneas sin dividir el texto en capas. Seleccione Todo o un rango numerado (comenzando en 1). La posición, la escala X/Y independiente, la rotación, el pivote, la opacidad, el tinte y las transformaciones progresivas admiten fotogramas clave. Apila efectos para animación independiente de personajes individuales.",
+      "params": {
+        "unit": {
+          "label": "Basado en",
+          "section": "Selección",
+          "options": [
+            "Personaje",
+            "Palabra",
+            "Línea"
+          ]
+        },
+        "selection": {
+          "label": "Aplicar a",
+          "section": "Selección",
+          "options": [
+            "Todos",
+            "Rango"
+          ]
+        },
+        "first": {
+          "label": "Primero",
+          "section": "Selección"
+        },
+        "last": {
+          "label": "Último",
+          "section": "Selección"
+        },
+        "position": {
+          "label": "Posición",
+          "section": "Transformar"
+        },
+        "scaleXY": {
+          "label": "Escala",
+          "section": "Transformar"
+        },
+        "rotation": {
+          "label": "Rotación",
+          "section": "Transformar"
+        },
+        "pivot": {
+          "label": "Pivote",
+          "section": "Transformar"
+        },
+        "anchor": {
+          "label": "Ancla",
+          "section": "Transformar",
+          "options": [
+            "Componente",
+            "Capa"
+          ]
+        },
+        "opacity": {
+          "label": "Opacidad",
+          "section": "Transformar"
+        },
+        "tint": {
+          "label": "Tinte",
+          "section": "Transformar"
+        },
+        "positionStep": {
+          "label": "Posición por personaje",
+          "section": "Progresivo"
+        },
+        "rotationStep": {
+          "label": "Rotación por personaje",
+          "section": "Progresivo"
+        }
+      },
+      "presets": {
+        "one-letter": "Una letra",
+        "cascade": "Cascada"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Espaciado de texto adicional",
+      "description": "Anima caracteres, palabras y espacios entre líneas adicionales directamente en texto vectorial. Sigue combinando marcas y respeta el orden visual de derecha a izquierda. El ancla mantiene fijo el borde izquierdo, central o derecho; La alineación del texto sigue la capa de texto.",
+      "params": {
+        "letter": {
+          "label": "Espaciado entre caracteres",
+          "section": "Espaciado"
+        },
+        "word": {
+          "label": "Espaciado entre palabras",
+          "section": "Espaciado"
+        },
+        "line": {
+          "label": "Interlineado",
+          "section": "Espaciado"
+        },
+        "anchor": {
+          "label": "Ancla",
+          "section": "Espaciado",
+          "options": [
+            "Izquierda",
+            "Centro",
+            "Correcto",
+            "Alineación de texto"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Ampliado",
+        "tight": "Apretado",
+        "wide-words": "Palabras amplias"
+      }
     }
   }
 }

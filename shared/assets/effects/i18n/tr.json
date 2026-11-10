@@ -44815,6 +44815,114 @@
           "label": "Ölçek ağırlığı"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Karakter Animatörü",
+      "description": "Metni katmanlara bölmeden karakterleri, kelimeleri veya satırları dönüştürün. Tümünü veya numaralı bir aralığı (1'den başlayarak) seçin. Konum, bağımsız X/Y ölçeği, döndürme, pivot, opaklık, renk tonu ve aşamalı dönüşümler ana kareleri destekler. Bireysel karakterlerin bağımsız animasyonu için yığın efektleri.",
+      "params": {
+        "unit": {
+          "label": "Dayalı",
+          "section": "Seçim",
+          "options": [
+            "Karakter",
+            "Kelime",
+            "Çizgi"
+          ]
+        },
+        "selection": {
+          "label": "Uygula",
+          "section": "Seçim",
+          "options": [
+            "Hepsi",
+            "Aralık"
+          ]
+        },
+        "first": {
+          "label": "İlk",
+          "section": "Seçim"
+        },
+        "last": {
+          "label": "Son",
+          "section": "Seçim"
+        },
+        "position": {
+          "label": "Pozisyon",
+          "section": "Dönüştürme"
+        },
+        "scaleXY": {
+          "label": "Ölçek",
+          "section": "Dönüştürme"
+        },
+        "rotation": {
+          "label": "Döndürme",
+          "section": "Dönüştürme"
+        },
+        "pivot": {
+          "label": "Pivot",
+          "section": "Dönüştürme"
+        },
+        "anchor": {
+          "label": "Çapa",
+          "section": "Dönüştürme",
+          "options": [
+            "Bileşen",
+            "Katman"
+          ]
+        },
+        "opacity": {
+          "label": "Opaklık",
+          "section": "Dönüştürme"
+        },
+        "tint": {
+          "label": "Renk Tonu",
+          "section": "Dönüştürme"
+        },
+        "positionStep": {
+          "label": "Karakter Başına Konum",
+          "section": "Aşamalı"
+        },
+        "rotationStep": {
+          "label": "Karakter Başına Dönüş",
+          "section": "Aşamalı"
+        }
+      },
+      "presets": {
+        "one-letter": "Tek Harf",
+        "cascade": "Kademeli"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Metin Aralığı Artı",
+      "description": "Doğrudan vektör metni üzerinde ekstra karakter, kelime ve satır aralığını canlandırın. İşaretleri bir arada birleştirmeyi sürdürür ve sağdan sola görsel sıralamaya uyar. Çapa sol, orta veya sağ kenarı sabit tutar; Metin Hizalama metin katmanını takip eder.",
+      "params": {
+        "letter": {
+          "label": "Karakter Aralığı",
+          "section": "Aralık"
+        },
+        "word": {
+          "label": "Kelime Aralığı",
+          "section": "Aralık"
+        },
+        "line": {
+          "label": "Satır Aralığı",
+          "section": "Aralık"
+        },
+        "anchor": {
+          "label": "Çapa",
+          "section": "Aralık",
+          "options": [
+            "Sol",
+            "Merkez",
+            "Sağ",
+            "Metin Hizalama"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Genişletilmiş",
+        "tight": "Sıkı",
+        "wide-words": "Geniş Kelimeler"
+      }
     }
   }
 }

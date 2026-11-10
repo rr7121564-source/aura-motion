@@ -6920,6 +6920,114 @@
           "label": "縮放權重"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "角色動畫師",
+      "description": "變換字元、單字或線條，無需將文字拆分為圖層。選擇全部或編號範圍（從 1 開始）。位置、獨立 X/Y 縮放、旋轉、樞軸、不透明度、色調和漸進變換支援關鍵影格。單一角色獨立動畫的堆疊效果。",
+      "params": {
+        "unit": {
+          "label": "基於",
+          "section": "選擇",
+          "options": [
+            "人物",
+            "字",
+            "線"
+          ]
+        },
+        "selection": {
+          "label": "適用於",
+          "section": "選擇",
+          "options": [
+            "全部",
+            "範圍"
+          ]
+        },
+        "first": {
+          "label": "第一",
+          "section": "選擇"
+        },
+        "last": {
+          "label": "最後",
+          "section": "選擇"
+        },
+        "position": {
+          "label": "位置",
+          "section": "變形"
+        },
+        "scaleXY": {
+          "label": "規模",
+          "section": "變形"
+        },
+        "rotation": {
+          "label": "旋轉",
+          "section": "變形"
+        },
+        "pivot": {
+          "label": "樞軸",
+          "section": "變形"
+        },
+        "anchor": {
+          "label": "錨",
+          "section": "變形",
+          "options": [
+            "組件",
+            "層"
+          ]
+        },
+        "opacity": {
+          "label": "不透明度",
+          "section": "變形"
+        },
+        "tint": {
+          "label": "色調\n每個角色",
+          "section": "變形"
+        },
+        "positionStep": {
+          "label": "位置",
+          "section": "進步\n每個角色"
+        },
+        "rotationStep": {
+          "label": "旋轉",
+          "section": "進步\n每個角色"
+        }
+      },
+      "presets": {
+        "one-letter": "一封信",
+        "cascade": "級聯"
+      }
+    },
+    "true-text-spacing": {
+      "name": "文字間距加",
+      "description": "直接在向量文字上製作額外字元、單字和行間距的動畫。不斷將標記組合在一起並尊重視覺上從右到左的順序。錨點保持左、中或右邊緣固定；文字對齊遵循文字圖層。",
+      "params": {
+        "letter": {
+          "label": "字元間距",
+          "section": "間距"
+        },
+        "word": {
+          "label": "字間距",
+          "section": "間距"
+        },
+        "line": {
+          "label": "行距",
+          "section": "間距"
+        },
+        "anchor": {
+          "label": "錨",
+          "section": "間距",
+          "options": [
+            "左",
+            "中心",
+            "對",
+            "文字對齊"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "展開",
+        "tight": "緊",
+        "wide-words": "寬詞"
+      }
     }
   }
 }

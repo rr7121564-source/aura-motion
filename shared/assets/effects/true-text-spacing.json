@@ -1,0 +1,77 @@
+{
+  "id": "true-text-spacing",
+  "runtimeId": "truemotion.textspacing",
+  "name": "Text Spacing Plus",
+  "category": "text",
+  "native": true,
+  "since": "5.0.3",
+  "description": "Animate extra character, word and line spacing directly on vector text. Keeps combining marks together and respects visual right-to-left order. The anchor keeps the left, center or right edge fixed; Text Alignment follows the text layer.",
+  "params": [
+    {
+      "id": "letter",
+      "label": "Character Spacing",
+      "type": "float",
+      "default": 0,
+      "min": -100000,
+      "max": 100000,
+      "step": 0.1,
+      "section": "Spacing",
+      "pixels": true
+    },
+    {
+      "id": "word",
+      "label": "Word Spacing",
+      "type": "float",
+      "default": 0,
+      "min": -100000,
+      "max": 100000,
+      "step": 0.1,
+      "section": "Spacing",
+      "pixels": true
+    },
+    {
+      "id": "line",
+      "label": "Line Spacing",
+      "type": "float",
+      "default": 0,
+      "min": -100000,
+      "max": 100000,
+      "step": 0.1,
+      "section": "Spacing",
+      "pixels": true
+    },
+    {
+      "id": "anchor",
+      "label": "Anchor",
+      "type": "choice",
+      "default": 3,
+      "options": [
+        "Left",
+        "Center",
+        "Right",
+        "Text Alignment"
+      ],
+      "section": "Spacing"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Expanded",
+      "params": {
+        "letter": 20
+      }
+    },
+    {
+      "name": "Tight",
+      "params": {
+        "letter": -5
+      }
+    },
+    {
+      "name": "Wide Words",
+      "params": {
+        "word": 30
+      }
+    }
+  ]
+}

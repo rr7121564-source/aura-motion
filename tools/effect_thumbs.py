@@ -140,9 +140,9 @@ def parented(id, image, effect, half, end):
     return parent + child
 
 
-def words(id, content, effect="", end=999, font="googlefonts?name=Montserrat&amp;weight=700"):
+def words(id, content, effect="", end=999, font="googlefonts?name=Montserrat&amp;weight=700", text_size=18):
     c = RENDER // 2
-    return (f'<text id="{id}" label="text" startTime="0" endTime="{end}" fillType="color" size="18" wrapWidth="{RENDER - 48}" '
+    return (f'<text id="{id}" label="text" startTime="0" endTime="{end}" fillType="color" size="{text_size}" wrapWidth="{RENDER - 48}" '
             f'align="center" font="{font}"><transform><location value="{c},{c},0"/></transform>'
             f'<fillColor value="#ffffffff"/><content>{content}</content>{effect}</text>')
 
@@ -194,13 +194,14 @@ def scene(show, effect, preset=None):
         params.update(chosen)
         pins = "".join(prop({"id": f"rest{k}", "type": "point"}, rest) + prop({"id": f"pin{k}", "type": "point"}, at)
                        for k, (rest, at) in enumerate(show.get("pins", []), 1))
-        fx = f'<effect id="absent.{effect["id"]}" hidden="false">' + "".join(prop(p, params[p["id"]]) for p in effect["params"]) + pins + "</effect>"
+        runtime_id = effect.get("runtimeId", f'absent.{effect["id"]}')
+        fx = f'<effect id="{runtime_id}" hidden="false">' + "".join(prop(p, params[p["id"]]) for p in effect["params"]) + pins + "</effect>"
     fps, total = (ANIM_FPS, round(show["animate"] * 1000 / ANIM_FPS)) if "animate" in show else (30, 1000)
     layers = [layer(1, name, end=total - 1) for name in backdrops(show)]
     if "path" in show:
         layers.append(path_layer(show, total - 1))
     if show.get("layout") == "text":
-        layers.append(words(2, show["text"], fx, total - 1, *([show["font"]] if "font" in show else [])))
+        layers.append(words(2, show["text"], fx, total - 1, show.get("font", "googlefonts?name=Montserrat&amp;weight=700"), show.get("textSize", 18)))
     elif show.get("layout") == "drawing":
         layers.append(sketch(2, fx, total - 1))
     elif show.get("layout") == "parent":
@@ -359,7 +360,8 @@ def main():
         reference, frames = batch[plain[base]], batch[rendered]
         if show.get("animate"):
             changes = [change(f, r) for f, r in zip(frames, reference)]
-            diff, moving = max(changes), max(change(frames[0], f) for f in frames)
+            # Static presets keep their actual values; they must still visibly differ from plain text.
+            diff, moving = max(changes), None if show.get("still") else max(change(frames[0], f) for f in frames)
             image = frames[changes.index(diff)]
         else:
             image, moving = grid(frames), None

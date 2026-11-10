@@ -6920,6 +6920,114 @@
           "label": "Skalierungsgewichtung"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Charakteranimator",
+      "description": "Verwandeln Sie Zeichen, Wörter oder Zeilen, ohne den Text in Ebenen aufzuteilen. Wählen Sie „Alle“ oder einen nummerierten Bereich (beginnend bei 1) aus. Position, unabhängige X/Y-Skalierung, Drehung, Drehpunkt, Deckkraft, Tönung und progressive Transformationen unterstützen Keyframes. Stapeleffekte zur unabhängigen Animation einzelner Charaktere.",
+      "params": {
+        "unit": {
+          "label": "Basierend auf",
+          "section": "Auswahl",
+          "options": [
+            "Charakter",
+            "Wort",
+            "Linie"
+          ]
+        },
+        "selection": {
+          "label": "Bewerben bei",
+          "section": "Auswahl",
+          "options": [
+            "Alle",
+            "Reichweite"
+          ]
+        },
+        "first": {
+          "label": "Zuerst",
+          "section": "Auswahl"
+        },
+        "last": {
+          "label": "Zuletzt",
+          "section": "Auswahl"
+        },
+        "position": {
+          "label": "Position",
+          "section": "Transformieren"
+        },
+        "scaleXY": {
+          "label": "Skala",
+          "section": "Transformieren"
+        },
+        "rotation": {
+          "label": "Drehung",
+          "section": "Transformieren"
+        },
+        "pivot": {
+          "label": "Drehpunkt",
+          "section": "Transformieren"
+        },
+        "anchor": {
+          "label": "Anker",
+          "section": "Transformieren",
+          "options": [
+            "Komponente",
+            "Ebene"
+          ]
+        },
+        "opacity": {
+          "label": "Deckkraft",
+          "section": "Transformieren"
+        },
+        "tint": {
+          "label": "Tönung",
+          "section": "Transformieren"
+        },
+        "positionStep": {
+          "label": "Position pro Zeichen",
+          "section": "Progressiv"
+        },
+        "rotationStep": {
+          "label": "Rotation pro Charakter",
+          "section": "Progressiv"
+        }
+      },
+      "presets": {
+        "one-letter": "Ein Buchstabe",
+        "cascade": "Kaskade"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Textabstand Plus",
+      "description": "Animieren Sie zusätzliche Zeichen-, Wort- und Zeilenabstände direkt auf Vektortext. Kombiniert Markierungen weiterhin miteinander und respektiert die visuelle Rechts-nach-Links-Reihenfolge. Der Anker hält die linke, mittlere oder rechte Kante fest; Die Textausrichtung richtet sich nach der Textebene.",
+      "params": {
+        "letter": {
+          "label": "Zeichenabstand",
+          "section": "Abstand"
+        },
+        "word": {
+          "label": "Wortabstand",
+          "section": "Abstand"
+        },
+        "line": {
+          "label": "Zeilenabstand",
+          "section": "Abstand"
+        },
+        "anchor": {
+          "label": "Anker",
+          "section": "Abstand",
+          "options": [
+            "Links",
+            "Mitte",
+            "Richtig",
+            "Textausrichtung"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Erweitert",
+        "tight": "Eng",
+        "wide-words": "Breite Wörter"
+      }
     }
   }
 }

@@ -102,6 +102,12 @@ internal object Next020Probe {
             }
             results
         }
+        test("characterTools") {
+            Text020Probe.run(context,engine,directory).also { check(it.optBoolean("ok")) { it.toString() } }
+        }
+        test("glbRigs") {
+            ModelRig020Probe.run(context,engine,directory).also { check(it.optBoolean("ok")) { it.toString() } }
+        }
         return report.put("failures", failures).put("ok", failures.length() == 0)
     }
 }

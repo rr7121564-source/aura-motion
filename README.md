@@ -6,7 +6,9 @@ An experimental Android motion graphics editor based on [AbsentMotion 5.0.3](htt
 
 [Русская инструкция](README_TRUE_MOTION_RU.md) · [Port status](docs/TRUE_MOTION_MIGRATION_RU.md) · [Telegram](https://t.me/TrueMoti0n)
 
-0.19.1 merges the full AbsentMotion 5.0.3 source update, including effect reach, group/shape tools, background export and GPU startup safeguards. True Motion tools and effect schemas remain integrated. [Validation](docs/TRUE_MOTION_0191_VALIDATION.md). [Future versions](docs/ROADMAP_RU.md).
+0.20.0 completes the Android roadmap with Alight share-link import, vector character animation/spacing, looping bounce presets, a searchable parent picker and GLB skin/clip/bone-key editing. Large-text effects and extended rig timing are corrected. Based on AbsentMotion 5.0.3. [Usage](docs/RELEASE_0_20_RU.md) · [Validation and APK signing](docs/TRUE_MOTION_020_VALIDATION.md) · [Future versions](docs/ROADMAP_RU.md).
+
+0.19.1 merges the full AbsentMotion 5.0.3 source update, including effect reach, group/shape tools, background export and GPU startup safeguards. True Motion tools and effect schemas remain integrated. [Validation](docs/TRUE_MOTION_0191_VALIDATION.md).
 
 0.19.0 integrates the official AbsentMotion 5.0.0 source layout, depth order, light layers, palettes, FLA import and new native effects. True Motion tools, rig/bind data, free numeric fields, Classic effects and vector editor remain integrated. Earlier projects keep the Classic Parent Helper schema; 5.0 Parenting Helper uses a separate id. [Integration and validation](docs/TRUE_MOTION_019_VALIDATION.md).
 

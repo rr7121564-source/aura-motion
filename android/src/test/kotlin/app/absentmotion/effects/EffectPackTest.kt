@@ -20,7 +20,7 @@ class EffectPackTest {
         assertEquals("index.json and the effect files", files.sorted(), index.sorted())
         assertEquals("ids are unique", index.size, index.toSet().size)
         assertEquals("every listed effect parses", index, catalog.definitions.map { it.key })
-        assertTrue(catalog.definitions.all { (it.id == "absent.${it.key}" || it.dialect == "afterz" && it.id.startsWith("amz.") || it.dialect == "legacy" && it.id.startsWith("tmold.") || it.id in setOf("lab.true.grade", "lab.true.audioMotion", "lab.true.particles", "lab.true.spectrum") || it.pluginId != null && it.id.startsWith("plugin.${it.pluginId}.")) && it.category in EffectCatalog.Categories })
+        assertTrue(catalog.definitions.all { (it.id == "absent.${it.key}" || it.dialect == "afterz" && it.id.startsWith("amz.") || it.dialect == "legacy" && it.id.startsWith("tmold.") || it.id in setOf("lab.true.grade", "lab.true.audioMotion", "lab.true.particles", "lab.true.spectrum", "truemotion.textanimator", "truemotion.textspacing") || it.pluginId != null && it.id.startsWith("plugin.${it.pluginId}.")) && it.category in EffectCatalog.Categories })
     }
 
     @Test fun shadersDeclareTheContractAndOneUniformPerParam() {

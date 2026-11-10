@@ -174,6 +174,7 @@ fun HomeScreen(
     var page by rememberSaveable { mutableIntStateOf(lastPage) }
     SideEffect { lastTab = tab; lastPage = page }
     var creating by remember { mutableStateOf(false) }
+    var linkOpen by remember { mutableStateOf(false) }
     var opening by remember { mutableIntStateOf(0) }
     var initialElement by remember { mutableStateOf(false) }
     val newProject = { initialElement = newProjectIsAsset(page, tab); opening++; creating = true }
@@ -214,6 +215,7 @@ fun HomeScreen(
                 else if (page == 1) TemplatesTab(version, onTemplate, onTemplateProject, fill, query) else ProjectsPane(
                     Modifier.weight(1f), shown, loaded, tab, { tab = it }, settings, version, onOpen, onExport, query,
                     onUpload = { picker.launch(arrayOf("*/*")) },
+                    onImportLink = { linkOpen = true },
                     onDuplicate = { id -> if (!duplicating) {
                         duplicating = true
                         app.absentmotion.platform.Toast.makeText(context, context.getString(R.string.home_duplicating), app.absentmotion.platform.Toast.LENGTH_SHORT).show()
@@ -233,6 +235,7 @@ fun HomeScreen(
             }
             if (!wide) BottomBar(onNew = newProject, page, { page = it; if (it == 2) search = null }, Modifier.align(Alignment.BottomCenter), navInset)
             if (toReport.isNotEmpty()) ImportDialog(toReport, onDismiss = onImportShown, onOpen = { onImportShown(); toReport.first().let { if (it.template) onTemplate(it.id) else onOpen(it.id) } })
+            if (linkOpen) ProjectLinkDialog(onImportFile) { linkOpen = false }
             Presence(creating) {
                 NewProjectSheet(
                     store, settings, projects.map { it.title }, initialElement, opening, onClose = { creating = false },
@@ -286,6 +289,7 @@ private fun ProjectsPane(
     onExport: (String) -> Unit,
     query: String,
     onUpload: () -> Unit,
+    onImportLink: () -> Unit,
     onDuplicate: (String) -> Unit,
     onDelete: (String) -> Unit,
     onHistory: (ProjectInfo) -> Unit,
@@ -325,10 +329,18 @@ private fun ProjectsPane(
                 Spacer(Modifier.height(24.dp))
                 Chips(tab, onTab)
             }
-            if (tab == 0) TextButton(onUpload, Modifier.padding(start = 12.dp, top = 4.dp)) {
-                Icon(HomeIcons.Upload, null, Modifier.size(18.dp), tint = Am.Navy)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.true_alight_import), color = Am.Navy)
+            if (tab == 0) Row(Modifier.widthIn(max = 520.dp).fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                TextButton(onUpload, Modifier.weight(1f).heightIn(min = 44.dp)) {
+                    Icon(HomeIcons.Upload, null, Modifier.size(18.dp), tint = Am.Navy)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.true_alight_import), color = Am.Navy, maxLines = 2)
+                }
+                TextButton(onImportLink, Modifier.weight(1f).heightIn(min = 44.dp)) {
+                    Icon(app.absentmotion.ui.editor.PanelIcons.Link, null, Modifier.size(18.dp), tint = Am.Navy)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.project_link_button), color = Am.Navy, maxLines = 2)
+                }
             }
             if (loaded && shown.isEmpty() && tab == 0 && settings.xmlUpload && query.isBlank()) {
                 Spacer(Modifier.height(13.dp))

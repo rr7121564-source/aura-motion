@@ -57,6 +57,7 @@ class PortInstrumentation : Instrumentation() {
             if(next020) {
                 val directory=File(context.filesDir,if(legacyGl) "next020-gl-validation" else "next020-validation").apply {mkdirs()}
                 NativeEngine(if(legacyGl) NativeEngine.Backend.GL else NativeEngine.Backend.GRAPHITE).use {engine->report.put("result",Next020Probe.run(context,engine,directory))}
+                check(report.getJSONObject("result").getBoolean("ok")) { "0.20 regression; see ${directory.path}/report.json" }
                 report.put("ok",true); File(directory,"report.json").writeText(report.toString(2))
                 finish(0,Bundle().apply {putString("report",report.toString())});return
             }

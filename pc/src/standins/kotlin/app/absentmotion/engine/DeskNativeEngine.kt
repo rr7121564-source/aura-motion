@@ -26,7 +26,11 @@ class NativeEngine(backend: Backend = Backend.GANESH) : AutoCloseable {
         return DesktopNative.setPixels(handle, uri, bitmap.width, bitmap.height, px)
     }
 
-    fun setModel(uri: String, mesh: app.absentmotion.media.Mesh?): Boolean = DesktopNative.setModel(uri, mesh?.positions, mesh?.normals, mesh?.uvs, mesh?.colors, mesh?.triangles, mesh?.slots, mesh?.twoSided == true)
+    fun setModel(uri: String, mesh: app.absentmotion.media.Mesh?): Boolean {
+        val rig = try { mesh?.rig?.packed() } catch (_: IllegalArgumentException) { return false } catch (_: OutOfMemoryError) { return false }
+        return DesktopNative.setModel(uri, mesh?.positions, mesh?.normals, mesh?.uvs, mesh?.colors, mesh?.triangles, mesh?.slots, mesh?.twoSided == true, rig)
+            .also { if (it) app.absentmotion.media.ModelRigs.set(uri, mesh?.rig) }
+    }
 
     fun setPictureFile(uri: String, path: String): Boolean = DesktopNative.setPicture(handle, uri, path)
 
@@ -62,6 +66,7 @@ class NativeEngine(backend: Backend = Backend.GANESH) : AutoCloseable {
     fun layerQuad(layerId: Long, timeMs: Double): FloatArray? = DesktopNative.layerQuad(handle, layerId, timeMs)
     fun propertyNumbers(layerId: Long, effect: Int, name: String, timeMs: Double): FloatArray? = DesktopNative.propertyNumbers(handle, layerId, effect, name, timeMs)
     fun layerMatrix(layerId: Long, timeMs: Double): FloatArray? = DesktopNative.layerMatrix(handle, layerId, timeMs)
+    fun modelPose(layerId: Long, timeMs: Double, joints: Boolean = true): FloatArray? = DesktopNative.modelPose(handle, layerId, timeMs, joints)
     fun layerBounds(layerId: Long, timeMs: Double): FloatArray? = DesktopNative.layerBounds(handle, layerId, timeMs)
     fun layerOutline(layerId: Long, timeMs: Double): String? = DesktopNative.layerOutline(handle, layerId, timeMs)
     fun hitTest(x: Float, y: Float, timeMs: Double): Long = DesktopNative.hitTest(handle, x, y, timeMs)

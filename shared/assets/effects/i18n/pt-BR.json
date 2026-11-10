@@ -44815,6 +44815,114 @@
           "label": "Peso da escala"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animador de personagens",
+      "description": "Transforme caracteres, palavras ou linhas sem dividir o texto em camadas. Selecione Tudo ou um intervalo numerado (começando em 1). Posição, escala X/Y independente, rotação, pivô, opacidade, matiz e transformações progressivas suportam quadros-chave. Efeitos de pilha para animação independente de personagens individuais.",
+      "params": {
+        "unit": {
+          "label": "Baseado em",
+          "section": "Seleção",
+          "options": [
+            "Personagem",
+            "Palavra",
+            "Linha"
+          ]
+        },
+        "selection": {
+          "label": "Inscreva-se em",
+          "section": "Seleção",
+          "options": [
+            "Todos",
+            "Alcance"
+          ]
+        },
+        "first": {
+          "label": "Primeiro",
+          "section": "Seleção"
+        },
+        "last": {
+          "label": "Último",
+          "section": "Seleção"
+        },
+        "position": {
+          "label": "Posição",
+          "section": "Transformar"
+        },
+        "scaleXY": {
+          "label": "Escala",
+          "section": "Transformar"
+        },
+        "rotation": {
+          "label": "Rotação",
+          "section": "Transformar"
+        },
+        "pivot": {
+          "label": "Pivô",
+          "section": "Transformar"
+        },
+        "anchor": {
+          "label": "Âncora",
+          "section": "Transformar",
+          "options": [
+            "Componente",
+            "Camada"
+          ]
+        },
+        "opacity": {
+          "label": "Opacidade",
+          "section": "Transformar"
+        },
+        "tint": {
+          "label": "Matiz",
+          "section": "Transformar"
+        },
+        "positionStep": {
+          "label": "Posição por personagem",
+          "section": "Progressivo"
+        },
+        "rotationStep": {
+          "label": "Rotação por personagem",
+          "section": "Progressivo"
+        }
+      },
+      "presets": {
+        "one-letter": "Uma Carta",
+        "cascade": "Cascata"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Espaçamento de texto adicional",
+      "description": "Animar espaçamento extra entre caracteres, palavras e linhas diretamente no texto vetorial. Mantém a combinação de marcas e respeita a ordem visual da direita para a esquerda. A âncora mantém fixa a borda esquerda, central ou direita; O alinhamento do texto segue a camada de texto.",
+      "params": {
+        "letter": {
+          "label": "Espaçamento entre caracteres",
+          "section": "Espaçamento"
+        },
+        "word": {
+          "label": "Espaçamento entre palavras",
+          "section": "Espaçamento"
+        },
+        "line": {
+          "label": "Espaçamento entre linhas",
+          "section": "Espaçamento"
+        },
+        "anchor": {
+          "label": "Âncora",
+          "section": "Espaçamento",
+          "options": [
+            "Esquerda",
+            "Centro",
+            "Certo",
+            "Alinhamento de texto"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Expandido",
+        "tight": "Apertado",
+        "wide-words": "Palavras amplas"
+      }
     }
   }
 }

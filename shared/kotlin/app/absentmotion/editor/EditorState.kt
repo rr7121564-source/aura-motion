@@ -230,6 +230,7 @@ class EditorState(
     var playing by mutableStateOf(false)
 
     var panel by mutableStateOf(EditorPanel.Tools)
+    var modelRigTab by mutableIntStateOf(0)
 
     var exportOpen by mutableStateOf(false)
 

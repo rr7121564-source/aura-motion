@@ -23,6 +23,7 @@ class Mesh(
     val slots: IntArray,
     val textures: List<ByteArray>,
     val twoSided: Boolean,
+    val rig: ModelRig? = null,
 ) {
     val vertexCount: Int get() = positions.size / 3
     val triangleCount: Int get() = triangles.size / 3
@@ -77,6 +78,7 @@ private class Ints {
 }
 
 private class MeshBuilder {
+    var rig: RigBuild? = null
     val positions = Floats()
     val normals = Floats()
     val uvs = Floats()
@@ -91,12 +93,13 @@ private class MeshBuilder {
         triangles.reserve(corners); slots.reserve(corners / 3)
     }
 
-    fun vertex(x: Float, y: Float, z: Float, normal: FloatArray?, u: Float, v: Float, color: Int): Int {
+    fun vertex(x: Float, y: Float, z: Float, normal: FloatArray?, u: Float, v: Float, color: Int, rigVertex: RigVertex? = null): Int {
         positions.add(x); positions.add(-y); positions.add(-z)
         if (normal == null) { missing.add(count); repeat(3) { normals.add(0f) } }
         else { normals.add(normal[0]); normals.add(-normal[1]); normals.add(-normal[2]) }
         uvs.add(u); uvs.add(v)
         colors.add(color)
+        rig?.add(requireNotNull(rigVertex))
         return count - 1
     }
 
@@ -129,7 +132,8 @@ private class MeshBuilder {
         }
         radius = sqrt(radius).takeIf { it > 0f } ?: 1f
         for (i in p.indices) p[i] = (p[i] - centre[i % 3]) / radius
-        return Mesh(p, pick(normals, 3), pick(uvs, 2), IntArray(used) { colors.data[keep[it]] }, triangles.array(), slots.array(), textures, twoSided)
+        return Mesh(p, pick(normals, 3), pick(uvs, 2), IntArray(used) { colors.data[keep[it]] }, triangles.array(), slots.array(), textures, twoSided,
+            rig?.build(keep, centre, radius))
     }
 
     private fun flatten() {
@@ -150,9 +154,36 @@ private class MeshBuilder {
                 for (j in 0..2) { positions.add(positions.data[v * 3 + j]); normals.add(f[j] / l) }
                 uvs.add(uvs.data[v * 2]); uvs.add(uvs.data[v * 2 + 1])
                 colors.add(colors.data[v])
+                rig?.duplicate(v)
                 triangles.data[k + i] = count - 1
             }
         }
+    }
+}
+
+private data class RigVertex(val p: FloatArray, val n: FloatArray, val joints: IntArray, val weights: FloatArray)
+private class RigBuild(val nodes: List<ModelRigNode>, val clips: List<ModelRigClip>) {
+    val bindings = ArrayList<ModelRigBinding>()
+    private val positions = Floats()
+    private val normals = Floats()
+    private val influences = Ints()
+    private val weights = Floats()
+    fun add(v: RigVertex) {
+        v.p.forEach(positions::add); v.n.forEach(normals::add)
+        repeat(8) { influences.add(v.joints.getOrElse(it) { -1 }); weights.add(v.weights.getOrElse(it) { 0f }) }
+    }
+    fun duplicate(v: Int) {
+        repeat(3) { positions.add(positions.data[v * 3 + it]); normals.add(normals.data[v * 3 + it]) }
+        repeat(8) { influences.add(influences.data[v * 8 + it]); weights.add(weights.data[v * 8 + it]) }
+    }
+    fun build(keep: IntArray, centre: FloatArray, radius: Float): ModelRig {
+        val h = floatArrayOf(1/radius,0f,0f,0f, 0f,-1/radius,0f,0f, 0f,0f,-1/radius,0f,
+            -centre[0]/radius,-centre[1]/radius,-centre[2]/radius,1f)
+        return ModelRig(nodes, clips, bindings, h,
+            FloatArray(keep.size * 3) { positions.data[keep[it / 3] * 3 + it % 3] },
+            FloatArray(keep.size * 3) { normals.data[keep[it / 3] * 3 + it % 3] },
+            IntArray(keep.size * 8) { influences.data[keep[it / 8] * 8 + it % 8] },
+            FloatArray(keep.size * 8) { weights.data[keep[it / 8] * 8 + it % 8] })
     }
 }
 
@@ -346,6 +377,9 @@ object GltfReader {
         val accessors = json.optJSONArray("accessors").objects()
         val meshes = json.optJSONArray("meshes").objects()
         val nodes = json.optJSONArray("nodes").objects()
+        val skins = json.optJSONArray("skins").objects()
+        val animations = json.optJSONArray("animations").objects()
+        require(nodes.size <= 8192 && skins.size <= 1024 && animations.size <= 1024) { AppText.get(R.string.model_err_too_complex) }
         val materials = json.optJSONArray("materials").objects()
         val textureList = json.optJSONArray("textures").objects()
         val images = json.optJSONArray("images").objects()
@@ -366,29 +400,55 @@ object GltfReader {
         fun read(index: Int, normalizeInts: Boolean = true, expect: Int = -1): Pair<FloatArray, Int>? {
             val a = accessors.getOrNull(index) ?: return null
             val count = a.optInt("count", 0)
-            require(count <= limit) { AppText.get(R.string.model_err_too_complex) }
+            require(count >= 0 && count <= limit) { AppText.get(R.string.model_err_too_complex) }
             if (expect >= 0 && count != expect) return null
-            val comps = when (a.optString("type")) { "SCALAR" -> 1; "VEC2" -> 2; "VEC3" -> 3; "VEC4" -> 4; else -> return null }
+            val comps = when (a.optString("type")) { "SCALAR" -> 1; "VEC2" -> 2; "VEC3" -> 3; "VEC4" -> 4; "MAT4" -> 16; else -> return null }
             val type = a.optInt("componentType")
             val size = when (type) { 5120, 5121 -> 1; 5122, 5123 -> 2; 5125, 5126 -> 4; else -> return null }
-            if (!a.has("bufferView")) return if (expect >= 0) FloatArray(count * comps) to comps else null
-            val (buffer, start, viewStride) = slice(a.optInt("bufferView", -1)) ?: return null
-            val stride = if (viewStride > 0) viewStride else comps * size
-            val base = start + a.optInt("byteOffset", 0).toLong()
+            require(count.toLong() * comps <= limit * 4 && (comps != 16 || type == 5126)) { AppText.get(R.string.model_err_too_complex) }
+            if (!a.has("bufferView") && !a.has("sparse")) return if (expect >= 0) FloatArray(count * comps) to comps else null
             val scaled = normalizeInts && (a.optBoolean("normalized") || type == 5121 || type == 5123)
-            require(count >= 0 && base >= 0 && (count == 0 || base + (count - 1L) * stride + comps * size <= buffer.limit())) { AppText.get(R.string.model_err_accessor) }
-            val out = FloatArray(count * comps)
-            for (e in 0 until count) for (c in 0 until comps) {
-                val at = (base + e.toLong() * stride + c * size).toInt()
-                out[e * comps + c] = when (type) {
+            fun number(buffer: ByteBuffer, at: Int): Float = when (type) {
                     5126 -> buffer.getFloat(at)
                     5121 -> (buffer.get(at).toInt() and 0xff).let { if (scaled) it / 255f else it.toFloat() }
                     5123 -> (buffer.getShort(at).toInt() and 0xffff).let { if (scaled) it / 65535f else it.toFloat() }
                     5125 -> (buffer.getInt(at).toLong() and 0xffffffffL).toFloat()
                     5120 -> buffer.get(at).toFloat().let { if (scaled) max(it / 127f, -1f) else it }
                     else -> buffer.getShort(at).toFloat().let { if (scaled) max(it / 32767f, -1f) else it }
+            }
+            val out: FloatArray
+            if (a.has("bufferView")) {
+                val (buffer, start, viewStride) = slice(a.optInt("bufferView", -1)) ?: return null
+                val stride = if (viewStride > 0) viewStride else comps * size
+                val base = start + a.optInt("byteOffset", 0).toLong()
+                require(stride >= comps * size && base >= start && (count == 0 || base + (count - 1L) * stride + comps * size <= buffer.limit())) { AppText.get(R.string.model_err_accessor) }
+                out = FloatArray(count * comps)
+                for (e in 0 until count) for (c in 0 until comps) out[e * comps + c] = number(buffer, (base + e.toLong() * stride + c * size).toInt())
+            } else {
+                require(count.toLong() * comps <= minOf(limit, 4_000_000L)) { AppText.get(R.string.model_err_too_complex) }
+                out = FloatArray(count * comps)
+            }
+            a.optJSONObject("sparse")?.let { sparse ->
+                val n = sparse.optInt("count", -1)
+                val ids = sparse.optJSONObject("indices") ?: error(AppText.get(R.string.model_err_accessor))
+                val values = sparse.optJSONObject("values") ?: error(AppText.get(R.string.model_err_accessor))
+                val (ib, ibase, _) = slice(ids.optInt("bufferView", -1)) ?: error(AppText.get(R.string.model_err_accessor))
+                val (vb, vbase, _) = slice(values.optInt("bufferView", -1)) ?: error(AppText.get(R.string.model_err_accessor))
+                val itype = ids.optInt("componentType")
+                val isize = when (itype) { 5121 -> 1; 5123 -> 2; 5125 -> 4; else -> 0 }
+                val io = ibase.toLong() + ids.optInt("byteOffset", 0)
+                val vo = vbase.toLong() + values.optInt("byteOffset", 0)
+                require(n in 0..count && isize > 0 && io >= ibase && vo >= vbase && io + n.toLong() * isize <= ib.limit() && vo + n.toLong() * comps * size <= vb.limit()) { AppText.get(R.string.model_err_accessor) }
+                var previous = -1
+                repeat(n) { k ->
+                    val at = (io + k * isize).toInt()
+                    val id = when (itype) { 5121 -> ib.get(at).toInt() and 255; 5123 -> ib.getShort(at).toInt() and 65535; else -> ib.getInt(at) }
+                    require(id > previous && id < count) { AppText.get(R.string.model_err_accessor) }
+                    previous = id
+                    repeat(comps) { c -> out[id * comps + c] = number(vb, (vo + (k.toLong() * comps + c) * size).toInt()) }
                 }
             }
+            require(out.all(Float::isFinite)) { AppText.get(R.string.model_err_accessor) }
             return out to comps
         }
 
@@ -429,9 +489,87 @@ object GltfReader {
             require(work <= limit) { AppText.get(R.string.model_err_too_complex) }
         }
 
-        fun addMesh(meshIndex: Int, world: FloatArray) {
+        val identity = FloatArray(16) { if (it % 5 == 0) 1f else 0f }
+        val parents = IntArray(nodes.size) { -1 }
+        for ((parent, node) in nodes.withIndex()) node.optJSONArray("children")?.let { children ->
+            repeat(children.length()) { k ->
+                val child = children.optInt(k, -1)
+                if (skins.isNotEmpty() || animations.isNotEmpty()) require(child in nodes.indices && parents[child] == -1 && child != parent) { AppText.get(R.string.model_err_accessor) }
+                if (child in nodes.indices && parents[child] == -1) parents[child] = parent
+            }
+        }
+        val local = nodes.map(::localMatrix)
+        val worlds = arrayOfNulls<FloatArray>(nodes.size)
+        val computing = BooleanArray(nodes.size)
+        fun restWorld(index: Int, depth: Int = 0): FloatArray {
+            require(index in nodes.indices && depth <= 256 && !computing[index]) { AppText.get(R.string.model_err_accessor) }
+            worlds[index]?.let { return it }
+            computing[index] = true
+            val world = if (parents[index] >= 0) multiply(restWorld(parents[index], depth + 1), local[index]) else local[index]
+            computing[index] = false
+            require(world.all(Float::isFinite)) { AppText.get(R.string.model_err_accessor) }
+            worlds[index] = world
+            return world
+        }
+        val jointSet = skins.flatMap { skin -> skin.optJSONArray("joints")?.let { j -> List(j.length()) { j.optInt(it, -1) } }.orEmpty() }.toSet()
+        require(jointSet.all { it in nodes.indices }) { AppText.get(R.string.model_err_accessor) }
+        val clips = animations.mapIndexedNotNull { clipIndex, animation ->
+            val samplers = animation.optJSONArray("samplers").objects()
+            val channels = animation.optJSONArray("channels").objects()
+            require(channels.size <= 32768) { AppText.get(R.string.model_err_too_complex) }
+            val parsed = channels.mapNotNull { channel ->
+                val target = channel.optJSONObject("target") ?: return@mapNotNull null
+                val path = when (target.optString("path")) { "translation" -> 0; "rotation" -> 1; "scale" -> 2; else -> return@mapNotNull null }
+                val sampler = samplers.getOrNull(channel.optInt("sampler", -1)) ?: error(AppText.get(R.string.model_err_accessor))
+                val node = target.optInt("node", -1)
+                require(node in nodes.indices && !nodes[node].has("matrix")) { AppText.get(R.string.model_err_accessor) }
+                val input = sampler.optInt("input", -1); val output = sampler.optInt("output", -1)
+                charge(input); charge(output)
+                val (times, tc) = read(input, normalizeInts = false) ?: error(AppText.get(R.string.model_err_accessor))
+                val (values, vc) = read(output) ?: error(AppText.get(R.string.model_err_accessor))
+                val interpolation = when (sampler.optString("interpolation", "LINEAR")) { "STEP" -> 0; "LINEAR" -> 1; "CUBICSPLINE" -> 2; else -> error(AppText.get(R.string.model_err_accessor)) }
+                val components = if (path == 1) 4 else 3
+                require(tc == 1 && times.isNotEmpty() && times[0] >= 0 && times.indices.drop(1).all { times[it] > times[it - 1] } &&
+                    vc == components && values.size.toLong() == times.size.toLong() * components * (if (interpolation == 2) 3 else 1) &&
+                    (interpolation != 2 || times.size >= 2)) { AppText.get(R.string.model_err_accessor) }
+                ModelRigChannel(node, path, interpolation, times, values)
+            }
+            if (parsed.isEmpty()) null else ModelRigClip(animation.optString("name").ifBlank { "Animation ${clipIndex + 1}" }, parsed.maxOf { it.times.last() }, parsed)
+        }
+        val rig = if (skins.isNotEmpty() || clips.isNotEmpty()) RigBuild(nodes.mapIndexed { i, n ->
+            fun values(name: String, fallback: FloatArray): FloatArray = n.optJSONArray(name)?.let { a ->
+                require(a.length() == fallback.size) { AppText.get(R.string.model_err_accessor) }
+                FloatArray(fallback.size) { a.getDouble(it).toFloat() }
+            } ?: fallback
+            ModelRigNode(ModelJoint(i, n.optString("name").ifBlank { "Node ${i + 1}" }, parents[i], i in jointSet), local[i],
+                values("translation", floatArrayOf(0f,0f,0f)), values("rotation", floatArrayOf(0f,0f,0f,1f)),
+                values("scale", floatArrayOf(1f,1f,1f)), n.has("matrix"))
+        }, clips).also { builder.rig = it; nodes.indices.forEach { i -> restWorld(i) } } else null
+        val skinBindings = HashMap<Int, IntArray>()
+        val staticBindings = HashMap<Int, Int>()
+        fun bindingsFor(index: Int): IntArray = skinBindings.getOrPut(index) {
+            val skin = skins.getOrNull(index) ?: error(AppText.get(R.string.model_err_accessor))
+            val joints = skin.getJSONArray("joints")
+            require(joints.length() in 1..8192) { AppText.get(R.string.model_err_too_complex) }
+            val matrices = if (skin.has("inverseBindMatrices")) read(skin.getInt("inverseBindMatrices"), false)?.takeIf { it.second == 16 && it.first.size >= joints.length() * 16 }?.first
+                ?: error(AppText.get(R.string.model_err_accessor)) else null
+            IntArray(joints.length()) { j ->
+                val binding = ModelRigBinding(joints.getInt(j), matrices?.copyOfRange(j * 16, j * 16 + 16) ?: identity)
+                require(binding.node in nodes.indices) { AppText.get(R.string.model_err_accessor) }
+                requireNotNull(rig).bindings.add(binding)
+                rig.bindings.lastIndex
+            }
+        }
+
+        fun addMesh(meshIndex: Int, world: FloatArray, nodeIndex: Int = -1) {
             val normalMatrix = normalMatrix(world)
-            val flip = determinant(world) < 0
+            val skinIndex = nodes.getOrNull(nodeIndex)?.optInt("skin", -1) ?: -1
+            val skin = if (skinIndex >= 0) bindingsFor(skinIndex) else null
+            val rigid = if (rig != null && skin == null) staticBindings.getOrPut(nodeIndex) {
+                require(nodeIndex in nodes.indices) { AppText.get(R.string.model_err_accessor) }
+                rig.bindings.add(ModelRigBinding(nodeIndex, identity)); rig.bindings.lastIndex
+            } else -1
+            val flip = skin == null && determinant(world) < 0
             for (primitive in meshes.getOrNull(meshIndex)?.optJSONArray("primitives").objects()) {
                 val mode = primitive.optInt("mode", 4)
                 if (mode !in 4..6) continue
@@ -451,14 +589,46 @@ object GltfReader {
                 val slot = pbr?.optJSONObject("baseColorTexture")?.optInt("index", -1)?.let { textureList.getOrNull(it) }?.optInt("source", -1)
                     ?.takeIf { it >= 0 }?.let { src -> imageSlots.getOrPut(src) { image(src)?.let { textures += it; textures.size - 1 } ?: -1 } } ?: -1
                 val list = indices(primitive, count)
+                val jointArrays = if (skin != null) (0..1).map { read(attributes.optInt("JOINTS_$it", -1), false, count)?.takeIf { it.second == 4 }?.first } else emptyList()
+                val weightArrays = if (skin != null) (0..1).map { read(attributes.optInt("WEIGHTS_$it", -1), true, count)?.takeIf { it.second == 4 }?.first } else emptyList()
+                require(skin == null || (jointArrays[0] != null && weightArrays[0] != null && (jointArrays[1] == null) == (weightArrays[1] == null))) { AppText.get(R.string.model_err_accessor) }
+                val rawNormals = normals ?: if (rig != null) generatedNormals(positions, list, mode) else null
+                val skinMatrices = skin?.map { b -> val bind = requireNotNull(rig).bindings[b]; multiply(restWorld(bind.node), bind.inverseBind) }
+                val skinNormals = skinMatrices?.map(::normalMatrix)
                 builder.reserve(count, list.size)
                 val first = builder.count
                 for (v in 0 until count) {
-                    val p = transform(world, positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2])
-                    val n = normals?.let { transformNormal(normalMatrix, it[v * 3], it[v * 3 + 1], it[v * 3 + 2]) }
+                    val rawP = positions.copyOfRange(v * 3, v * 3 + 3)
+                    val rawN = rawNormals?.copyOfRange(v * 3, v * 3 + 3)
+                    val ids = IntArray(8) { -1 }; val localIds = IntArray(8); val weights = FloatArray(8)
+                    if (skin != null) {
+                        repeat(8) { k ->
+                            val joint = jointArrays[k / 4]?.get(v * 4 + k % 4) ?: 0f
+                            val weight = weightArrays[k / 4]?.get(v * 4 + k % 4) ?: 0f
+                            require(weight >= 0f && joint >= 0f && joint == joint.toInt().toFloat() && joint < skin.size) { AppText.get(R.string.model_err_accessor) }
+                            localIds[k] = joint.toInt(); ids[k] = skin[localIds[k]]; weights[k] = weight
+                        }
+                        val sum = weights.sum()
+                        require(sum > 0f && sum.isFinite()) { AppText.get(R.string.model_err_accessor) }
+                        repeat(8) { weights[it] /= sum }
+                    } else if (rig != null) { ids[0] = rigid; weights[0] = 1f }
+                    val p: FloatArray; val n: FloatArray?
+                    if (skin != null) {
+                        p = FloatArray(3); n = FloatArray(3)
+                        repeat(8) { k -> if (weights[k] > 0f) {
+                            val j = localIds[k]
+                            val q = transform(requireNotNull(skinMatrices)[j], rawP[0], rawP[1], rawP[2])
+                            val nn = requireNotNull(rawN).let { transformNormal(requireNotNull(skinNormals)[j], it[0], it[1], it[2]) }
+                            repeat(3) { c -> p[c] += q[c] * weights[k]; n[c] += nn[c] * weights[k] }
+                        } }
+                    } else {
+                        p = transform(world, rawP[0], rawP[1], rawP[2])
+                        n = rawN?.let { transformNormal(normalMatrix, it[0], it[1], it[2]) }
+                    }
                     val c = colours?.let { (values, comps) -> FloatArray(4) { i -> if (i < comps) values[v * comps + i] else 1f } } ?: floatArrayOf(1f, 1f, 1f, 1f)
                     builder.vertex(p[0], p[1], p[2], n, uvs?.get(v * 2) ?: 0f, uvs?.get(v * 2 + 1) ?: 0f,
-                        argb(factor[0] * c[0], factor[1] * c[1], factor[2] * c[2], factor[3] * c[3]))
+                        argb(factor[0] * c[0], factor[1] * c[1], factor[2] * c[2], factor[3] * c[3]),
+                        if (rig != null) RigVertex(rawP, requireNotNull(rawN), ids, weights) else null)
                 }
                 fun emit(a: Int, b: Int, c: Int) {
                     if (a !in 0 until count || b !in 0 until count || c !in 0 until count) return
@@ -480,11 +650,10 @@ object GltfReader {
             if (depth > 64 || visited[index]) return
             visited[index] = true
             val world = multiply(parent, localMatrix(node))
-            if (node.has("mesh")) addMesh(node.getInt("mesh"), world)
+            if (node.has("mesh")) addMesh(node.getInt("mesh"), world, index)
             node.optJSONArray("children")?.let { c -> for (i in 0 until c.length()) visit(c.optInt(i, -1), world, depth + 1) }
         }
 
-        val identity = FloatArray(16) { if (it % 5 == 0) 1f else 0f }
         if (nodes.isEmpty()) meshes.indices.forEach { addMesh(it, identity) }
         else {
             val scenes = json.optJSONArray("scenes").objects()
@@ -497,6 +666,27 @@ object GltfReader {
     }
 
     private fun JSONArray?.objects(): List<JSONObject> = if (this == null) emptyList() else List(length()) { optJSONObject(it) ?: JSONObject() }
+
+    private fun generatedNormals(p: FloatArray, indices: IntArray, mode: Int): FloatArray {
+        val out = FloatArray(p.size)
+        fun face(a: Int, b: Int, c: Int) {
+            if (a !in 0 until p.size / 3 || b !in 0 until p.size / 3 || c !in 0 until p.size / 3) return
+            val ax = p[b*3]-p[a*3]; val ay = p[b*3+1]-p[a*3+1]; val az = p[b*3+2]-p[a*3+2]
+            val bx = p[c*3]-p[a*3]; val by = p[c*3+1]-p[a*3+1]; val bz = p[c*3+2]-p[a*3+2]
+            val n = floatArrayOf(ay*bz-az*by, az*bx-ax*bz, ax*by-ay*bx)
+            for (v in intArrayOf(a,b,c)) repeat(3) { out[v*3+it] += n[it] }
+        }
+        when (mode) {
+            4 -> for (k in 0 until indices.size-2 step 3) face(indices[k],indices[k+1],indices[k+2])
+            5 -> for (k in 0 until indices.size-2) if (k%2 == 0) face(indices[k],indices[k+1],indices[k+2]) else face(indices[k+1],indices[k],indices[k+2])
+            else -> for (k in 1 until indices.size-1) face(indices[0],indices[k],indices[k+1])
+        }
+        for (v in 0 until p.size/3) {
+            val length = sqrt(out[v*3]*out[v*3]+out[v*3+1]*out[v*3+1]+out[v*3+2]*out[v*3+2])
+            if (length > 0f) repeat(3) { out[v*3+it] /= length } else out[v*3+2] = 1f
+        }
+        return out
+    }
 
     private fun le(b: ByteArray, at: Int) = (b[at].toInt() and 0xff) or ((b[at + 1].toInt() and 0xff) shl 8) or
         ((b[at + 2].toInt() and 0xff) shl 16) or ((b[at + 3].toInt() and 0xff) shl 24)
@@ -550,6 +740,9 @@ object GltfReader {
 
 fun decimated(mesh: Mesh, budget: Int): Mesh {
     if (mesh.triangleCount <= budget) return mesh
+    // Do not merge vertices with different skin weights into an unanimated mesh.
+    // Retain a uniformly distributed set of original faces and all their attributes.
+    if (mesh.rig != null) return reducedRig(mesh, budget.coerceAtLeast(1))
     var best: Mesh? = null
     var low = 0
     var high = 4097
@@ -567,6 +760,25 @@ fun decimated(mesh: Mesh, budget: Int): Mesh {
         cells = if (guess in low + 1 until high) guess else (low + high) / 2
     }
     return best ?: clustered(mesh, 4)
+}
+
+private fun reducedRig(mesh: Mesh, budget: Int): Mesh {
+    val remap = IntArray(mesh.vertexCount) { -1 }
+    val keep = ArrayList<Int>()
+    val slots = IntArray(budget)
+    val faces = IntArray(budget * 3)
+    repeat(budget) { t ->
+        val source = (t.toLong() * mesh.triangleCount / budget).toInt()
+        slots[t] = mesh.slots[source]
+        repeat(3) { k ->
+            val v = mesh.triangles[source*3+k]
+            if (remap[v] < 0) { remap[v] = keep.size; keep.add(v) }
+            faces[t*3+k] = remap[v]
+        }
+    }
+    fun floats(values: FloatArray, size: Int) = FloatArray(keep.size*size) { values[keep[it/size]*size+it%size] }
+    return Mesh(floats(mesh.positions,3),floats(mesh.normals,3),floats(mesh.uvs,2),IntArray(keep.size) { mesh.colors[keep[it]] },
+        faces,slots,mesh.textures,mesh.twoSided,mesh.rig!!.subset(keep.toIntArray()))
 }
 
 private const val UV_CELLS = 512

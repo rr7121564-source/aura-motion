@@ -6920,6 +6920,114 @@
           "label": "Peso scala"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animatore di personaggi",
+      "description": "Trasforma caratteri, parole o linee senza dividere il testo in livelli. Seleziona Tutto o un intervallo numerato (a partire da 1). Posizione, scala X/Y indipendente, rotazione, perno, opacità, tinta e trasformazioni progressive supportano i fotogrammi chiave. Effetti stack per l'animazione indipendente dei singoli personaggi.",
+      "params": {
+        "unit": {
+          "label": "Basato su",
+          "section": "Selezione",
+          "options": [
+            "Carattere",
+            "Parola",
+            "Linea"
+          ]
+        },
+        "selection": {
+          "label": "Candidati a",
+          "section": "Selezione",
+          "options": [
+            "Tutti",
+            "Portata"
+          ]
+        },
+        "first": {
+          "label": "Primo",
+          "section": "Selezione"
+        },
+        "last": {
+          "label": "Ultimo",
+          "section": "Selezione"
+        },
+        "position": {
+          "label": "Posizione",
+          "section": "Trasforma"
+        },
+        "scaleXY": {
+          "label": "Scala",
+          "section": "Trasforma"
+        },
+        "rotation": {
+          "label": "Rotazione",
+          "section": "Trasforma"
+        },
+        "pivot": {
+          "label": "Perno",
+          "section": "Trasforma"
+        },
+        "anchor": {
+          "label": "Ancora",
+          "section": "Trasforma",
+          "options": [
+            "Componente",
+            "Livello"
+          ]
+        },
+        "opacity": {
+          "label": "Opacità",
+          "section": "Trasforma"
+        },
+        "tint": {
+          "label": "Tinta",
+          "section": "Trasforma"
+        },
+        "positionStep": {
+          "label": "Posizione per personaggio",
+          "section": "Progressivo"
+        },
+        "rotationStep": {
+          "label": "Rotazione per personaggio",
+          "section": "Progressivo"
+        }
+      },
+      "presets": {
+        "one-letter": "Una lettera",
+        "cascade": "Cascata"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Spaziatura testo più",
+      "description": "Anima caratteri extra, parole e interlinea direttamente sul testo vettoriale. Continua a combinare insieme i segni e rispetta l'ordine visivo da destra a sinistra. L'ancoraggio mantiene fisso il bordo sinistro, centrale o destro; L'allineamento del testo segue il livello del testo.",
+      "params": {
+        "letter": {
+          "label": "Spaziatura caratteri",
+          "section": "Distanziamento"
+        },
+        "word": {
+          "label": "Spaziatura delle parole",
+          "section": "Distanziamento"
+        },
+        "line": {
+          "label": "Interlinea",
+          "section": "Distanziamento"
+        },
+        "anchor": {
+          "label": "Ancora",
+          "section": "Distanziamento",
+          "options": [
+            "Sinistra",
+            "Centro",
+            "Giusto",
+            "Allineamento del testo"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Espanso",
+        "tight": "Stretto",
+        "wide-words": "Parole larghe"
+      }
     }
   }
 }

@@ -10,6 +10,7 @@
 #include "effects.h"
 #include "interpolation.h"
 #include "scene.h"
+#include "model_rig.h"
 #include "easing.h"
 #include "textanim.h"
 #include "gpu.h"
@@ -376,7 +377,7 @@ JNIEXPORT jboolean JNICALL JNI(setPixels)(JNIEnv* e, jobject, jlong h, jstring u
     return true;
 }
 JNIEXPORT jboolean JNICALL JNI(setModel)(JNIEnv* e, jobject, jstring uri, jfloatArray positions, jfloatArray normals,
-                                       jfloatArray uvs, jintArray colors, jintArray triangles, jintArray slots, jboolean twoSided) {
+                                       jfloatArray uvs, jintArray colors, jintArray triangles, jintArray slots, jboolean twoSided, jbyteArray rigBytes) {
     const auto key = str(e, uri);
     if (!positions) { am::SetModel(key, nullptr); return true; }
     if (!normals || !uvs || !colors || !triangles || !slots) return false;
@@ -399,6 +400,13 @@ JNIEXPORT jboolean JNICALL JNI(setModel)(JNIEnv* e, jobject, jstring uri, jfloat
     model->triangles = ints(triangles);
     model->slots = ints(slots);
     model->twoSided = twoSided;
+    if(rigBytes) {
+        const auto length=e->GetArrayLength(rigBytes);
+        if(length<=0 || length>128*1024*1024) return false;
+        std::vector<uint8_t> packed(size_t(length),0);
+        e->GetByteArrayRegion(rigBytes,0,length,reinterpret_cast<jbyte*>(packed.data()));
+        if(e->ExceptionCheck() || !(model->rig=am::ReadModelRig(packed,model->positions.size()/3))) return false;
+    }
     const size_t count = model->positions.size() / 3;
     const bool ok = model->positions.size() == count * 3 && model->normals.size() == count * 3 && model->uvs.size() == count * 2 &&
         model->colors.size() == count && model->triangles.size() % 3 == 0 && model->slots.size() == model->triangles.size() / 3 &&
@@ -425,6 +433,12 @@ JNIEXPORT jfloatArray JNICALL JNI(layerMatrix)(JNIEnv* e, jobject, jlong h, jlon
     am::WorldMatrix(d->scene, *layer, t).get9(m);
     am::PlaneMatrix(d->scene.layers, *layer, d->scene.width, d->scene.height, t, d->scene.depthOrder).get9(m + 9);
     return floats(e, m, 18);
+}
+JNIEXPORT jfloatArray JNICALL JNI(modelPose)(JNIEnv* e,jobject,jlong h,jlong id,jdouble t,jboolean joints) {
+    Desktop* d=ptr(h);const am::SceneScope scope(d->scene);const auto* layer=d->scene.layer(id);
+    if(!layer) return nullptr;
+    const auto values=am::ModelPoseNumbers(*layer,t,joints);
+    return values.empty()?nullptr:floats(e,values.data(),values.size());
 }
 JNIEXPORT jfloatArray JNICALL JNI(layerBounds)(JNIEnv* e, jobject, jlong h, jlong id, jdouble t) {
     Desktop* d = ptr(h);

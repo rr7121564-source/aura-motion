@@ -44815,6 +44815,114 @@
           "label": "Wajaran Skala"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animator Watak",
+      "description": "Ubah aksara, perkataan atau baris tanpa membelah teks kepada lapisan. Pilih Semua atau julat bernombor (bermula pada 1). Kedudukan, skala X/Y bebas, putaran, pangsi, kelegapan, warna dan transformasi progresif menyokong bingkai utama. Kesan tindanan untuk animasi bebas bagi watak individu.",
+      "params": {
+        "unit": {
+          "label": "Berdasarkan",
+          "section": "Pemilihan",
+          "options": [
+            "Perwatakan",
+            "Perkataan",
+            "Talian"
+          ]
+        },
+        "selection": {
+          "label": "Mohon Kepada",
+          "section": "Pemilihan",
+          "options": [
+            "Semua",
+            "Julat"
+          ]
+        },
+        "first": {
+          "label": "Pertama",
+          "section": "Pemilihan"
+        },
+        "last": {
+          "label": "Terakhir",
+          "section": "Pemilihan"
+        },
+        "position": {
+          "label": "Kedudukan",
+          "section": "Berubah"
+        },
+        "scaleXY": {
+          "label": "Skala",
+          "section": "Berubah"
+        },
+        "rotation": {
+          "label": "Putaran",
+          "section": "Berubah"
+        },
+        "pivot": {
+          "label": "Pivot",
+          "section": "Berubah"
+        },
+        "anchor": {
+          "label": "Sauh",
+          "section": "Berubah",
+          "options": [
+            "Komponen",
+            "Lapisan"
+          ]
+        },
+        "opacity": {
+          "label": "Kelegapan",
+          "section": "Berubah"
+        },
+        "tint": {
+          "label": "Tint",
+          "section": "Berubah"
+        },
+        "positionStep": {
+          "label": "Kedudukan setiap Aksara",
+          "section": "Progresif"
+        },
+        "rotationStep": {
+          "label": "Putaran setiap Aksara",
+          "section": "Progresif"
+        }
+      },
+      "presets": {
+        "one-letter": "Satu Huruf",
+        "cascade": "Lata"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Teks Spacing Plus",
+      "description": "Animasikan aksara tambahan, perkataan dan jarak baris terus pada teks vektor. Terus menggabungkan tanda bersama-sama dan menghormati susunan visual kanan-ke-kiri. Penambat mengekalkan tepi kiri, tengah atau kanan tetap; Penjajaran Teks mengikut lapisan teks.",
+      "params": {
+        "letter": {
+          "label": "Jarak Aksara",
+          "section": "Jarak"
+        },
+        "word": {
+          "label": "Jarak Perkataan",
+          "section": "Jarak"
+        },
+        "line": {
+          "label": "Jarak Talian",
+          "section": "Jarak"
+        },
+        "anchor": {
+          "label": "Sauh",
+          "section": "Jarak",
+          "options": [
+            "Kiri",
+            "Tengah",
+            "Betul",
+            "Penjajaran Teks"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Dikembangkan",
+        "tight": "Ketat",
+        "wide-words": "Perkataan Luas"
+      }
     }
   }
 }

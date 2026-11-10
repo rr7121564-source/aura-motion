@@ -6920,6 +6920,114 @@
           "label": "スケールの割合"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "キャラクターアニメーター",
+      "description": "テキストをレイヤーに分割せずに、文字、単語、または行を変形します。 [すべて] または番号付き範囲 (1 から始まる) を選択します。位置、独立した X/Y スケール、回転、ピボット、不透明度、色合い、プログレッシブ変換はキーフレームをサポートします。個々のキャラクターの独立したアニメーションのためのスタック効果。",
+      "params": {
+        "unit": {
+          "label": "に基づく",
+          "section": "選択",
+          "options": [
+            "キャラクター",
+            "言葉",
+            "ライン"
+          ]
+        },
+        "selection": {
+          "label": "お申し込み先",
+          "section": "選択",
+          "options": [
+            "すべて",
+            "範囲"
+          ]
+        },
+        "first": {
+          "label": "最初",
+          "section": "選択"
+        },
+        "last": {
+          "label": "最後",
+          "section": "選択"
+        },
+        "position": {
+          "label": "ポジション",
+          "section": "変身"
+        },
+        "scaleXY": {
+          "label": "スケール",
+          "section": "変身"
+        },
+        "rotation": {
+          "label": "回転",
+          "section": "変身"
+        },
+        "pivot": {
+          "label": "ピボット",
+          "section": "変身"
+        },
+        "anchor": {
+          "label": "アンカー",
+          "section": "変身",
+          "options": [
+            "コンポーネント",
+            "レイヤー"
+          ]
+        },
+        "opacity": {
+          "label": "不透明度",
+          "section": "変身"
+        },
+        "tint": {
+          "label": "ティント",
+          "section": "変身"
+        },
+        "positionStep": {
+          "label": "キャラクターごとの位置",
+          "section": "プログレッシブ"
+        },
+        "rotationStep": {
+          "label": "文字ごとの回転",
+          "section": "プログレッシブ"
+        }
+      },
+      "presets": {
+        "one-letter": "一通の手紙",
+        "cascade": "カスケード"
+      }
+    },
+    "true-text-spacing": {
+      "name": "テキスト間隔プラス",
+      "description": "ベクター テキスト上で余分な文字、単語、行間隔を直接アニメーション化します。マークを結合し続け、視覚的な右から左の順序を尊重します。アンカーは左端、中央端、または右端を固定したままにします。テキストの配置はテキストレイヤーに従います。",
+      "params": {
+        "letter": {
+          "label": "文字間隔",
+          "section": "間隔"
+        },
+        "word": {
+          "label": "単語の間隔",
+          "section": "間隔"
+        },
+        "line": {
+          "label": "行間隔",
+          "section": "間隔"
+        },
+        "anchor": {
+          "label": "アンカー",
+          "section": "間隔",
+          "options": [
+            "左",
+            "センター",
+            "そう",
+            "テキストの配置"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "拡大",
+        "tight": "きつい",
+        "wide-words": "幅広い言葉"
+      }
     }
   }
 }

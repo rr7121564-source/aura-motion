@@ -6920,6 +6920,114 @@
           "label": "Waga skali"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Animator postaci",
+      "description": "Przekształcaj znaki, słowa lub linie bez dzielenia tekstu na warstwy. Wybierz opcję Wszystko lub zakres numerowany (zaczynając od 1). Pozycja, niezależna skala X/Y, obrót, obrót, krycie, odcień i transformacje progresywne obsługują klatki kluczowe. Efekty stosu dla niezależnej animacji poszczególnych postaci.",
+      "params": {
+        "unit": {
+          "label": "Na podstawie",
+          "section": "Wybór",
+          "options": [
+            "Charakter",
+            "Słowo\nLinia",
+            ""
+          ]
+        },
+        "selection": {
+          "label": "Zastosuj do",
+          "section": "Wybór",
+          "options": [
+            "Wszystkie\nZasięg",
+            ""
+          ]
+        },
+        "first": {
+          "label": "Najpierw",
+          "section": "Wybór"
+        },
+        "last": {
+          "label": "Ostatni",
+          "section": "Wybór"
+        },
+        "position": {
+          "label": "Pozycja",
+          "section": "Transformacja"
+        },
+        "scaleXY": {
+          "label": "Skala",
+          "section": "Transformacja"
+        },
+        "rotation": {
+          "label": "Rotacja",
+          "section": "Transformacja"
+        },
+        "pivot": {
+          "label": "Obrót",
+          "section": "Transformacja"
+        },
+        "anchor": {
+          "label": "Kotwica",
+          "section": "Transformacja",
+          "options": [
+            "Komponent",
+            "Warstwa"
+          ]
+        },
+        "opacity": {
+          "label": "Nieprzezroczystość",
+          "section": "Transformacja"
+        },
+        "tint": {
+          "label": "Odcień",
+          "section": "Transformacja"
+        },
+        "positionStep": {
+          "label": "Pozycja na postać",
+          "section": "Progresywny"
+        },
+        "rotationStep": {
+          "label": "Rotacja na postać",
+          "section": "Progresywny"
+        }
+      },
+      "presets": {
+        "one-letter": "Jeden list",
+        "cascade": "Kaskada"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Plus odstępy między tekstami",
+      "description": "Animuj dodatkowe znaki, wyrazy i odstępy między wierszami bezpośrednio w tekście wektorowym. Łączy ze sobą znaki i przestrzega wizualnej kolejności od prawej do lewej. Kotwica utrzymuje lewą, środkową lub prawą krawędź nieruchomą; Wyrównanie tekstu następuje po warstwie tekstowej.",
+      "params": {
+        "letter": {
+          "label": "Odstępy między znakami",
+          "section": "Odstęp"
+        },
+        "word": {
+          "label": "Odstępy między wyrazami",
+          "section": "Odstęp"
+        },
+        "line": {
+          "label": "Odstępy między wierszami",
+          "section": "Odstęp"
+        },
+        "anchor": {
+          "label": "Kotwica",
+          "section": "Odstęp",
+          "options": [
+            "W lewo",
+            "Centrum",
+            "Jasne",
+            "Wyrównanie tekstu"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Rozszerzony",
+        "tight": "Ciasno",
+        "wide-words": "Szerokie słowa"
+      }
     }
   }
 }

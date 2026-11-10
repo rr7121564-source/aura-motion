@@ -45563,6 +45563,114 @@
           "label": "缩放权重"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "字符动画器",
+      "description": "无需将文字拆成图层即可变换字符、单词和行。选择全部或从1开始的编号范围。位置、独立X/Y缩放、旋转、锚点、不透明度、色调及递进变换均支持关键帧。叠加多个效果可分别制作各字符的动画。",
+      "params": {
+        "unit": {
+          "label": "基于",
+          "section": "选择",
+          "options": [
+            "字符",
+            "单词",
+            "行"
+          ]
+        },
+        "selection": {
+          "label": "应用于",
+          "section": "选择",
+          "options": [
+            "全部",
+            "范围"
+          ]
+        },
+        "first": {
+          "label": "起始",
+          "section": "选择"
+        },
+        "last": {
+          "label": "结束",
+          "section": "选择"
+        },
+        "position": {
+          "label": "位置",
+          "section": "变换"
+        },
+        "scaleXY": {
+          "label": "缩放",
+          "section": "变换"
+        },
+        "rotation": {
+          "label": "旋转",
+          "section": "变换"
+        },
+        "pivot": {
+          "label": "锚点XY",
+          "section": "变换"
+        },
+        "anchor": {
+          "label": "锚点",
+          "section": "变换",
+          "options": [
+            "组件",
+            "图层"
+          ]
+        },
+        "opacity": {
+          "label": "不透明度",
+          "section": "变换"
+        },
+        "tint": {
+          "label": "色调",
+          "section": "变换"
+        },
+        "positionStep": {
+          "label": "逐字符位置",
+          "section": "递进"
+        },
+        "rotationStep": {
+          "label": "逐字符旋转",
+          "section": "递进"
+        }
+      },
+      "presets": {
+        "one-letter": "单个字符",
+        "cascade": "级联"
+      }
+    },
+    "true-text-spacing": {
+      "name": "文字间距增强",
+      "description": "直接在矢量文字上为字符、单词及行添加可动画的间距。保留组合字符并支持从右到左的视觉顺序。锚点保持左边缘、中心或右边缘固定；跟随文字将使用图层的对齐方式。",
+      "params": {
+        "letter": {
+          "label": "字符间距",
+          "section": "间距"
+        },
+        "word": {
+          "label": "单词间距",
+          "section": "间距"
+        },
+        "line": {
+          "label": "行间距",
+          "section": "间距"
+        },
+        "anchor": {
+          "label": "锚点",
+          "section": "间距",
+          "options": [
+            "左",
+            "中",
+            "右",
+            "跟随文字"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "加宽",
+        "tight": "紧凑",
+        "wide-words": "单词加宽"
+      }
     }
   }
 }

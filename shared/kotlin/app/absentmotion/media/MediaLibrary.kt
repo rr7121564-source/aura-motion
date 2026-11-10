@@ -49,6 +49,7 @@ class MediaLibrary(context: Context, private val engine: EngineThread) {
             withContext(NonCancellable) {
                 engine.setModel(uri, null, List(models.getValue(uri).third) { null })
                 models.remove(uri)
+                ModelRigs.set(uri, null)
             }
         }
         prepareLocked(scene)
@@ -75,7 +76,10 @@ class MediaLibrary(context: Context, private val engine: EngineThread) {
             val (mesh, textures) = withContext(Dispatchers.IO) { loadModel(resolver, uri, limit, budget) } ?: continue
             withContext(NonCancellable) {
                 try {
-                    if (engine.setModel(uri, mesh, textures)) models[uri] = Triple(version, generation to budget, textures.size)
+                    if (engine.setModel(uri, mesh, textures)) {
+                        models[uri] = Triple(version, generation to budget, textures.size)
+                        ModelRigs.set(uri, mesh.rig)
+                    }
                 } finally { textures.forEach { it?.recycle() } }
             }
         }

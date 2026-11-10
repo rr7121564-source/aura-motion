@@ -44815,6 +44815,114 @@
           "label": "Trọng số tỷ lệ"
         }
       }
+    },
+    "true-text-animator": {
+      "name": "Công cụ tạo hoạt hình nhân vật",
+      "description": "Chuyển đổi ký tự, từ hoặc dòng mà không chia văn bản thành các lớp. Chọn Tất cả hoặc một phạm vi được đánh số (bắt đầu từ 1). Vị trí, tỷ lệ X/Y độc lập, xoay, trục, độ mờ, tông màu và các phép biến đổi lũy tiến hỗ trợ các khung hình chính. Hiệu ứng ngăn xếp cho hoạt ảnh độc lập của từng nhân vật.",
+      "params": {
+        "unit": {
+          "label": "Dựa trên",
+          "section": "Lựa chọn",
+          "options": [
+            "Nhân vật",
+            "Từ",
+            "Dòng"
+          ]
+        },
+        "selection": {
+          "label": "Đăng ký",
+          "section": "Lựa chọn",
+          "options": [
+            "Tất cả",
+            "Phạm vi"
+          ]
+        },
+        "first": {
+          "label": "Đầu tiên",
+          "section": "Lựa chọn"
+        },
+        "last": {
+          "label": "Cuối cùng",
+          "section": "Lựa chọn"
+        },
+        "position": {
+          "label": "Chức vụ",
+          "section": "Biến đổi"
+        },
+        "scaleXY": {
+          "label": "Tỷ lệ",
+          "section": "Biến đổi"
+        },
+        "rotation": {
+          "label": "Xoay",
+          "section": "Biến đổi"
+        },
+        "pivot": {
+          "label": "Xoay vòng",
+          "section": "Biến đổi"
+        },
+        "anchor": {
+          "label": "Mỏ neo",
+          "section": "Biến đổi",
+          "options": [
+            "Thành phần",
+            "Lớp"
+          ]
+        },
+        "opacity": {
+          "label": "Độ mờ",
+          "section": "Biến đổi"
+        },
+        "tint": {
+          "label": "Pha màu",
+          "section": "Biến đổi"
+        },
+        "positionStep": {
+          "label": "Vị trí mỗi nhân vật",
+          "section": "Tiến bộ"
+        },
+        "rotationStep": {
+          "label": "Xoay mỗi ký tự",
+          "section": "Tiến bộ"
+        }
+      },
+      "presets": {
+        "one-letter": "Một lá thư",
+        "cascade": "Thác nước"
+      }
+    },
+    "true-text-spacing": {
+      "name": "Khoảng cách văn bản Plus",
+      "description": "Tạo hiệu ứng thêm ký tự, khoảng cách từ và dòng trực tiếp trên văn bản vector. Tiếp tục kết hợp các nhãn hiệu với nhau và tôn trọng thứ tự từ phải sang trái trực quan. Mỏ neo giữ cố định cạnh trái, giữa hoặc phải; Căn chỉnh văn bản theo lớp văn bản.",
+      "params": {
+        "letter": {
+          "label": "Khoảng cách ký tự",
+          "section": "Khoảng cách"
+        },
+        "word": {
+          "label": "Khoảng cách giữa các từ",
+          "section": "Khoảng cách"
+        },
+        "line": {
+          "label": "Giãn cách dòng",
+          "section": "Khoảng cách"
+        },
+        "anchor": {
+          "label": "Mỏ neo",
+          "section": "Khoảng cách",
+          "options": [
+            "Còn lại",
+            "Trung tâm",
+            "Đúng rồi",
+            "Căn chỉnh văn bản"
+          ]
+        }
+      },
+      "presets": {
+        "expanded": "Mở rộng",
+        "tight": "Chặt chẽ",
+        "wide-words": "Từ rộng"
+      }
     }
   }
 }
