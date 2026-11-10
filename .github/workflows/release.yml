@@ -112,13 +112,13 @@ jobs:
           from pathlib import Path
           out = Path('build/release/validated')
           out.mkdir(parents=True, exist_ok=True)
-          built = Path('app/build/outputs/apk/compat/debug/app-compat-debug.apk')
+          built = Path('android/build/outputs/apk/compat/debug/app-compat-debug.apk')
           unsigned = out / 'ci-unsigned.apk'
           with zipfile.ZipFile(built) as src, zipfile.ZipFile(unsigned, 'w') as dst:
               for member in src.infolist():
                   if not re.fullmatch(r'META-INF/(?:MANIFEST\.MF|[^/]+\.(?:SF|RSA|DSA|EC))', member.filename, re.I):
                       dst.writestr(member, src.read(member))
-          reports = list(Path('app/build/test-results/testCompatDebugUnitTest').glob('TEST-*.xml'))
+          reports = list(Path('android/build/test-results/testCompatDebugUnitTest').glob('TEST-*.xml'))
           assert reports
           totals = {key: sum(int(ET.parse(p).getroot().get(key, '0')) for p in reports) for key in ('tests', 'failures', 'errors', 'skipped')}
           assert totals['tests'] > 0 and totals['failures'] == totals['errors'] == 0
@@ -151,10 +151,10 @@ jobs:
           assert metadata['source_commit'] == os.environ['SOURCE_COMMIT'] and metadata['run_id'] == os.environ['VALIDATED_RUN'] and metadata['prepare_only'] is True
           assert metadata['tests']['tests'] > 0 and metadata['tests']['failures'] == metadata['tests']['errors'] == 0
           assert hashlib.file_digest((source / 'ci-unsigned.apk').open('rb'), 'sha256').hexdigest() == metadata['sha256']
-          apk = Path('app/build/outputs/apk/compat/debug/app-compat-debug.apk')
+          apk = Path('android/build/outputs/apk/compat/debug/app-compat-debug.apk')
           apk.parent.mkdir(parents=True, exist_ok=True)
           shutil.copyfile(source / 'ci-unsigned.apk', apk)
-          reports = Path('app/build/test-results/testCompatDebugUnitTest')
+          reports = Path('android/build/test-results/testCompatDebugUnitTest')
           reports.mkdir(parents=True, exist_ok=True)
           for report in source.glob('TEST-*.xml'):
               shutil.copyfile(report, reports / report.name)
@@ -163,7 +163,7 @@ jobs:
         if: ${{ !inputs.prepare_only }}
         run: |
           mkdir -p build/release
-          built=app/build/outputs/apk/compat/debug/app-compat-debug.apk
+          built=android/build/outputs/apk/compat/debug/app-compat-debug.apk
           if [[ -n "$PREPARED_COMMIT" ]]; then
             git fetch --no-tags origin "$PREPARED_COMMIT"
             git show "$PREPARED_COMMIT:release.apk" > build/release/prepared.apk
@@ -194,7 +194,7 @@ jobs:
           import hashlib, json, os
           import xml.etree.ElementTree as ET
           from pathlib import Path
-          reports = list(Path('app/build/test-results/testCompatDebugUnitTest').glob('TEST-*.xml'))
+          reports = list(Path('android/build/test-results/testCompatDebugUnitTest').glob('TEST-*.xml'))
           assert reports, 'Missing test reports'
           totals = {key: 0 for key in ('tests', 'failures', 'errors', 'skipped')}
           for report in reports:
@@ -256,5 +256,5 @@ jobs:
           name: TrueMotion-release-${{ inputs.tag }}
           path: |
             build/release/
-            app/build/reports/tests/testCompatDebugUnitTest/
+            android/build/reports/tests/testCompatDebugUnitTest/
           if-no-files-found: warn

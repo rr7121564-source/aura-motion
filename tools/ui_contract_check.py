@@ -11,15 +11,30 @@ if len(sys.argv) > 2 and sys.argv[1] == '--revision':
     REVISION = sys.argv[2]
     del sys.argv[1:3]
 
+LEGACY = (('shared/kotlin/', 'app/src/main/kotlin/'), ('shared/kotlin/', 'app/src/main/java/'), ('android/src/main/kotlin/', 'app/src/main/kotlin/'), ('android/src/main/java/', 'app/src/main/java/'), ('shared/res/', 'app/src/main/res/'), ('shared/cpp/', 'app/src/main/cpp/'), ('shared/assets/', 'app/src/main/assets/'), ('android/src/', 'app/src/'))
+
+
+def read(path):
+    if not REVISION:
+        return (ROOT / path).read_text()
+    for new, old in ((path, path),) + LEGACY:
+        if path.startswith(new):
+            result = subprocess.run(['git', 'show', REVISION + ':' + old + path[len(new):]], cwd=ROOT, text=True, capture_output=True)
+            if result.returncode == 0:
+                return result.stdout
+    raise FileNotFoundError(path)
+
+
+def kotlin_path(relative):
+    android = 'android/src/main/kotlin/app/absentmotion/' + relative
+    return android if (ROOT / android).exists() else 'shared/kotlin/app/absentmotion/' + relative
+
+
 def source(relative):
-    path = 'app/src/main/kotlin/app/absentmotion/' + relative
-    if REVISION:
-        return subprocess.check_output(['git', 'show', REVISION + ':' + path], cwd=ROOT, text=True)
-    return (ROOT / path).read_text()
+    return read(kotlin_path(relative))
 
 def english(key):
-    path = 'app/src/main/res/values/strings.xml'
-    text = subprocess.check_output(['git', 'show', REVISION + ':' + path], cwd=ROOT, text=True) if REVISION else (ROOT / path).read_text()
+    text = read('shared/res/values/strings.xml')
     return re.search(r'<string name="' + key + r'"[^>]*>(.*?)</string>', text, re.S).group(1)
 
 class UiContracts(unittest.TestCase):
@@ -29,7 +44,7 @@ class UiContracts(unittest.TestCase):
         self.assertIn('Lifecycle.Event.ON_RESUME', text)
 
     def test_export_probes_missing_media_inside_the_export_job_on_io(self):
-        before, job = source('ui/export/ExportScreen.kt').split('val job = scope.launch {', 1)
+        before, job = source('ui/export/ExportScreen.kt').split('val job = app.absentmotion.platform.exportScope(scope).launch {', 1)
         self.assertNotIn('openAssetFileDescriptor', before)
         self.assertIn('val missing = withContext(Dispatchers.IO) {', job)
         self.assertIn('AudioClip.of(scene).isNotEmpty()', before)
@@ -48,7 +63,7 @@ class UiContracts(unittest.TestCase):
         self.assertEqual(2, text.count('dirty = true'))
 
     def test_player_is_owned_before_data_source_can_throw(self):
-        text = source('ui/editor/AudioTab.kt').split('private class SoundPreview', 1)[1]
+        text = source('ui/editor/AudioTab.kt').split('class SoundPreview', 1)[1]
         self.assertIn('player = nextPlayer', text)
         self.assertLess(text.index('player = nextPlayer'), text.index('setDataSource(context, Uri.parse(next))'))
         self.assertIn('catch (_: Exception) { stop() }', text)
@@ -113,7 +128,7 @@ class UiContracts(unittest.TestCase):
 
     def test_settings_scroll_to_the_last_control(self):
         text = source('ui/home/SettingsDrawer.kt')
-        self.assertIn('.statusBarsPadding().verticalScroll(rememberScrollState())', text)
+        self.assertIn('.windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.captionBar)).verticalScroll(rememberScrollState())', text)
 
     def test_theme_provider_io_leaves_the_main_thread(self):
         text = source('ui/home/SettingsDrawer.kt')
@@ -155,8 +170,8 @@ class UiContracts(unittest.TestCase):
         self.assertIn('state.playing = false', text)
 
     def test_editor_menus_animate_in_and_out(self):
-        root = ROOT / 'app/src/main/kotlin/app/absentmotion/ui/editor'
-        paths = sorted(str(p.relative_to(ROOT / 'app/src/main/kotlin/app/absentmotion')) for p in root.rglob('*.kt'))
+        root = ROOT / 'shared/kotlin/app/absentmotion/ui/editor'
+        paths = sorted(str(p.relative_to(ROOT / 'shared/kotlin/app/absentmotion')) for p in root.rglob('*.kt'))
         for path in paths:
             self.assertIsNone(re.search(r'if \([^\n]*\) (MenuPopup|ChoiceList|ParentMenu|PasteStyleMenu|OverflowMenu)\(', source(path)), path)
         self.assertIn('Modifier.presence(scaleFrom = 0.92f', source('ui/editor/StructureUi.kt').split('internal fun ChoiceList', 1)[1])
@@ -165,9 +180,9 @@ class UiContracts(unittest.TestCase):
             self.assertIn('Presence(state.previewPanelOpen) { PreviewModePanel(', source(path))
 
     def test_every_editor_haptic_respects_the_vibration_setting(self):
-        root = ROOT / 'app/src/main/kotlin/app/absentmotion/ui/editor'
+        root = ROOT / 'shared/kotlin/app/absentmotion/ui/editor'
         for p in sorted(root.rglob('*.kt')):
-            path = str(p.relative_to(ROOT / 'app/src/main/kotlin/app/absentmotion'))
+            path = str(p.relative_to(ROOT / 'shared/kotlin/app/absentmotion'))
             for line in source(path).splitlines():
                 if 'performHapticFeedback(' in line:
                     self.assertTrue('state.settings.vibration' in line or 'if (vibrate)' in line, path)
@@ -180,7 +195,9 @@ class UiContracts(unittest.TestCase):
         self.assertIn('listOf(PanelIcons.TabMove, PanelIcons.TabRotate, PanelIcons.TabSize, PanelIcons.TabTilt, PanelIcons.TabSkew, PanelIcons.TabPivot)', text)
         self.assertIn('KeyTarget(PropRef.Location, "0.000000,0.000000,0.000000"),\n    KeyTarget(PropRef.Rotation, "0.000000"),\n    KeyTarget(PropRef.Scale, "1.000000,1.000000"),\n    KeyTarget(PropRef.Tilt, "0.000000,0.000000"),', text)
         self.assertIn('KeyTarget(PropRef.Pivot, "0.000000,0.000000,0.000000"),', text)
-        self.assertIn('1 -> l.withRotation(0f)\n                2 -> if (l.kind == "camera") l.withCameraFov(60f) else l.withTransform("scale", 1f, 1f)\n                3 -> l.withTilt(0f, 0f)', source('editor/EditorActions.kt'))
+        reset = source('editor/EditorActions.kt').split('internal fun Scene.resetTransform', 1)[1].split('\nfun EditorState.toggleKeyframe', 1)[0]
+        for tab, ref in [(1, 'PropRef.Rotation'), (2, 'PropRef.Scale'), (3, 'PropRef.Tilt')]:
+            self.assertTrue(any(line.strip().startswith(f'{tab} -> ') and f'resetValue({ref}' in line for line in reset.splitlines()))
         self.assertIn('val usable = i <= SIZE_TAB || selected.kind != "camera"', text)
         self.assertIn('PanelIcon(icon, tint, size = 17.dp)\n                            Text(\n                                stringResource(names[i])', text)
         self.assertIn('2 -> if (layer.kind == "camera") CameraSizeTab(state, layer) else SizeTab(state, layer)', source('ui/editor/panels/MoveTransformPanel.kt'))
@@ -218,7 +235,7 @@ class UiContracts(unittest.TestCase):
         text = source('ui/editor/Preview.kt')
         guard = 'handleScale(handle, startQuad, pivot, position + handleGrab, startLayer.scale, 8.dp.toPx()) ?: continue'
         self.assertIn(guard, text)
-        self.assertLess(text.index(guard), text.index('state.editSelected(key = "preview-handle")'))
+        self.assertLess(text.index(guard), text.index('state.editSelected(key = "preview-handle") { it.withTransform("scale"'))
         self.assertIn('if (grabbed.getDistance() < reach) return null', text)
         self.assertIn('if (abs(along) < reach) return null', text)
 
@@ -262,11 +279,11 @@ class UiContracts(unittest.TestCase):
 
     def test_trim_limit_turns_the_grip_red_and_ticks_once_when_allowed(self):
         text = source('ui/editor/Timeline.kt')
-        self.assertIn('val hit = if (start) trimmed.startTime > time else trimmed.endTime < time', text)
-        self.assertIn('if (hit && limitEdge == null) onTick()', text)
+        self.assertIn('return EdgeTrim(trimmed, edge, time, if (start) trimmed.startTime > time else trimmed.endTime < time)', text)
+        self.assertIn('if (hits.isNotEmpty() && limits.isEmpty()) onTick()', text)
         self.assertIn('v.onTick = { if (state.settings.vibration) haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick) }', text)
         self.assertIn('drawPath(outline, if (limit) LimitColor else GripColor, alpha = appear)', text)
-        self.assertIn('limitEdge = null', text.split('fun endDrag(', 1)[1].split('\n    }\n', 1)[0])
+        self.assertIn('limits = emptyMap()', text.split('fun endDrag(', 1)[1].split('\n    }\n', 1)[0])
         self.assertIn('if (shown != null && shown != snapAt) onTick()', text)
         self.assertIn('if (rows > selectRows) onTick()', text)
         self.assertEqual(1, text.count('performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)'))

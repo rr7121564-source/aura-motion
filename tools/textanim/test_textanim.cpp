@@ -1,6 +1,7 @@
 #include "frames.h"
 #include "textanim.h"
 
+#include <clocale>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -121,6 +122,9 @@ int main() {
         check(CountNumbers("no numbers here", 5, 2, -1, 1) == "no numbers here", "text without numbers stays");
         check(CountNumbers("1.23456789", 0, 1, -1, 0) == "1.23456789", "as typed preserves more than six decimals");
         check(CountNumbers("7", 0.6, 1, 0, 0) == "8", "rounds to the decimals asked for");
+        const bool comma = setlocale(LC_ALL, "de_DE.UTF-8") || setlocale(LC_ALL, "fr_FR.UTF-8");
+        check(!comma || CountNumbers("$1,250.50 now", 10, 1, -1, 1) == "$1,260.50 now", "a comma locale set later does not change counted numbers");
+        setlocale(LC_ALL, "C");
         check(CountNumbers(std::string(400, '9'), 0, 0, -1, 0) == "0", "overflowing input multiplied by zero stays numeric");
         check(CountNumbers("١ 100", 5, 1, -1, 0) == "١ 105", "other scripts pass through");
     }
@@ -222,6 +226,46 @@ int main() {
         check(Scramble("ábcd", 0, kFromStart, 1, 0, kCustom, "x", true, 1, 0.25f, 0.75f) == "áxxd", "range counts graphemes instead of bytes");
         check(Scramble("abcd", 0, kFromStart, 1, 0, kCustom, "x", true, 1, 0.5f, 0.5f) == "abcd", "empty randomizer range leaves text alone");
         check(Scramble("é", 0, kFromStart, 1, 0, kCustom, "x", true) == "x", "a cluster scrambles as one character");
+    }
+    {
+        const std::vector<float> at = TypeTimes("Hi, yo", 10, 0.5f);
+        check(at.size() == 6, "one time per character");
+        check(near(at[0], 0) && near(at[1], 0.1f) && near(at[2], 0.2f), "letters type at the speed");
+        check(near(at[3], 0.8f) && near(at[4], 0.8f), "a comma before a space pauses and the space takes no time");
+        check(near(at[5], 0.9f), "typing goes on after the pause");
+        const std::vector<float> wrapped = TypeTimes("Hi,\nyo", 10, 0.5f), spaced = TypeTimes("Hi, yo", 10, 0.5f);
+        check(near(wrapped[5], spaced[5]), "a line break times the same as a space");
+        check(near(TypeTimes("a...b", 10, 1)[4], 0.4f), "dots inside a word do not pause");
+        const std::vector<float> blips = BlipTimes("Hi, yo!", 10, 0, 1);
+        check(blips.size() == 4, "spaces and punctuation stay silent");
+        check(near(blips[2], 0.3f), "blips follow the typed letters");
+        check(BlipTimes("abcdef", 10, 0, 2).size() == 3, "every second letter blips");
+        check(BlipTimes("a\U0001F44D\U0001F3FD", 10, 0, 1).size() == 2, "an emoji blips once");
+    }
+    {
+        const Wiggle a = Shake(1, 3, 7, 0.10f, 10, 1, 30, 4, 0), b = Shake(1, 3, 7, 0.15f, 10, 1, 30, 4, 0), c = Shake(1, 3, 7, 0.25f, 10, 1, 30, 4, 0);
+        check(near(a.x, b.x) && near(a.y, b.y), "jitter holds still within a step");
+        check(!near(a.x, c.x) || !near(a.y, c.y), "jitter jumps on the next step");
+        check(std::fabs(a.x) <= 4 && std::fabs(a.y) <= 4, "jitter stays inside the amount");
+        const Wiggle s0 = Shake(0, 1, 7, 0.0999f, 10, 1, 30, 4, 0), s1 = Shake(0, 1, 7, 0.1001f, 10, 1, 30, 4, 0);
+        check(std::fabs(s0.x - s1.x) < 0.05f, "shake glides without jumps");
+        check(near(Shake(2, 0, 7, 0.25f, 0, 1, 0, 5, 0).y, 5), "wave peaks at a quarter cycle");
+        const Wiggle r = Shake(3, 0, 7, 0, 0, 1, 0, 5, 0);
+        check(near(r.x, 5) && near(r.y, 0), "circle starts on the right");
+        check(near(Shake(4, 0, 7, 0.25f, 0, 1, 0, 0, 20).angle, 20), "wobble turns by the tilt");
+        int picked = 0, kept = 0, moved = 0;
+        for (int i = 0; i < 1000; i++) {
+            const bool now = Picked(i, 7, 0.1f, 0.2f, 0.5f);
+            picked += now;
+            kept += now == Picked(i, 7, 0.4f, 0.2f, 0.5f);
+            moved += now != Picked(i, 7, 0.6f, 0.2f, 0.5f);
+        }
+        check(picked > 150 && picked < 250, "about a fifth of the letters shake");
+        check(kept == 1000, "the same letters keep shaking until the next pick");
+        check(moved > 200, "a new set of letters is picked after the interval");
+        check(Picked(3, 7, 0, 1, 0.5f) && !Picked(3, 7, 0, 0, 0.5f), "all or none at the ends");
+        const Wiggle other = Shake(1, 4, 7, 0.10f, 10, 1, 30, 4, 0);
+        check(!near(a.x, other.x) || !near(a.y, other.y), "letters shake apart from each other");
     }
     if (failures) return 1;
     printf("textanim: all checks passed\n");

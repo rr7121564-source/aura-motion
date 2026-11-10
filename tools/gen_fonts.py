@@ -6,9 +6,9 @@ ROOT = Path(__file__).resolve().parent.parent
 URL = "https://fonts.google.com/metadata/fonts"
 RAW = "https://raw.githubusercontent.com/google/fonts/%s/%s"
 COMMIT = "47d54ca1ebb14fd864695f1d39dc734f39017c33"
-OUT = ROOT / "app/src/main/kotlin/app/absentmotion/fonts/FontCatalog.kt"
+OUT = ROOT / "shared/kotlin/app/absentmotion/fonts/FontCatalog.kt"
 MANIFEST = ROOT / "tools/fonts_manifest.json"
-ASSETS = ROOT / "app/src/main/assets/fonts"
+ASSETS = ROOT / "shared/assets/fonts"
 SOURCES = ROOT / "build/fontsrc"
 NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
 DOWNLOADABLE = 100
@@ -396,7 +396,7 @@ instances, and every font was cut down to the Latin, Cyrillic and Vietnamese let
 the writing system of that font, with `tools/gen_fonts.py` and fontTools. The %(published_count)d families whose copyright holders reserve
 the font name (%(published)s) are included exactly as published, because the SIL Open Font License
 does not allow a modified version to keep a reserved name. The licence text of the SIL Open Font License 1.1 is in
-appendix A.13; the Apache License 2.0 text is the file `LICENSE`.
+appendix A.13; the Apache License 2.0 text is in appendix A.21.
 
 %(table)s
 

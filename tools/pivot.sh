@@ -2,8 +2,8 @@
 set -eu
 cd "$(dirname "$0")/.."
 . tools/env.sh
-cpp=app/src/main/cpp
-out=app/build/hostpivot
+cpp=shared/cpp
+out=android/build/hostpivot
 skia=third_party/skia
 libs=$skia/out/mac-v2-2-arm64
 if [ ! -f "$libs/libskia.a" ]; then
@@ -14,7 +14,7 @@ mkdir -p "$out/obj"
 FLAGS="-std=c++20 -O1 -fPIC -fno-rtti -fno-exceptions -w -DNDEBUG -DSK_DISABLE_TRACING -DXML_STATIC -DU_DISABLE_RENAMING=1 -DU_STATIC_IMPLEMENTATION -DU_USING_ICU_NAMESPACE=0
  -I$cpp -I$skia -I$skia/third_party/externals/expat/expat/lib -I$skia/third_party/externals/icu/source/common"
 export FLAGS cpp out
-for f in camera drawing easing effects model motion legacy true_particles particles pieces3d spectrum scene shapes styles text textanim warp xml; do echo "$f"; done | xargs -P 8 -n 1 sh -c '
+for f in camera depth drawing easing effects model motion legacy true_particles particles pieces3d spectrum scene shapes styles text textanim warp xml; do echo "$f"; done | xargs -P 8 -n 1 sh -c '
   src="$cpp/$0.cpp"; obj="$out/obj/$0.o"
   if [ ! -f "$obj" ] || [ -n "$(find "$cpp" -name "*.h" -newer "$obj" | head -n 1)" ] || [ "$src" -nt "$obj" ]; then clang++ $FLAGS -c "$src" -o "$obj"; fi'
 clang++ $FLAGS -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/darwin" -c tools/pivot/pivot_jni.cpp -o "$out/pivot_jni.o"

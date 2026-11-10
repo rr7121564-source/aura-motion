@@ -3,7 +3,7 @@ import zipfile,re,json,sys
 import skia
 import argparse
 ap=argparse.ArgumentParser();ap.add_argument("bundles",type=Path);args=ap.parse_args()
-r=Path(__file__).resolve().parents[1]/'app/src/main/assets/effects';report=[]
+r=Path(__file__).resolve().parents[1]/'shared/assets/effects';report=[]
 for pkg in args.bundles.glob('*.tmplugin'):
  with zipfile.ZipFile(pkg) as z:
   m=json.loads(z.read('plugin.json'))

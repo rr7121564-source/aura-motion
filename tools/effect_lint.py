@@ -6,9 +6,9 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PACK = ROOT / "app/src/main/assets/effects"
+PACK = ROOT / "shared/assets/effects"
 SKIP = {"index.json", "releases.json", "foreign.json"}
-CATEGORIES = {"color", "blur", "distort", "stylize", "noise", "repeat", "key", "move", "beat", "3d", "text"}
+CATEGORIES = {"color", "blur", "distort", "stylize", "noise", "repeat", "key", "move", "beat", "3d", "text", "other"}
 CATEGORIES.add("true")
 for prefix in ("amz-","legacy-"):
     CATEGORIES.update(prefix+key for key in ("color","blur","distort","procedural","drawing","transform","3d","text","opacity","matte","repeat","other"))
@@ -16,7 +16,7 @@ KINDS = {"float", "angle", "point", "vector3", "quaternion", "color", "switch", 
 UNIFORM = re.compile(r"^\s*(?:layout\([^)]*\)\s*)?uniform\s+(\w+)\s+(\w+)\s*;", re.M)
 UNIFORM_TYPES = {"float": {"float"}, "angle": {"float"}, "choice": {"float"}, "switch": {"float"}, "point": {"float2"}, "color": {"float4", "half4"}, "text": set()}
 RESERVED = {"image", "size", "time", "screen", "layer", "fromLayer", "toLayer", "duration", "orient", "paletteSize", "paletteSpread", "swatches",
-            "beat", "beatTime", "beatIndex"}
+            "beat", "beatTime", "beatIndex", "glyphCount", "glyphColumns", "glyphCell", "visible"}
 
 
 def lint(path, problems, standard):

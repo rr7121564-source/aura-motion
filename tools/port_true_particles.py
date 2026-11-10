@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--legacy', type=Path, required=True)
 args = parser.parse_args()
 legacy = ET.parse(args.legacy).getroot()
-assets = root / 'app/src/main/assets/effects'
+assets = root / 'shared/assets/effects'
 
 # English and Chinese parameter labels, in legacy schema order.
 labels = {

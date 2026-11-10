@@ -6,6 +6,117 @@ All notable changes to AbsentMotion are listed here, newest first. The format fo
 Versions before 2.0.0 were never published or numbered. The entry for 1.0.0 stands for the feature set as it stood on
 2026-10-12.
 
+## [5.0.0] - 2026-11-07
+
+### Added
+
+- AbsentMotion on the computer: a desktop version for Macs (Apple silicon and Intel), Windows and Linux. It runs the phone's own editor, effects and export, laid out for a mouse and a keyboard, with a media library, an inspector, a mouse timeline, right-click menus, keyboard shortcuts, files dropped into the window, linked folders, the webcam, export in the background and in-app updates.
+- Windows: a per-user installer (.msi) with Start menu and desktop shortcuts, for 64-bit Windows 10 and 11.
+- Linux: a .deb package and an AppImage, each for arm64 and x86_64. They run on glibc 2.35 or newer (Ubuntu 22.04, Debian 12 and later).
+- Text effects: Text Shake (letters shake on their own as Shake, Jitter, Wave, Circle or Wobble, or only some letters at a time), Text Blips (types the text out with a blip for each letter, eight voices, heard in the preview and the export) and Font Weight (animate the weight of variable fonts, imported ones too).
+- ASCII effect: any layer as text art made of letters and symbols, with six presets.
+- Depth order: with a camera, layers in 3D are drawn by their distance from the camera, and the camera can tilt and orbit around the scene. New projects have it on; older projects keep their look until it is turned on. A 3D layer tile lets flat layers take part.
+- Light layers: Ambient, Directional and Point lights with colour, intensity and falloff, up to four at once, shade 3D models, 3D Scatter and 3D Fracture.
+- Linear Repeat, Radial Repeat, Grid Repeat and Repeat Along Path: Delay per copy, and Random Position, Rotation, Scale and Opacity for each copy.
+- Parenting Helper and Scale Assist effects (Move). Alight Motion projects that use them, or the 3D orientation of a layer, now import.
+- Groups: Edit Group opens a group, the top bar shows where you are and leads back, and Ungroup in the layer menu puts the layers back.
+- Group Re-timing: the gear of an open group has Re-timing (Off, Freeze, Stretch, Loop, Repeat & Stretch, Blank), and the copy and paste menu sets its intro and outro flags.
+- Stretch Timing (More actions of a multi-selection) makes the selected clips longer or shorter together; their animations stretch with them and videos play slower or faster to fit.
+- A clipped layer shows a small hooked arrow in the timeline that points down to the layer it is clipped to.
+- Swipe an effect in a layer's effect list to the left to delete it, and swipe left or right inside an effect category for the next or previous category.
+- Deep Glow, HSL and Drop Shadow effects.
+- Alight Motion presets keep more effect settings when they are imported: Light Glow Blend, Soft Glow outside glow, Chroma Key Defringe, Long Shadow Solidity, Electric Edges Strength, Fractal Warp Intensity, Offset, Parallax and Screen Space, Gradient Map Saturation, Edge Glow Strength and Tint, and Smooth Bevel. Edge Glow, Fractal Warp, Chroma Key, Soft Glow and Electric Edges look closer to Alight Motion after import.
+- Tools tab: Trim (Fast without re-encoding, or Exact), Extract Audio (M4A or MP3) and Make a GIF (up to 30 seconds, three sizes, three frame rates, loop or play once).
+- Tablet layouts for big screens in portrait and landscape: panels beside the preview, a taller timeline, grids on the home screen and tool screens in two columns.
+- Audio layers have a Mark Beats tile.
+- Puppet Pin: pins curl the picture smoothly, pin types Position, Bend (with rotation and scale) and Stiff, Triangle Density, Mesh Expansion and Sway.
+- Effect presets: a Presets button on an open effect, a picture for every preset, and favourite presets that show first in the Favorite strip.
+- Several selected clips stretch and split together.
+- Colour palettes in every colour picker on the phone and the desktop (Fill & Color, the full picker, frame and shadow, gradients, text, lights, captions and effect colours): make palettes from a picture (its 8 main colours, or every colour of a palette picture AbsentMotion exported) or from palette files (.gpl, .ase, .pal, .act, .hex), add, duplicate and delete colours, sort them by hue, lightness or saturation, lock a palette, and export it as a PNG strip, .gpl or .ase. Eight built-in palettes are locked; make a copy to change one. Palettes are kept in backups. On the desktop, a palette file dropped on the window joins the library.
+- Real 3D part two: Camera Options > Camera View has Sort, By layer or By piece. By piece sorts the pieces of 3D Scatter and 3D Fracture, the faces of 3D models and particles with Depth one by one among the other 3D layers, so objects that pass through each other overlap where they should. Mix pieces with other layers, on the 3D Scatter, 3D Fracture and Particles cards and in Model Options, keeps one layer whole. Pieces that cut through each other are not split, and groups do not mix with the layers around them.
+- Adobe Animate import: .fla files from Flash CS5 on (and XFL folders on the desktop) open through the normal import, Choose file, Share or Open with. Shapes, symbols as groups, pictures, classic tweens with eases, alpha, tint and brightness, masks and MP3 sounds on the main timeline come over; the import report lists them and what was left out, such as text, ActionScript, shape and motion tweens, filters and camera layers. Older binary .fla files get a message that says so.
+- Chromebooks with Intel or AMD chips have their own x86_64 files, -foss-x86_64.apk and -compatible-x86_64.apk. The in-app update picks the right file, and the download page lists them. The Video Downloader is not in these files.
+- Desktop window bar in the app's colours with the system's own window buttons, and a menu button with File, Edit, View, Playback and Help.
+- Desktop media belongs to each project; right-click a folder and choose Pin to all projects to see it everywhere. Search lists the folder first.
+- Desktop level meter for the whole project, right of the buttons on the left; with nothing selected, the Inspector shows the project settings and the list of layers.
+- What's new: the first start after updating to a version with release notes shows what changed, once, with links to report problems.
+- The level line under the play bar shows the left and right channel; tablets held sideways also show a level meter at the top left of the preview.
+- Effect help on the desktop opens in its own window inside the app.
+- 90 and 120 fps projects.
+- Saved custom sizes in New Project and in the project settings.
+- Copy and Report on crash and error screens, with links to GitHub, Discord and the bug report form.
+- Join Discord: a button on the About page and links in Settings and the Tools tab.
+- Desktop: Alt+Left and Alt+Right jump between bookmarks; comma and period nudge the selected clips.
+- Linux: a .tar.gz with an install script for any distribution.
+- Effects library: swipe left or right on the Recent and Favorite grid to switch, or press and hold the two small icons and slide your thumb.
+- Eight new languages: Korean, Chinese (Traditional), Chinese (Simplified), French, German, Italian, Polish and Ukrainian, with the help pages and picture captions in each. Phones set to Chinese for Taiwan, Hong Kong or Macau get Traditional Chinese.
+- The preview renders ahead while you pause, starting at the playhead and growing outward, and a thin green line at the bottom of the time ruler shows the frames that are ready. Settings has a switch to turn it off.
+
+### Changed
+
+- Adjustment Layer is now called Copy Background and sits in a new Other category. Projects that use it keep working, and searching for "adjustment layer" still finds it.
+- Effect presets left the grid of the effects library; searching a preset's name finds its effect. The New category lists the effects of 5.x.
+- While a gradient is being edited, dragging on the canvas moves the nearest gradient dot instead of the layer.
+- Effect and border card headers are lighter.
+- If the app closes while Vulkan or OpenGL is starting, the next start uses the other one.
+- On Samsung phones, when Auto Blocker may be stopping an update, the update message says so and how to turn it off for the install.
+- The source code has one folder per platform: shared, android, pc, macos, windows and linux.
+- Linking a layer to a parent or unlinking it no longer adds keyframes: the layer keeps its own animation and stays where it is at the playhead.
+- A short tap on an effect's reorder grip opens the effect; hold the grip to move it.
+- Opening an effect card or an audio effect moves it up to the top as it opens, and the other cards slide out of the way; closing it puts it back in its place.
+- Electric Edges from Alight Motion: Thickness widens the edge into a glowing band and a keyframed Seed crackles on every frame, as in Alight Motion. Projects saved before 5.0 keep their look.
+- Desktop file and folder pickers use the system's current dialogs on Windows and Linux.
+- Help on tablets opens in a wide panel with the pictures beside the text, instead of a phone-sized card.
+- A change to one layer now throws away only the prepared preview frames of that layer and of the layers parented or linked to it, instead of all of them.
+- Desktop: editing and scrubbing respond sooner, with less waiting on each step and on video frames.
+- Phones and tablets: editing a project that has a video no longer waits for the video on every step; the exact frame follows when it is ready.
+- Phones and tablets: compiled graphics programs are kept between launches, so effects stutter less the first time they show after a restart.
+- The bug report, feature request and Discord links in Settings, Tools and the report window follow the project's README, so they stay current; long Google Forms links work too.
+
+### Removed
+
+- The Play build. Play installs move to the foss build when they update, and keep their projects and settings.
+
+### Fixed
+
+- A thin light line could show along the edge of the canvas.
+- 3D Scatter, 3D Fracture and the 3D shape effects such as Cube turn with a tilted or orbiting camera like other 3D layers, and the light on Scatter and Fracture pieces stays the same when the camera rolls or zooms.
+- Puppet Pin keeps the parts it pulls in from outside the canvas, also when the layer has Glow.
+- On computers set to a language with decimal commas, projects could show layers in the wrong place.
+- A damaged frame near the end of a video no longer freezes the rest of the clip.
+- Two layers using the same video play and export smoothly.
+- The background preview no longer stops for good when a project is still loading.
+- Full motion blur in the preview no longer risks freezing weaker tablets.
+- Long chains of linked values no longer freeze the editor.
+- The background preview redraws a clipping mask, a path follower or Displacement Map when the layer under it changes.
+
+### Licence
+
+- 5.0 and every later version are released under GPL-3.0. 4.4 and earlier stay under Apache-2.0.
+
+## [4.4.1] - 2026-11-01
+
+### Added
+
+- Fill & Color > Media works on shapes: fill any shape with a photo or a video.
+- Separate Bug Report and Feature Request forms, with a link to each in Settings.
+- The Tools tab says more tools are coming, with links to suggest one.
+
+### Changed
+
+- After swiping between the two tool pages, the first tap works straight away.
+- Photos show the AI button on page 2.
+- The Video Downloader is greyed out until its 25 MB add-on is downloaded; tapping it first explains what it does. On tablets it is centred, with two columns in landscape.
+- Reset position, scale, rotation and the rest clear that setting's keyframes instead of adding one.
+- A new project from the Assets tab starts as an Asset.
+
+### Fixed
+
+- When YouTube asks to confirm you are not a bot (often on a VPN), the Downloader showed the video as pictures; it now says what happened.
+- On Android 8 and 9, Screenshot, Compress and the Downloader could fail to save until storage access was allowed elsewhere.
+- Undo, then Redo of a Screenshot could bring back a picture whose file had been removed.
+- The README and store text said 184 effects; there are 207.
+
 ## [4.4.0] - 2026-11-01 - The last 4.x
 
 ### Added
@@ -30,7 +141,7 @@ Versions before 2.0.0 were never published or numbered. The entry for 1.0.0 stan
 
 ### Fixed
 
-- Video clips showed black on older GPUs such as the Galaxy S3 Neo's.
+- Video clips showed black on some older phone GPUs.
 - Large or detailed SVG files took minutes to import.
 - The screen went black for a moment after choosing a language on the first start (Android 12 and older).
 - Pictures from the Video Downloader kept their original date.

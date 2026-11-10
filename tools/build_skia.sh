@@ -9,7 +9,9 @@ case "${1:-}" in
     compat) OUT=out/android-arm64-compat; API=28 ;;
     compat32) OUT=out/android-arm-compat; API=26; CPU=arm ;;
     compatx64) OUT=out/android-x64-compat; API=28; CPU=x64 ;;
-    *) echo "usage: tools/build_skia.sh [compat|compat32]" >&2; exit 2 ;;
+    x64) OUT=out/android-x64; CPU=x64 ;;
+    compat-x64) OUT=out/android-x64-compat; API=28; CPU=x64 ;;
+    *) echo "usage: tools/build_skia.sh [compat|compat32|x64|compat-x64]" >&2; exit 2 ;;
 esac
 SKIA="$ROOT/third_party/skia"
 BRANCH=chrome/m156
@@ -52,7 +54,8 @@ for p in "$ROOT"/tools/skia-patches/*.patch; do
     fi
 done
 
-GN="$("$ROOT/tools/build_gn.sh" | tail -n 1)"
+GN="$("$ROOT/tools/build_gn.sh")"
+GN="$(printf '%s\n' "$GN" | tail -n 1)"
 mkdir -p "$OUT"
 { echo "ndk = \"$NDK\""; sed -e "${API:+s/^ndk_api = .*/ndk_api = $API/}" -e "${CPU:+s/^target_cpu = .*/target_cpu = \"$CPU\"/}" "$ROOT/tools/skia-args.gn"; } > "$OUT/args.gn"
 "$GN" gen "$OUT"

@@ -2,7 +2,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace am::depth;
+using namespace am::compat_depth;
 static Vertex vertex(float x,float y,float z,Color color) {return {x,y,z,1,0,0,color};}
 static void same(const std::vector<uint8_t>& a,const std::vector<uint8_t>& b) {assert(a==b);}
 int main() {

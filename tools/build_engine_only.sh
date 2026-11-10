@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SKIA_DIR="${SKIA_DIR:-$ROOT/third_party/skia}"
 OUT="${AM_NATIVE_OUT:-$ROOT/.native-engine-build}"
 test "$(git -C "$SKIA_DIR" rev-parse HEAD)" = 95ee33d7ec7791ab9c071675710a14fe6408ae4f
-cmake -S "$ROOT/app/src/main/cpp" -B "$OUT" -G Ninja \
+cmake -S "$ROOT/shared/cpp" -B "$OUT" -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI="${AM_NATIVE_ABI:-arm64-v8a}" -DANDROID_PLATFORM=android-28 -DANDROID_STL=c++_static \
     -DCMAKE_BUILD_TYPE=Release -DAM_COMPAT=ON -DAM_ENGINE_ONLY=ON -DSKIA_DIR="$SKIA_DIR"

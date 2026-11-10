@@ -2,7 +2,7 @@
 title: Download
 kind: download
 site_only: true
-summary: A free, open-source motion graphics and video editor for Android. It works offline. No account, no subscription, no ads.
+summary: A free, open-source motion graphics and video editor for Android, Mac, Windows and Linux. It works offline. No account, no subscription, no ads.
 ---
 ## Install in three steps
 
@@ -26,6 +26,7 @@ Later versions install over the old one and keep your projects. More help: [Gett
 - **Latest version:** Android 13 or newer. **Compatible version:** Android 8 to 12.
 - An ARM phone. Almost every phone sold in the last several years is 64-bit; phones with a 32-bit system use the Compatible 32-bit file. Phones without Vulkan 1.1 draw with OpenGL, with a few AI tools left out.
 - 4 GB of RAM or more is comfortable. Phones with less can run it but may close the app on large projects.
+- **Chromebooks** with an ARM chip use the phone files. Chromebooks with an **Intel or AMD** chip use the **Latest, Intel or AMD** or **Compatible, Intel or AMD** file from the list of all downloads.
 
 Not sure? Use the [phone checker](@phone-checker), or read [Requirements and versions](@requirements).
 

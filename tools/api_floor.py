@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import atexit
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,7 +20,7 @@ ARCH = {"arm64-v8a": "aarch64-linux-android", "armeabi-v7a": "arm-linux-androide
 
 
 def find_ndk():
-    gradle = (ROOT / "app/build.gradle.kts").read_text()
+    gradle = (ROOT / "android/build.gradle.kts").read_text()
     version = next(line.split('"')[1] for line in gradle.splitlines() if "ndkVersion" in line)
     ndk = SDK / "ndk" / version
     if not ndk.is_dir():
@@ -57,9 +59,9 @@ def exported_by_api(tool, sysroot, arch, apis):
 
 def main():
     parser = argparse.ArgumentParser(description="Lowest Android API level the native libraries of an APK or folder can load on")
-    parser.add_argument("target", nargs="?", default=str(ROOT / "app/build/outputs/apk/foss/release/app-foss-release.apk"), help="an APK or a folder with .so files")
+    parser.add_argument("target", nargs="?", default=str(ROOT / "android/build/outputs/apk/foss/release/app-foss-release.apk"), help="an APK or a folder with .so files")
     parser.add_argument("--abi", default="arm64-v8a")
-    parser.add_argument("--min", type=int, default=0, help="report symbols that need more than this API level (default: the minSdk in app/build.gradle.kts)")
+    parser.add_argument("--min", type=int, default=0, help="report symbols that need more than this API level (default: the minSdk in android/build.gradle.kts)")
     parser.add_argument("--all", action="store_true", help="list every strong symbol above the limit, not just the first 40")
     args = parser.parse_args()
     ndk = find_ndk()
@@ -67,8 +69,9 @@ def main():
     tool = prebuilt / "bin/llvm-nm"
     sysroot = prebuilt / "sysroot/usr/lib"
     arch = ARCH[args.abi]
-    limit = args.min or int(next(line.split("=")[1] for line in (ROOT / "app/build.gradle.kts").read_text().splitlines() if line.strip().startswith("minSdk")))
+    limit = args.min or int(next(line.split("=")[1] for line in (ROOT / "android/build.gradle.kts").read_text().splitlines() if line.strip().startswith("minSdk")))
     work = Path(tempfile.mkdtemp(prefix="api-floor-"))
+    atexit.register(shutil.rmtree, work, True)
     target = Path(args.target)
     if target.suffix in (".apk", ".zip"):
         with zipfile.ZipFile(target) as z:

@@ -5,7 +5,7 @@ from lxml import etree as E
 import convert as converter
 
 repo=Path(__file__).resolve().parents[2]
-pack=repo/'app/src/main/assets/effects'
+pack=repo/'shared/assets/effects'
 source=converter.ROOT
 assert hashlib.sha256(converter.DONOR.read_bytes()).hexdigest()==converter.DONOR_SHA, 'Donor APK fingerprint differs'
 report=json.loads((source/'conversion.json').read_text(encoding='utf-8'))

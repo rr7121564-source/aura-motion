@@ -13,7 +13,7 @@ def main():
     foreground.alpha_composite(mark, ((432-mark.width)//2, (432-mark.height)//2))
     monochrome = Image.new('RGBA', foreground.size, 'white')
     monochrome.putalpha(ImageOps.grayscale(foreground))
-    drawable = ROOT / 'app/src/main/res/drawable'
+    drawable = ROOT / 'android/src/main/res/drawable'
     foreground.save(drawable / 'true_motion_launcher_foreground.png', optimize=True)
     monochrome.save(drawable / 'true_motion_launcher_monochrome.png', optimize=True)
     logo = ImageOps.contain(source, (512, 512), Image.Resampling.LANCZOS)

@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MAIN = ROOT / 'app/src/main'
+MAIN = ROOT / 'shared'
 KOTLIN = MAIN / 'kotlin'
 RES = MAIN / 'res'
 EFFECTS = MAIN / 'assets/effects'
@@ -29,10 +29,11 @@ KEEP = {'AbsentMotion', 'Alight Motion', 'Roboto'}
 REWRITE_IMPORTS = ['import androidx.compose.ui.res.stringResource', 'import app.absentmotion.R']
 FOLDERS = {'en': 'values', 'id': 'values-in', 'hi': 'values-hi', 'pt-BR': 'values-pt-rBR', 'es': 'values-es', 'fil': 'values-fil',
            'vi': 'values-vi', 'th': 'values-th', 'ms': 'values-ms', 'ar': 'values-ar', 'fa': 'values-fa', 'tr': 'values-tr', 'ru': 'values-ru', 'bn': 'values-bn',
-           'es-ES': 'values-es-rES', 'ur': 'values-ur', 'ja': 'values-ja'}
+           'es-ES': 'values-es-rES', 'ur': 'values-ur', 'ja': 'values-ja', 'ko': 'values-ko', 'zh-TW': 'values-zh-rTW', 'zh-CN': 'values-zh-rCN',
+           'fr': 'values-fr', 'de': 'values-de', 'it': 'values-it', 'pl': 'values-pl', 'uk': 'values-uk'}
 JAVA_WORDS = {'new', 'default', 'switch', 'case', 'do', 'final', 'private', 'public', 'static', 'void', 'int', 'char', 'this', 'super', 'throw', 'goto', 'const', 'package', 'native', 'long', 'short', 'byte', 'float', 'double', 'boolean', 'catch', 'enum', 'extends', 'implements', 'interface', 'instanceof', 'protected', 'synchronized', 'throws', 'transient', 'volatile', 'abstract', 'strictfp', 'null', 'true', 'false'}
 PLACEHOLDER = re.compile(r'%(\d+\$)?[sdf]')
-SEVERAL = {'values-fil': {'one'}, 'values-hi': {'one'}, 'values-pt-rBR': {'one'}, 'values-ru': {'one', 'few', 'many'}, 'values-fa': {'one'}, 'values-ar': {'few', 'many'}, 'values-bn': {'one'}}
+SEVERAL = {'values-fil': {'one'}, 'values-hi': {'one'}, 'values-pt-rBR': {'one'}, 'values-ru': {'one', 'few', 'many'}, 'values-fa': {'one'}, 'values-ar': {'few', 'many'}, 'values-bn': {'one'}, 'values-fr': {'one'}, 'values-pl': {'few', 'many'}, 'values-uk': {'one', 'few', 'many'}}
 LETTER = re.compile('[A-Za-z\u00c0-\uffff]')
 
 
@@ -217,7 +218,7 @@ def scan_effects():
 
 
 def kotlin_files(filters):
-    files = sorted(f for f in KOTLIN.rglob('*.kt') if 'i18n' not in f.parts)
+    files = sorted(f for root in (KOTLIN, ROOT / 'android/src/main/kotlin') for f in root.rglob('*.kt') if 'i18n' not in f.parts)
     return [f for f in files if any(s in str(f) for s in filters)] if filters else files
 
 

@@ -1,11 +1,11 @@
 {
   "base": {
     "repository": "https://github.com/Comett1225/AbsentMotion",
-    "tag": "v4.4.0",
-    "commit": "e3d562832a0071181a08945e6927ec4c44a5cbe7"
+    "tag": "v5.0.0",
+    "commit": "3ada9bc0af5641fd4bdc92863cb567261701ae26"
   },
-  "date": "2026-11-04",
-  "portVersion": "0.17.1",
+  "date": "2026-11-08",
+  "portVersion": "0.19.0",
   "complete": false,
   "features": [
     {
@@ -360,7 +360,7 @@
       "id": "preview-cache-alpha-014",
       "name": "Прозрачный кэш предпросмотра",
       "status": "ported",
-      "notes": "Lossless RGBA PNG, viewport-size rasterization, separate live checker and quality gating. Paused spectrum preparation invalidates unfinished audio frames."
+      "notes": "0.19.0: automatic and manual viewport caches share lossless checker-composited frames, as required by v5 playback. Transparent PNG export stays separate. The 2 GiB disk cap, stale-frame invalidation and paused spectrum preparation are retained."
     },
     {
       "id": "oneplus-gpu-014",
@@ -385,6 +385,19 @@
       "name": "Независимые смещения повторений и связи значений",
       "status": "partial",
       "notes": "0.17.1: отдельная вкладка удалена. Повторения встроены в Эффекты, связь открывается у текущего числового свойства. XYZ/rotation/scale/opacity/delay для копий, сохраняемые числовые ссылки, множитель/смещение/задержка. Значения сцены 3D — в просмотре/камере и свойствах модели. См. RELEASE_0_17_1_RU.md."
+    },
+    {
+      "id": "absent-500-base",
+      "name": "База AbsentMotion 5.0.0",
+      "status": "ported",
+      "notes": "Общая структура исходников, глубина/разбиение 3D, световые слои, палитры, FLA и новые эффекты. Classic Parent Helper сохранён отдельно от нового Parenting Helper. Перенос Windows-сборки не проверялся. См. TRUE_MOTION_019_VALIDATION.md."
+    }
+  ],
+  "baseHistory": [
+    {
+      "repository": "https://github.com/Comett1225/AbsentMotion",
+      "tag": "v4.4.0",
+      "commit": "e3d562832a0071181a08945e6927ec4c44a5cbe7"
     }
   ]
 }

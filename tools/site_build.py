@@ -13,13 +13,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
-ASSETS = ROOT / "app/src/main/assets"
+ASSETS = ROOT / "shared/assets"
 EFFECTS = ASSETS / "effects"
 OUT = ROOT / "build/site"
 HELP = ASSETS / "help"
 HELP_DATA = SITE / "data/help-translations"
 EFFECT_NAMES = EFFECTS / "i18n"
-LANGUAGES_KT = ROOT / "app/src/main/kotlin/app/absentmotion/i18n/AppLanguage.kt"
+LANGUAGES_KT = ROOT / "android/src/main/kotlin/app/absentmotion/i18n/AppLanguage.kt"
 RTL = {"ar", "fa", "ur"}
 REPO = "https://github.com/Comett1225/AbsentMotion"
 OWNER = REPO.split("/")[3].lower()
@@ -28,13 +28,14 @@ SHORT = {
     "releases": REPO + "/releases",
     "issues": REPO + "/issues",
     "report-form": "https://forms.gle/6bY8KBPMKc2iUypV6",
+    "feature-form": "https://forms.gle/5ZohVpB2eBPvzhu4A",
     "privacy-file": REPO + "/blob/main/PRIVACY.md",
     "license-file": REPO + "/blob/main/LICENSE",
     "notices-file": REPO + "/blob/main/THIRD_PARTY_NOTICES.md",
 }
 GROUPS = ["Start", "Interface", "Create", "Sound and AI", "Export and projects", "Help"]
 CATEGORIES = [("color", "Color"), ("blur", "Blur"), ("distort", "Distort"), ("stylize", "Stylize"), ("noise", "Noise"),
-              ("repeat", "Repeat"), ("key", "Key"), ("move", "Move"), ("beat", "Beat"), ("3d", "3D"), ("text", "Text")]
+              ("repeat", "Repeat"), ("key", "Key"), ("move", "Move"), ("beat", "Beat"), ("3d", "3D"), ("text", "Text"), ("other", "Other")]
 TIERS = {"latest", "compatible", "unsupported"}
 AI_CLASSES = {"great", "good", "slow"}
 DEVICE_KEYS = ["brand", "name", "aliases", "modelCodes", "year", "launchAndroid", "maxAndroid", "chip", "ramGB", "arm64",
@@ -223,7 +224,7 @@ class Site:
         if key in self.pages:
             return base + self.out_path(key)
         if key.startswith("effect/") and key[7:] in self.by_effect:
-            return base + "effects/" + key[7:] + ".html"
+            return base + "effects/" + self.by_effect[key[7:]]["page"] + ".html"
         return None
 
     def thumb(self, name, depth):
@@ -441,10 +442,10 @@ class Site:
         if sidebar and site:
             side = '<input type="checkbox" id="menu" class="menu-box" aria-label="Show the page list"><label for="menu" class="menu-btn">Pages</label><nav class="side" aria-label="Pages">%s</nav>' % self.sidebar(current, depth)
         foot = (
-            '<footer><p>AbsentMotion is free and open source under the Apache License 2.0. <a href="%s" rel="noopener">Source code</a> &middot; '
+            '<footer><p>AbsentMotion is free and open source under the GNU General Public License v3.0. <a href="%s" rel="noopener">Source code</a> &middot; '
             '<a href="%s" rel="noopener">Privacy</a> &middot; <a href="%s" rel="noopener">Report a problem</a> &middot; '
-            '<a href="%s" rel="noopener">Bug report form</a></p></footer>'
-            % (REPO, SHORT["privacy-file"], SHORT["issues"], SHORT["report-form"])) if site else ""
+            '<a href="%s" rel="noopener">Bug report form</a> &middot; <a href="%s" rel="noopener">Feature request form</a></p></footer>'
+            % (REPO, SHORT["privacy-file"], SHORT["issues"], SHORT["report-form"], SHORT["feature-form"])) if site else ""
         script = '<script src="%sassets/site.js" defer></script>' % base if site else ""
         shared = "../" * (depth + self.up)
         html = '<html lang="%s" dir="%s">' % (self.locale.tag, "rtl" if self.rtl else "ltr") if self.locale else '<html lang="en">'
@@ -500,7 +501,7 @@ class Site:
         else:
             parts.append(body)
         parts.append(self.pager(page.slug, depth))
-        title = "AbsentMotion: free video editor for Android" if page.kind == "download" else page.title + " | AbsentMotion"
+        title = "AbsentMotion: free video editor for Android, Mac, Windows and Linux" if page.kind == "download" else page.title + " | AbsentMotion"
         description = page.summary or "AbsentMotion, a free open-source motion graphics and video editor for Android."
         self.add(path, self.shell(path, title, re.sub(r"[`*]|\]\([^)]*\)|\[", "", description), "".join(parts), page.slug, page.kind, page.kind not in ("download",)))
 
@@ -521,7 +522,10 @@ class Site:
     def download_links(self):
         v = self.version
         base = "%s/releases/download/v%s/AbsentMotion-%s-" % (REPO, v, v)
-        return {"foss": base + "foss.apk", "play": base + "play.apk", "compatible": base + "compatible.apk", "compatible32": base + "compatible-32bit.apk", "sums": "%s/releases/download/v%s/SHA256SUMS.txt" % (REPO, v)}
+        return {"foss": base + "foss.apk", "compatible": base + "compatible.apk", "compatible32": base + "compatible-32bit.apk",
+                "foss_x86": base + "foss-x86_64.apk", "compatible_x86": base + "compatible-x86_64.apk", "sums": "%s/releases/download/v%s/SHA256SUMS.txt" % (REPO, v),
+                "mac_arm64": base + "macos-arm64.dmg", "mac_x64": base + "macos-x64.dmg", "windows": base + "windows-x64.msi",
+                **{"linux_%s_%s" % (chip, kind): base + "linux-%s.%s" % (chip, ext) for chip in ("x86_64", "arm64") for kind, ext in (("deb", "deb"), ("appimage", "AppImage"), ("tar", "tar.gz"))}}
 
     def download_top(self, page, depth):
         return (
@@ -539,12 +543,23 @@ class Site:
             '<section id="all"><h2>All downloads <span class="ver">version %s</span></h2><ul class="dl">'
             '<li><a id="dl-foss" class="btn" href="%s">Latest</a><div><strong>Android 13 or newer. Recommended.</strong> Every feature. '
             'Background removal uses its own offline model; this file contains no Google libraries. <code>AbsentMotion-%s-foss.apk</code></div></li>'
-            '<li><a id="dl-play" class="btn alt" href="%s">Latest (Play services)</a><div><strong>Android 13 or newer.</strong> The same app, but background removal uses Google Play services, '
-            'which downloads its own model and may send diagnostics to Google. <code>AbsentMotion-%s-play.apk</code></div></li>'
             '%s</ul>'
             '<p class="small"><a id="dl-sums" href="%s">SHA256SUMS.txt</a> has the checksum of every file. <a href="%s" rel="noopener">All releases and older versions</a> &middot; '
             '<a href="%s" rel="noopener">Source code</a></p></section>'
-        ) % (v, links["foss"], v, links["play"], v, self.compatible_item(), links["sums"], SHORT["releases"], REPO)
+        ) % (v, links["foss"], v, self.compatible_item() + self.computer_items(), links["sums"], SHORT["releases"], REPO)
+
+    def computer_items(self):
+        if tuple(int(part) for part in self.version.split(".")[:3]) < (5, 0, 0):
+            return ""
+        l, v = self.download_links(), self.version
+        linux = "".join('<li><a id="dl-linux-%s-appimage" class="btn alt" href="%s">Linux %s</a><div><strong>Linux on %s</strong>, glibc 2.35 or newer (Ubuntu 22.04, Debian 12 and later). '
+                        'AppImage <code>AbsentMotion-%s-linux-%s.AppImage</code>, also as <a id="dl-linux-%s-deb" href="%s">.deb</a> and <a id="dl-linux-%s-tar" href="%s">.tar.gz</a>.</div></li>'
+                        % (chip, l["linux_%s_appimage" % chip], chip, label, v, chip, chip, l["linux_%s_deb" % chip], chip, l["linux_%s_tar" % chip])
+                        for chip, label in (("x86_64", "Intel or AMD computers (x86_64)"), ("arm64", "ARM computers (arm64)")))
+        return ('<li><a id="dl-mac-arm64" class="btn alt" href="%s">Mac, Apple silicon</a><div><strong>Macs with Apple silicon</strong> (M1 or newer), macOS 11 or newer. <code>AbsentMotion-%s-macos-arm64.dmg</code></div></li>'
+                '<li><a id="dl-mac-x64" class="btn alt" href="%s">Mac, Intel</a><div><strong>Macs with an Intel chip</strong>, macOS 11 or newer. <code>AbsentMotion-%s-macos-x64.dmg</code></div></li>'
+                '<li><a id="dl-windows" class="btn alt" href="%s">Windows</a><div><strong>64-bit Windows 10 and 11.</strong> Installer for your user. <code>AbsentMotion-%s-windows-x64.msi</code></div></li>'
+                % (l["mac_arm64"], v, l["mac_x64"], v, l["windows"], v)) + linux
 
     def compatible_item(self):
         v = self.version
@@ -557,8 +572,16 @@ class Site:
         if released < (4, 3, 0):
             return item + ('<li><span id="dl-compatible32" class="btn alt" aria-disabled="true">Compatible 32-bit</span><div><strong>Phones with a 32-bit system.</strong> '
                            'Coming with the next update.</div></li>')
-        return item + ('<li><a id="dl-compatible32" class="btn alt" href="%s">Compatible 32-bit</a><div><strong>Phones with a 32-bit system</strong>, often sold as Android Go edition, '
-                       'Android 8 or newer. The Compatible version built for 32-bit ARM. <code>AbsentMotion-%s-compatible-32bit.apk</code></div></li>') % (self.download_links()["compatible32"], v)
+        item += ('<li><a id="dl-compatible32" class="btn alt" href="%s">Compatible 32-bit</a><div><strong>Phones with a 32-bit system</strong>, often sold as Android Go edition, '
+                 'Android 8 or newer. The Compatible version built for 32-bit ARM. <code>AbsentMotion-%s-compatible-32bit.apk</code></div></li>') % (self.download_links()["compatible32"], v)
+        if released < (5, 0, 0):
+            return item + ('<li><span id="dl-x86" class="btn alt" aria-disabled="true">Intel or AMD</span><div><strong>Chromebooks with Intel or AMD chips.</strong> '
+                           'Coming with the next update.</div></li>')
+        links = self.download_links()
+        return item + ('<li><a id="dl-foss-x86" class="btn alt" href="%s">Latest, Intel or AMD</a><div><strong>Chromebooks with Intel or AMD chips</strong>, Android 13 or newer. '
+                       'The Latest version built for x86_64. <code>AbsentMotion-%s-foss-x86_64.apk</code></div></li>'
+                       '<li><a id="dl-compatible-x86" class="btn alt" href="%s">Compatible, Intel or AMD</a><div><strong>Chromebooks with Intel or AMD chips</strong> on Android 9 to 12. '
+                       'The Compatible version built for x86_64. <code>AbsentMotion-%s-compatible-x86_64.apk</code></div></li>') % (links["foss_x86"], v, links["compatible_x86"], v)
 
     def checker_box(self):
         return (
@@ -603,16 +626,16 @@ class Site:
                 text = escape((e["name"] + " " + e["description"]).lower())
                 if site:
                     out.append('<li data-text="%s"><a href="%s.html"><img src="%s" width="96" height="96" alt="" loading="lazy"><span>%s</span></a></li>' % (
-                        text, e["id"], "thumb/" + e["id"] + ".webp", escape(e["name"])))
+                        text, e["page"], "thumb/" + e["id"] + ".webp", escape(e["name"])))
                 else:
-                    out.append('<li><a href="%s.html">%s</a></li>' % (e["id"], escape(e["name"])))
+                    out.append('<li><a href="%s.html">%s</a></li>' % (e["page"], escape(e["name"])))
             out.append("</ul></section>")
         return "".join(out)
 
     def render_effects(self):
         for n, e in enumerate(self.effects):
-            path = "effects/%s.html" % e["id"]
-            where = "app/src/main/assets/effects/%s.json" % e["id"]
+            path = "effects/%s.html" % e["page"]
+            where = "shared/assets/effects/%s.json" % e["id"]
             extra_path = SITE / "effects" / (e["id"] + ".md")
             extra = ""
             if extra_path.is_file():
@@ -638,8 +661,8 @@ class Site:
                 body.append("</ul>")
             same = [x for x in self.effects if x["category"] == e["category"]]
             i = same.index(e)
-            prev = '<a rel="prev" href="%s.html">%s %s</a>' % (same[i - 1]["id"], self.back(), escape(same[i - 1]["name"])) if i else "<span></span>"
-            nxt = '<a rel="next" href="%s.html">%s %s</a>' % (same[i + 1]["id"], escape(same[i + 1]["name"]), self.forward()) if i + 1 < len(same) else "<span></span>"
+            prev = '<a rel="prev" href="%s.html">%s %s</a>' % (same[i - 1]["page"], self.back(), escape(same[i - 1]["name"])) if i else "<span></span>"
+            nxt = '<a rel="next" href="%s.html">%s %s</a>' % (same[i + 1]["page"], escape(same[i + 1]["name"]), self.forward()) if i + 1 < len(same) else "<span></span>"
             body.append('<nav class="pager" aria-label="%s">%s%s</nav>' % (self.t("More {category} effects", category=category), prev, nxt))
             self.add(path, self.shell(path, e["name"] + (" | AbsentMotion" if self.locale else " effect | AbsentMotion"), e["description"], "".join(body), "effects", "effect"))
             if not e["description"]:
@@ -726,6 +749,7 @@ def load_effects():
             continue
         out.append({k: data.get(k) for k in ("id", "name", "category", "description", "params", "presets", "since")})
         out[-1]["params"] = data.get("params", [])
+        out[-1]["page"] = re.sub(r"[^a-z0-9]", "", data["name"].lower())
     return out
 
 
@@ -834,7 +858,7 @@ def load_locales(problems):
             continue
         names = EFFECT_NAMES / (tag + ".json")
         if not names.is_file():
-            problems.append("%s: app/src/main/assets/effects/i18n/%s.json is missing" % (where, tag))
+            problems.append("%s: shared/assets/effects/i18n/%s.json is missing" % (where, tag))
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -961,7 +985,7 @@ def validate_locale(locale, english):
         out += one_line("%s: chrome label %r" % (where, key), value, key)
         if isinstance(value, str) and Counter(re.findall(r"\{\w+\}", value)) != Counter(re.findall(r"\{\w+\}", key)):
             out.append("%s: chrome label %r must keep the placeholders %s" % (where, key, re.findall(r"\{\w+\}", key)))
-    return out + validate_names(locale, english, "app/src/main/assets/effects/i18n/%s.json" % locale.tag)
+    return out + validate_names(locale, english, "shared/assets/effects/i18n/%s.json" % locale.tag)
 
 
 def validate_names(locale, english, where):
@@ -1067,7 +1091,7 @@ def main():
         have = disk_files(HELP)
         for path in sorted(set(have) | set(app_files)):
             if have.get(path) != app_files.get(path):
-                problems.append("app/src/main/assets/help/%s is out of date: run python3 tools/site_build.py" % path)
+                problems.append("shared/assets/help/%s is out of date: run python3 tools/site_build.py" % path)
         node = shutil.which("node")
         test = ROOT / "tools/site_test.js"
         if node and test.is_file():
@@ -1090,7 +1114,7 @@ def main():
         return 1
     write(site_files, OUT)
     write(app_files, HELP)
-    print("site_build: %d site files in build/site, %d help files in app/src/main/assets/help (%d languages)" % (len(site_files), len(app_files), len({p.split("/")[0] for p in app_files if re.match(r"^[a-z]{2,3}(-[A-Z]{2})?/", p)})))
+    print("site_build: %d site files in build/site, %d help files in shared/assets/help (%d languages)" % (len(site_files), len(app_files), len({p.split("/")[0] for p in app_files if re.match(r"^[a-z]{2,3}(-[A-Z]{2})?/", p)})))
     return 0
 
 

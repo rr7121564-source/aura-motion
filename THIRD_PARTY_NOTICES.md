@@ -1,25 +1,26 @@
 # Third-party notices
 
-AbsentMotion is licensed under the Apache License 2.0 (see `LICENSE` and `NOTICE`). It contains, links against,
+AbsentMotion 5.0 and later is licensed under the GNU General Public License, version 3 (see `LICENSE` and `NOTICE`);
+4.x and earlier versions stay under the Apache License 2.0. It contains, links against,
 bundles or downloads the third-party software listed below. Each entry names the component, the version the build used
 on 2026-10-18 (AbsentMotion 2.1.0), its licence, its copyright line, where to find it and where AbsentMotion uses it. Copyright lines are
 copied from the licence files that ship with the vendored or checked-out sources; where AbsentMotion has no such
 file the entry says "see upstream" instead of guessing.
 
 Full licence texts for the C and C++ libraries are in the appendix at the end of this file. The Apache License 2.0 text
-that applies to the Apache-2.0 components is the file `LICENSE` in the root of the repository.
+that applies to the Apache-2.0 components is in appendix A.21; the GPL-2.0 with Classpath Exception text for the Java runtime is in A.22, which also
+holds the GPL-2.0 terms for FFmpeg, x264 and x265 in the macOS apps.
 
 This list was written by hand on 2026-10-18 from the build files and the vendored sources. It is not generated. When a
 dependency is added, removed or upgraded, update this file in the same change.
 
 **Contents**
 
-1. Engine libraries (C and C++): Skia and the libraries it links, whisper.cpp and ggml, RNNoise, ncnn, glslang, the RIFE warp layer, LAME, and the video downloader add-on (CPython and yt-dlp, downloaded at run time)
-2. Machine learning models: OpenAI Whisper weights, RIFE and Real-ESRGAN weights and the AI background removal 2.0 model (all downloaded at run time), background removal model (`foss` build)
-3. Kotlin and Compose libraries
-4. Google Play services (proprietary)
-5. Fonts, icons and effect thumbnails
-6. Appendix: licence texts
+1. Engine libraries (C and C++): Skia and the libraries it links, whisper.cpp and ggml, RNNoise, ncnn, glslang, the RIFE warp layer, LAME, FFmpeg (desktop apps only) with the codec libraries of the macOS build (x264, x265, libvpx, dav1d, Opus, SVT-AV1), the AppImage runtime (Linux AppImage only), and the video downloader add-on (CPython and yt-dlp, downloaded at run time)
+2. Machine learning models: OpenAI Whisper weights, RIFE and Real-ESRGAN weights and the AI background removal 2.0 model (all downloaded at run time), the built-in background removal model
+3. Kotlin and Compose libraries, including those bundled in the desktop apps (OpenJDK, Compose Desktop, Skiko, kotlinx)
+4. Fonts, icons and effect thumbnails
+5. Appendix: licence texts
 
 ---
 
@@ -102,7 +103,7 @@ together with Skia.
 #### Wuffs
 
 - Version: the `wuffs-mirror-release-c` revision `e3f919ccfe3ef542cfc983a82146070258fb57f8` pinned by Skia's `DEPS`.
-- Licence: Apache License 2.0 (the text is `LICENSE` in the root of this repository).
+- Licence: Apache License 2.0 (text in appendix A.21).
 - Copyright: see upstream. The licence file in the vendored copy has the unfilled Apache appendix boilerplate.
 - URL: https://github.com/google/wuffs
 - Used in: the engine library (image decoding through Skia).
@@ -122,7 +123,7 @@ together with Skia.
 - Copyright: Copyright (c) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper; Copyright (c) 2001-2025
   Expat maintainers.
 - URL: https://libexpat.github.io/
-- Used in: the engine library. The engine reads scene files with it (`app/src/main/cpp/xml.cpp`).
+- Used in: the engine library. The engine reads scene files with it (`shared/cpp/xml.cpp`).
 
 #### skcms
 
@@ -135,7 +136,7 @@ together with Skia.
 #### cpu-features
 
 - Version: the copy in the Android NDK r30 (`sources/android/cpufeatures`).
-- Licence: Apache License 2.0 (the text is `LICENSE` in the root of this repository).
+- Licence: Apache License 2.0 (text in appendix A.21).
 - Copyright: see upstream (the Android NDK `NOTICE` file).
 - URL: https://developer.android.com/ndk
 - Used in: the engine library (CPU feature detection for Skia's libwebp and zlib).
@@ -209,6 +210,143 @@ together with Skia.
 - URL: https://lame.sourceforge.io/
 - Used in: MP3 audio export. LAME is built as its own shared library, `libmp3lame.so`, and loaded through a small
   separate library, `liblame_jni.so`, so it can be replaced with another build of LAME.
+
+### FFmpeg (desktop apps only)
+
+- Copyright: Copyright (c) 2000-2026 the FFmpeg developers.
+- URL: https://ffmpeg.org/
+- The Android app does not use FFmpeg.
+
+Windows:
+
+- Version: n9.0.2-45-g1e65c6cd5d-20261103, the BtbN FFmpeg-Builds `win64-gpl-shared-9.0` auto-build of 2026-11-03
+  (`ffmpeg-n9.0-latest-win64-gpl-shared-9.0.zip`, SHA-256 `8dcbbea210aa7f6bbd65bf8b81517b25bd5a22846da57ecf563b9b4807892ca7`),
+  unchanged, from https://github.com/BtbN/FFmpeg-Builds.
+- Licence: GNU General Public License, version 3 or later (the build uses `--enable-gpl --enable-version3` and no
+  `--enable-nonfree`). The GPLv3 text from the package ships next to the libraries as `ffmpeg-LICENSE.txt`.
+- Codec libraries in this build (as reported by the binaries): x264 core 165, x265 4.3, SVT-AV1 4.2, libvpx 1.17.0, dav1d,
+  libopus, libaom 3.15.2, LAME, libvorbis, rav1e, libvmaf, libplacebo, libxml2, fontconfig, FreeType, HarfBuzz, FriBidi,
+  lcms2, GMP, liblzma and zlib, all under licences compatible with GPL-3.0. BtbN's build scripts list the exact sources.
+- Used in: the Windows installer. `amdesktop.dll` links the shared `avformat`, `avcodec`, `avutil`, `swresample` and
+  `swscale` DLLs for video decoding (D3D11 hardware decoding when available), and `ffmpeg.exe` and `ffprobe.exe` run export,
+  the Tools tab and media probing. The DLLs sit unchanged in the app folder, so they can be replaced with another build.
+- Source: `AbsentMotion-<version>-ffmpeg-source-1.tar` and `-2.tar`, attached to every release that ships the desktop apps,
+  hold the FFmpeg source of this build (commit `1e65c6cd5d3d2d12cbb374460dbf08bedf54772a`), BtbN's build scripts (commit
+  `5ece62897c650b863c1ddda7b6964845344aef2d`) and the source archive of every library those scripts build.
+
+Linux (x86_64 and arm64):
+
+- Version: n9.0.2-47-gb204e94e90-20261104, the BtbN FFmpeg-Builds `linux64-gpl-shared-9.0` and `linuxarm64-gpl-shared-9.0`
+  auto-builds of 2026-11-04 (release `autobuild-2026-11-04-12-51`: `ffmpeg-n9.0.2-47-gb204e94e90-linux64-gpl-shared-9.0.tar.xz`,
+  SHA-256 `04c177a65ad62ef84c512e90ac66dcc278bdf6da114d50a8a77de793fb3f5434`, and
+  `ffmpeg-n9.0.2-47-gb204e94e90-linuxarm64-gpl-shared-9.0.tar.xz`, SHA-256
+  `57ad908a337b5ebdf3f293c267a4e5c3e62042c553c56acec0dded442338726e`; both match BtbN's `checksums.sha256`), from
+  https://github.com/BtbN/FFmpeg-Builds. The only change is the run path: `linux/build.sh` sets it to `$ORIGIN` with
+  `patchelf`, so the programs and libraries find each other in one folder.
+- Licence: GNU General Public License, version 3 or later (the build uses `--enable-gpl --enable-version3` and no
+  `--enable-nonfree`). The GPLv3 text from the package ships next to the libraries as `ffmpeg-LICENSE.txt`.
+- Codec libraries in this build (from its configure line): x264, x265, SVT-AV1, libaom, rav1e, dav1d, libvpx, Opus,
+  Vorbis, LAME, Theora, OpenH264, Kvazaar, VVenC, libvmaf, libplacebo, libass, FreeType, HarfBuzz, FriBidi, fontconfig,
+  libxml2, lcms2, GMP, OpenSSL, liblzma, zlib and others, linked statically into the libraries, all under licences compatible
+  with GPL-3.0. BtbN's build scripts list the exact sources.
+- Used in: the Linux packages (`.deb` and AppImage). `libamdesktop.so` links the shared `avformat`, `avcodec`, `avutil` and
+  `swscale` libraries (and `swresample` through them) for video decoding (VA-API when available), and `ffmpeg` and `ffprobe`
+  run export, the Tools tab and media probing. They sit in the app's `lib/app/resources` folder
+  (`/opt/absentmotion/lib/app/resources` for the `.deb`), so they can be replaced with another build.
+- Source: the same `AbsentMotion-<version>-ffmpeg-source-1.tar` and `-2.tar` hold the FFmpeg source of this build (commit
+  `b204e94e90fca64045e9ca7dd44c65678c7eb29e`) next to BtbN's build scripts and library sources.
+
+macOS (Apple silicon and Intel):
+
+- Version: 9.0.2, built for arm64 and x86_64 (minimum macOS 11) from the unchanged release source
+  https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz (SHA-256 `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`,
+  signed with the FFmpeg release signing key).
+- Configure options: `--enable-shared --disable-static --install-name-dir=@rpath --disable-doc --disable-debug
+  --disable-ffplay --disable-sdl2 --disable-xlib --disable-libxcb --disable-sndio --enable-videotoolbox --enable-audiotoolbox
+  --enable-avfoundation --enable-gpl --enable-libmp3lame --enable-libx264 --enable-libx265 --enable-libvpx --enable-libdav1d
+  --enable-libopus --enable-libsvtav1` (plus `--pkg-config-flags=--static` and the compiler and path options; the Intel
+  build assembles FFmpeg's x86 code with NASM). No `--enable-version3` or `--enable-nonfree`.
+- Licence: GNU General Public License, version 2 or later (`--enable-gpl`, which x264 and x265 need; AbsentMotion 5.0 and
+  later uses it under version 3, see `LICENSE`). FFmpeg's `COPYING.GPLv2` ships next to the libraries as
+  `ffmpeg-LICENSE.txt`; the same terms are in appendix A.22 (the Classpath Exception there applies only to OpenJDK). LAME
+  (above) and the codec libraries below are linked statically into `libavcodec`.
+- Used in: the macOS apps. `libamdesktop.dylib` links the shared `avformat`, `avcodec`, `avutil` and `swscale` libraries for
+  video decoding (VideoToolbox when available), and `ffmpeg` and `ffprobe` run export, the Tools tab, the camera and media
+  probing. They sit in `AbsentMotion.app/Contents/app/resources`, so they can be replaced with another build.
+- Source: `AbsentMotion-<version>-macos-ffmpeg-source.tar`, attached to every release that ships the macOS apps, holds the
+  unchanged source archives of FFmpeg, LAME and the codec libraries below and the scripts that built them.
+
+The codec libraries in the macOS FFmpeg are built for arm64 and x86_64 (minimum macOS 11) as static libraries from the
+unchanged sources below; the SHA-256 sums of x265, libvpx, Opus and SVT-AV1 match the ones Homebrew pins for the same
+versions, dav1d matches VideoLAN's published sum and signature, and x264 is the named commit of its `stable` branch.
+
+#### x264
+
+- Version: r3222, commit `b35605ace3ddf7c1a5d67a2eb553f034aef41d55` (head of the `stable` branch; x264 publishes no
+  release archives), from https://code.videolan.org/videolan/x264.git.
+- Licence: GNU General Public License, version 2 or later (text in appendix A.22, without the Classpath Exception).
+- Copyright: Copyright (C) 2003-2025 x264 project.
+- URL: https://www.videolan.org/developers/x264.html
+- Used in: H.264 software encoding (`libx264`), for sizes above VideoToolbox's 4096 px and when VideoToolbox fails.
+
+#### x265
+
+- Version: 4.3, `x265_4.3.tar.gz` from https://github.com/Multicorewareinc/x265/releases (SHA-256
+  `83c53e4c8bbb8f1e33ed59e10a7d621d1d7801ca853910c3eb41f038b8ffb121`), 8-bit build.
+- Licence: GNU General Public License, version 2 or later (text in appendix A.22, without the Classpath Exception). x265
+  is also offered under a commercial licence; AbsentMotion uses it under the GPL.
+- Copyright: Copyright (C) 2013-2020 MulticoreWare, Inc.
+- URL: https://github.com/Multicorewareinc/x265
+- Used in: HEVC software encoding (`libx265`), for sizes above VideoToolbox's 4096 px and when VideoToolbox fails.
+
+#### libvpx
+
+- Version: 1.17.0, the `v1.17.0` tag archive from https://github.com/webmproject/libvpx (SHA-256
+  `1020f184046187baa2985dbde38e0691f49c44088bca7a1842b0236c6081dc0a`).
+- Licence: BSD-3-Clause, with the WebM Project's additional patent grant (texts in appendix A.23).
+- Copyright: Copyright (c) 2010, The WebM Project authors.
+- URL: https://chromium.googlesource.com/webm/libvpx
+- Used in: VP9 export (`libvpx-vp9`) and VP8 encoding.
+
+#### dav1d
+
+- Version: 1.5.4, `dav1d-1.5.4.tar.xz` from https://downloads.videolan.org/pub/videolan/dav1d/1.5.4/ (SHA-256
+  `686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5`, signed with the VideoLAN release signing key).
+- Licence: BSD-2-Clause (text in appendix A.24).
+- Copyright: Copyright © 2018-2025, VideoLAN and dav1d authors.
+- URL: https://code.videolan.org/videolan/dav1d
+- Used in: AV1 decoding (`libdav1d`), so AV1 videos open on Macs without an AV1 hardware decoder (M1, M2 and Intel).
+
+#### Opus
+
+- Version: 1.6.1, `opus-1.6.1.tar.gz` from https://downloads.xiph.org/releases/opus/ (SHA-256
+  `6ffcb593207be92584df15b32466ed64bbec99109f007c82205f0194572411a1`, the same as Xiph's `SHA256SUMS.txt`).
+- Licence: BSD-3-Clause (text in appendix A.25).
+- Copyright: Copyright 2001-2023 Xiph.Org, Skype Limited, Octasic, Jean-Marc Valin, Timothy B. Terriberry, CSIRO,
+  Gregory Maxwell, Mark Borgerding, Erik de Castro Lopo, Mozilla, Amazon.
+- URL: https://opus-codec.org/
+- Used in: Opus audio in WebM, MKV and OGG export (`libopus`).
+
+#### SVT-AV1
+
+- Version: 4.3.0, the `v4.3.0` tag archive `SVT-AV1-v4.3.0.tar.bz2` from https://gitlab.com/AOMediaCodec/SVT-AV1 (SHA-256
+  `9223ce06e6172ad41357ed23b3b00f036e03794b86b0e20ea9ccb3f648b8955d`).
+- Licence: BSD-3-Clause-Clear and the Alliance for Open Media Patent License 1.0 (texts in appendix A.26).
+- Copyright: Copyright (c) 2021, Alliance for Open Media.
+- URL: https://gitlab.com/AOMediaCodec/SVT-AV1
+- Used in: AV1 export (`libsvtav1`).
+
+### AppImage runtime (Linux AppImage only)
+
+- Version: the `continuous` build of 2026-10-19 from https://github.com/AppImage/type2-runtime (`runtime-x86_64`, SHA-256
+  `617aa77314d57c8b8e4fae9c3f0b35af7b30d5529cb69e98f64f92510ed98a46`, and `runtime-aarch64`, SHA-256
+  `9a72a744d221576c9347ec074243acc5c3c7568896b12714e0e82e9f0bf47900`), put in front of the app by appimagetool 1.9.1.
+- Licence: MIT (Copyright (c) 2004-23 probonopd). The runtime is one static program that also contains musl libc (MIT),
+  libfuse (GNU Lesser General Public License, version 2.1), squashfuse (BSD-2-Clause), zstd (BSD-3-Clause) and zlib (zlib
+  licence), as its `LICENSE` file states with links to each text.
+- URL: https://github.com/AppImage/type2-runtime
+- Used in: the AppImage only. It mounts the app stored inside the AppImage file and starts it; it is not part of the app
+  and can be swapped by unpacking the AppImage (`--appimage-extract`) and packing it again with another runtime.
 
 ### Video downloader add-on (downloaded on request, not part of the app)
 
@@ -294,28 +432,26 @@ can remove the add-on.
 - Version: `absent-cutout.bin` with `absent-cutout-768.param` and `absent-cutout-1024.param` (ncnn, fp16), published as
   assets of this repository's `ai-models-3` release (the fourth training round, used from AbsentMotion 4.4; earlier
   versions download the previous round from `ai-models-2`).
-- Licence: Apache-2.0, including the pretrained weights it contains. The Apache-2.0 text is `LICENSE` in the root of
-  this repository.
+- Licence: Apache-2.0, including the pretrained weights it contains. The Apache-2.0 text is in appendix A.21.
 - Copyright: The AbsentMotion authors.
-- Used in: "Remove Background" on images when AI background removal 2.0 is chosen (Latest version, `foss` and `play`
-  builds). Downloaded once after that choice, checked against its SHA-256, and removable in Settings.
+- Used in: "Remove Background" on images when AI background removal 2.0 is chosen (Latest version). Downloaded once
+  after that choice, checked against its SHA-256, and removable in Settings.
 
-### Background removal model (`foss` build only)
+### Background removal model (built in)
 
-- Version: `app/src/foss/assets/absent_bg.abg` (2,943,735 bytes, SHA-256
+- Version: `android/src/foss/assets/absent_bg.abg` (2,943,735 bytes, SHA-256
   `9bfbfcba996eb0b0b4f5da03d7dcbce704f5b8810101eb92f62b9e6d44465439`), a small segmentation network trained for
   AbsentMotion; weights stored as 8-bit integers and expanded to 32-bit floats on load. Its inference code,
-  `app/src/main/cpp/absent_bg/`, is part of AbsentMotion.
+  `shared/cpp/absent_bg/`, is part of AbsentMotion.
 - Licence: Apache-2.0 ("Original student architectures, training scripts and C++ runtime: Apache License 2.0."),
   subject to the source notices and the CC BY attribution below.
 - Copyright: The AbsentMotion authors.
-- Used in: "Remove Background" on images and videos in the `foss` build. It runs on the device and nothing is downloaded. The
-  `play` build uses ML Kit instead (section 4) and does not contain this file.
+- Used in: "Remove Background" on images and videos. It runs on the device and nothing is downloaded.
 - Pretrained encoder: `timm/mobilenetv3_large_100.ra_in1k`, revision `96f46a1c52932f27492dff66c72378eb99b443a7`,
   Apache-2.0, by Ross Wightman and timm contributors (https://huggingface.co/timm/mobilenetv3_large_100.ra_in1k,
   https://github.com/huggingface/pytorch-image-models); MobileNetV3: Howard et al., "Searching for MobileNetV3"
   (https://arxiv.org/abs/1905.02244). ImageNet-pretrained encoder only; classifier discarded; no ImageNet images
-  fetched. The Apache-2.0 text is `LICENSE` in the root of this repository.
+  fetched. The Apache-2.0 text is in appendix A.21.
 - Training pictures: 18,615 photographs under Creative Commons Attribution licences (18,559 CC BY 2.0,
   https://creativecommons.org/licenses/by/2.0/, and 56 CC BY 4.0, https://creativecommons.org/licenses/by/4.0/); only
   explicit CC BY records were accepted, and each licence was checked at the source before use. 8,391 come from the
@@ -337,9 +473,9 @@ can remove the add-on.
 
 ## 3. Kotlin and Compose libraries
 
-Versions are the ones the build resolved on 2026-10-18. The Apache-2.0 text is `LICENSE` in the root of this
-repository. For all Apache-2.0 entries below the copyright holders are named in the projects' own repositories ("see
-upstream"). The artifacts were not inspected for a `META-INF/NOTICE` file.
+Versions are the ones the build resolved on 2026-10-18. The Apache-2.0 text is in appendix A.21. For all Apache-2.0
+entries below the copyright holders are named in the projects' own repositories ("see upstream"). The artifacts were not
+inspected for a `META-INF/NOTICE` file.
 
 ### AndroidX Compose, Activity Compose and Material 3
 
@@ -401,32 +537,109 @@ upstream"). The artifacts were not inspected for a `META-INF/NOTICE` file.
 - URL: https://github.com/JetBrains/java-annotations
 - Used in: the app.
 
+### Desktop app (macOS, Windows and Linux)
+
+The desktop apps (`pc/`) bundle the Java runtime and the jars below in the app folder (`AbsentMotion.app/Contents/app` on
+macOS, the install folder's `app` folder on Windows, `lib/app` on Linux). Versions are the ones the macOS arm64 build of 2026-11-04 resolved
+(`./gradlew -p pc dependencies --configuration runtimeClasspath` and the jars in the built app); the Intel Mac, Windows
+and Linux builds use the same versions with their own Skiko native jar. Skia and FFmpeg are listed in section 1.
+
+#### Java runtime (OpenJDK 21)
+
+- Version: OpenJDK 21, trimmed by `jlink` to the modules `java.base`, `java.datatransfer`, `java.desktop`, `java.logging`,
+  `java.prefs`, `java.xml` and `jdk.crypto.ec`. The macOS release apps (Apple silicon and Intel) ship the JetBrains Runtime
+  21.0.11 (an OpenJDK 21 build); the Windows installer and the Linux packages ship Eclipse Temurin 21.0.13; local developer builds may use another
+  OpenJDK 21. The JetBrains Runtime API jar below is a separate client library.
+- Licence: GNU General Public License, version 2, with the Classpath Exception (text in appendix A.22). Files of the
+  runtime that carry a different licence are listed next.
+- Copyright: Copyright (c) Oracle and/or its affiliates and the OpenJDK contributors.
+- URL: https://openjdk.org/
+- Used in: runs the app. The runtime sits unchanged in `AbsentMotion.app/Contents/runtime` (macOS), `runtime` (Windows) and `lib/runtime` (Linux),
+  so it can be replaced with another build of OpenJDK 21. Its own `legal` folder there holds the licence files per module
+  (`LICENSE`, `ADDITIONAL_LICENSE_INFO`, `ASSEMBLY_EXCEPTION`) and the full texts of the parts below.
+
+Third-party parts of the runtime, with the file in the `legal` folder that holds the licence text:
+
+- `java.base`: ICU4J 72.1 (Unicode License, `icu.md`), Unicode CLDR 43 (Unicode License, `cldr.md`), Unicode Character Database
+  15.0.0 (Unicode License, `unicode.md`), ASM 9.3 (BSD-3-Clause, `asm.md`), Cryptix AES 3.2.0 (Cryptix General License, `aes.md`),
+  c-libutl 20160225 (`c-libutl.md`), SipHash (MIT and CC0, `siphash.md`), Mozilla Public Suffix List (MPL-2.0, `public_suffix.md`).
+- `java.desktop`: Eastman Kodak colour management and imaging code (`colorimaging.md`), Mesa 3-D 21.0.3 (MIT, `mesa3d.md`),
+  PipeWire 1.3.81 (MIT, `pipewire.md`), xwd 1.0.7 (`xwd.md`). Mesa, PipeWire and xwd are used by the Linux build only.
+- `java.xml`: Apache Xerces 2.12.2 (Apache-2.0, `xerces.md`), Apache Xalan 2.7.2 (Apache-2.0, `xalan.md`), Apache Commons BCEL
+  6.10.0 (Apache-2.0, `bcel.md`), CUP Parser Generator 0.11b (`jcup.md`), W3C DOM Level 3 Core (W3C Software Notice, `dom.md`).
+
+#### Compose Multiplatform Desktop and Skiko
+
+- Version: Compose Multiplatform 1.10.3 (`org.jetbrains.compose.runtime`, `ui`, `foundation`, `animation`, `material`,
+  `material-ripple` and their `-desktop` jars; some resolve to 1.10.5 or, for `material3`, 1.9.0), Skiko 0.9.37.4
+  (`skiko-awt` and `skiko-awt-runtime-<os>-<arch>`, which carries the native Skia binding), JetBrains AndroidX forks
+  `lifecycle-*` 2.9.4 and 2.9.6, `savedstate` 1.3.3 and 1.3.6, `navigationevent` 1.0.2, `androidx.collection` 1.5.0,
+  `androidx.annotation` 1.9.1 and `androidx.arch.core:core-common` 2.2.0, `org.jetbrains.runtime:jbr-api` 1.5.0.
+- Licence: Apache-2.0 (appendix A.21).
+- Copyright: Copyright JetBrains s.r.o. and the Compose Multiplatform, Skiko and AndroidX authors; see upstream.
+- URL: https://github.com/JetBrains/compose-multiplatform and https://github.com/JetBrains/skiko
+- Used in: the desktop user interface and window shell. The Skia copy inside Skiko is covered by the Skia entry in section 1.
+
+#### Kotlin standard library and kotlinx libraries
+
+- Version: `kotlin-stdlib` 2.4.21 (and the empty `kotlin-stdlib-jdk7` and `kotlin-stdlib-jdk8` 2.2.20), `kotlinx-coroutines-core-jvm`
+  and `kotlinx-coroutines-swing` 1.9.0, `kotlinx-serialization-core-jvm` 1.7.3, `kotlinx-datetime-jvm` 0.7.1, `atomicfu-jvm` 0.23.2.
+- Licence: Apache-2.0 (appendix A.21).
+- Copyright: Copyright JetBrains s.r.o. and Kotlin Programming Language contributors; see upstream.
+- URL: https://github.com/JetBrains/kotlin, https://github.com/Kotlin/kotlinx.coroutines, https://github.com/Kotlin/kotlinx.serialization,
+  https://github.com/Kotlin/kotlinx-datetime and https://github.com/Kotlin/kotlinx.atomicfu
+- Used in: the desktop app.
+
+#### Other jars in the desktop app
+
+- JetBrains annotations 23.0.0 (`org.jetbrains:annotations`) and JSpecify 1.0.0 (`org.jspecify:jspecify`): Apache-2.0
+  (appendix A.21); copyright see upstream. URL: https://github.com/JetBrains/java-annotations and https://jspecify.dev/
+- org.json 20250517 (`org.json:json`): Public Domain, as its Maven POM states. Copyright: see upstream. URL: https://github.com/stleary/JSON-java
+  Used for reading and writing JSON.
+- kXML 2 2.3.0 (`net.sf.kxml:kxml2`): a BSD-style licence for the kXML2 classes and Public Domain for the XmlPull API, as its
+  Maven POM states. Copyright: Stefan Haustein and the kXML contributors (see upstream). URL: https://kxml.sourceforge.net/
+  Used for reading XML. Licence text, from the upstream `license.txt`:
+
+    Copyright (c) 2002,2003, Stefan Haustein, Oberhausen, Rhld., Germany
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The  above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE. 
+
+
+
 ### Test-only dependencies (not distributed)
 
-JUnit 4.13.2 (Eclipse Public License 1.0), kXML 2 2.3.0 (`net.sf.kxml:kxml2`, a "BSD style" licence) and org.json
-20240303 (`org.json:json`, the "JSON License") are used by the unit tests only and are not part of any build output.
+JUnit 4.13.2 (Eclipse Public License 1.0) is used by the unit tests only and is not part of any build output. In the
+Android build kXML 2 2.3.0 and org.json 20240303 are also test-only; the desktop apps bundle them (see above).
+
+### Adobe Animate file format references (no code included)
+
+The importer for Adobe Animate `.fla` and XFL files (`compat/FlaImport.kt`) was written for AbsentMotion from published
+descriptions of the format. No code from these projects is in AbsentMotion; they are named because their descriptions were read:
+
+- xfl2svg, Copyright (c) 2021 PluieElectrique, MIT licence, https://github.com/PluieElectrique/xfl2svg (the shape edge
+  format and how edges join into filled shapes).
+- JPEXS Free Flash Decompiler, Copyright (C) 2010-2026 JPEXS, GNU LGPL 3.0 or later,
+  https://github.com/jindrapetrik/jpexs-decompiler (the layout of the `bin/*.dat` picture files).
 
 ---
 
-## 4. Google Play services (proprietary)
-
-- Components: ML Kit subject segmentation through Google Play services
-  (`com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1`, used for "Remove Background" on
-  images and video frames).
-- Licence: proprietary (Google APIs Terms of Service and the ML Kit terms). These libraries are **not** open source.
-  The segmentation model is fetched by Google Play services, not by AbsentMotion.
-- Copyright: Google LLC.
-- Used in: the Android app. Intended to be confined to a Google Play build flavour, with a flavour without them for
-  distribution channels that accept only free software.
-- The free Android build (the `foss` flavour) includes neither library; only the `play` build does.
-- Known risk: 16.0.0-beta1 is a beta release, which Google ships without a service-level or deprecation promise, so a
-  later Google Play services update may change or remove it. The version is pinned, the code that uses it is one file
-  (`app/src/play/kotlin/app/absentmotion/ai/BackgroundRemoval.kt`) behind the same interface as the `foss` remover, and
-  when the service fails the app says that background removal is not ready instead of crashing.
-
----
-
-## 5. Fonts, icons and effect thumbnails
+## 4. Fonts, icons and effect thumbnails
 
 ### Noto Color Emoji
 
@@ -454,7 +667,7 @@ instances, and every font was cut down to the Latin, Cyrillic and Vietnamese let
 the writing system of that font, with `tools/gen_fonts.py` and fontTools. The 15 families whose copyright holders reserve
 the font name (Abril Fatface, Alfa Slab One, Bitter, Comfortaa, DM Serif Display, Dancing Script, Kaushan Script, Lobster, Lora, Orbitron, Playfair Display, Press Start 2P, Quicksand, Raleway, Righteous) are included exactly as published, because the SIL Open Font License
 does not allow a modified version to keep a reserved name. The licence text of the SIL Open Font License 1.1 is in
-appendix A.13; the Apache License 2.0 text is the file `LICENSE`.
+appendix A.13; the Apache License 2.0 text is in appendix A.21.
 
 | What | Source | Licence | File |
 |---|---|---|---|
@@ -515,7 +728,7 @@ The icon sets used in the user interface, and their licences, are listed in `doc
 
 ### Effect thumbnail photos
 
-The effect thumbnails (`app/src/main/assets/effects/thumb/*.webp`, 192 x 192 pixels) are rendered by
+The effect thumbnails (`shared/assets/effects/thumb/*.webp`, 192 x 192 pixels) are rendered by
 `tools/effect_thumbs.py` from the six photographs below, all from Wikimedia Commons. Each author released the photograph
 under CC0 1.0, a public domain dedication (https://creativecommons.org/publicdomain/zero/1.0/), so no credit is required;
 they are listed for the record. The licence of each was checked on 2026-10-19 on the file's Commons page and in its
@@ -549,7 +762,7 @@ two screenshots.
 
 ---
 
-## 6. Appendix: licence texts
+## 5. Appendix: licence texts
 
 The texts below are copied unchanged from the files that ship with the sources named in each entry.
 
@@ -3690,4 +3903,889 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+~~~~
+
+### A.21 Apache License 2.0
+
+~~~~text
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+~~~~
+
+### A.22 GNU General Public License, version 2, with the Classpath Exception (OpenJDK)
+
+The text is copied unchanged from `legal/java.base/LICENSE` of OpenJDK 21.0.12.1, followed by its `ASSEMBLY_EXCEPTION`.
+The `ADDITIONAL_LICENSE_INFO` file of each module stays in the runtime's `legal` folder.
+
+~~~~text
+The GNU General Public License (GPL)
+
+Version 2, June 1991
+
+Copyright (C) 1989, 1991 Free Software Foundation, Inc.
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+Everyone is permitted to copy and distribute verbatim copies of this license
+document, but changing it is not allowed.
+
+Preamble
+
+The licenses for most software are designed to take away your freedom to share
+and change it.  By contrast, the GNU General Public License is intended to
+guarantee your freedom to share and change free software--to make sure the
+software is free for all its users.  This General Public License applies to
+most of the Free Software Foundation's software and to any other program whose
+authors commit to using it.  (Some other Free Software Foundation software is
+covered by the GNU Library General Public License instead.) You can apply it to
+your programs, too.
+
+When we speak of free software, we are referring to freedom, not price.  Our
+General Public Licenses are designed to make sure that you have the freedom to
+distribute copies of free software (and charge for this service if you wish),
+that you receive source code or can get it if you want it, that you can change
+the software or use pieces of it in new free programs; and that you know you
+can do these things.
+
+To protect your rights, we need to make restrictions that forbid anyone to deny
+you these rights or to ask you to surrender the rights.  These restrictions
+translate to certain responsibilities for you if you distribute copies of the
+software, or if you modify it.
+
+For example, if you distribute copies of such a program, whether gratis or for
+a fee, you must give the recipients all the rights that you have.  You must
+make sure that they, too, receive or can get the source code.  And you must
+show them these terms so they know their rights.
+
+We protect your rights with two steps: (1) copyright the software, and (2)
+offer you this license which gives you legal permission to copy, distribute
+and/or modify the software.
+
+Also, for each author's protection and ours, we want to make certain that
+everyone understands that there is no warranty for this free software.  If the
+software is modified by someone else and passed on, we want its recipients to
+know that what they have is not the original, so that any problems introduced
+by others will not reflect on the original authors' reputations.
+
+Finally, any free program is threatened constantly by software patents.  We
+wish to avoid the danger that redistributors of a free program will
+individually obtain patent licenses, in effect making the program proprietary.
+To prevent this, we have made it clear that any patent must be licensed for
+everyone's free use or not licensed at all.
+
+The precise terms and conditions for copying, distribution and modification
+follow.
+
+TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+0. This License applies to any program or other work which contains a notice
+placed by the copyright holder saying it may be distributed under the terms of
+this General Public License.  The "Program", below, refers to any such program
+or work, and a "work based on the Program" means either the Program or any
+derivative work under copyright law: that is to say, a work containing the
+Program or a portion of it, either verbatim or with modifications and/or
+translated into another language.  (Hereinafter, translation is included
+without limitation in the term "modification".) Each licensee is addressed as
+"you".
+
+Activities other than copying, distribution and modification are not covered by
+this License; they are outside its scope.  The act of running the Program is
+not restricted, and the output from the Program is covered only if its contents
+constitute a work based on the Program (independent of having been made by
+running the Program).  Whether that is true depends on what the Program does.
+
+1. You may copy and distribute verbatim copies of the Program's source code as
+you receive it, in any medium, provided that you conspicuously and
+appropriately publish on each copy an appropriate copyright notice and
+disclaimer of warranty; keep intact all the notices that refer to this License
+and to the absence of any warranty; and give any other recipients of the
+Program a copy of this License along with the Program.
+
+You may charge a fee for the physical act of transferring a copy, and you may
+at your option offer warranty protection in exchange for a fee.
+
+2. You may modify your copy or copies of the Program or any portion of it, thus
+forming a work based on the Program, and copy and distribute such modifications
+or work under the terms of Section 1 above, provided that you also meet all of
+these conditions:
+
+    a) You must cause the modified files to carry prominent notices stating
+    that you changed the files and the date of any change.
+
+    b) You must cause any work that you distribute or publish, that in whole or
+    in part contains or is derived from the Program or any part thereof, to be
+    licensed as a whole at no charge to all third parties under the terms of
+    this License.
+
+    c) If the modified program normally reads commands interactively when run,
+    you must cause it, when started running for such interactive use in the
+    most ordinary way, to print or display an announcement including an
+    appropriate copyright notice and a notice that there is no warranty (or
+    else, saying that you provide a warranty) and that users may redistribute
+    the program under these conditions, and telling the user how to view a copy
+    of this License.  (Exception: if the Program itself is interactive but does
+    not normally print such an announcement, your work based on the Program is
+    not required to print an announcement.)
+
+These requirements apply to the modified work as a whole.  If identifiable
+sections of that work are not derived from the Program, and can be reasonably
+considered independent and separate works in themselves, then this License, and
+its terms, do not apply to those sections when you distribute them as separate
+works.  But when you distribute the same sections as part of a whole which is a
+work based on the Program, the distribution of the whole must be on the terms
+of this License, whose permissions for other licensees extend to the entire
+whole, and thus to each and every part regardless of who wrote it.
+
+Thus, it is not the intent of this section to claim rights or contest your
+rights to work written entirely by you; rather, the intent is to exercise the
+right to control the distribution of derivative or collective works based on
+the Program.
+
+In addition, mere aggregation of another work not based on the Program with the
+Program (or with a work based on the Program) on a volume of a storage or
+distribution medium does not bring the other work under the scope of this
+License.
+
+3. You may copy and distribute the Program (or a work based on it, under
+Section 2) in object code or executable form under the terms of Sections 1 and
+2 above provided that you also do one of the following:
+
+    a) Accompany it with the complete corresponding machine-readable source
+    code, which must be distributed under the terms of Sections 1 and 2 above
+    on a medium customarily used for software interchange; or,
+
+    b) Accompany it with a written offer, valid for at least three years, to
+    give any third party, for a charge no more than your cost of physically
+    performing source distribution, a complete machine-readable copy of the
+    corresponding source code, to be distributed under the terms of Sections 1
+    and 2 above on a medium customarily used for software interchange; or,
+
+    c) Accompany it with the information you received as to the offer to
+    distribute corresponding source code.  (This alternative is allowed only
+    for noncommercial distribution and only if you received the program in
+    object code or executable form with such an offer, in accord with
+    Subsection b above.)
+
+The source code for a work means the preferred form of the work for making
+modifications to it.  For an executable work, complete source code means all
+the source code for all modules it contains, plus any associated interface
+definition files, plus the scripts used to control compilation and installation
+of the executable.  However, as a special exception, the source code
+distributed need not include anything that is normally distributed (in either
+source or binary form) with the major components (compiler, kernel, and so on)
+of the operating system on which the executable runs, unless that component
+itself accompanies the executable.
+
+If distribution of executable or object code is made by offering access to copy
+from a designated place, then offering equivalent access to copy the source
+code from the same place counts as distribution of the source code, even though
+third parties are not compelled to copy the source along with the object code.
+
+4. You may not copy, modify, sublicense, or distribute the Program except as
+expressly provided under this License.  Any attempt otherwise to copy, modify,
+sublicense or distribute the Program is void, and will automatically terminate
+your rights under this License.  However, parties who have received copies, or
+rights, from you under this License will not have their licenses terminated so
+long as such parties remain in full compliance.
+
+5. You are not required to accept this License, since you have not signed it.
+However, nothing else grants you permission to modify or distribute the Program
+or its derivative works.  These actions are prohibited by law if you do not
+accept this License.  Therefore, by modifying or distributing the Program (or
+any work based on the Program), you indicate your acceptance of this License to
+do so, and all its terms and conditions for copying, distributing or modifying
+the Program or works based on it.
+
+6. Each time you redistribute the Program (or any work based on the Program),
+the recipient automatically receives a license from the original licensor to
+copy, distribute or modify the Program subject to these terms and conditions.
+You may not impose any further restrictions on the recipients' exercise of the
+rights granted herein.  You are not responsible for enforcing compliance by
+third parties to this License.
+
+7. If, as a consequence of a court judgment or allegation of patent
+infringement or for any other reason (not limited to patent issues), conditions
+are imposed on you (whether by court order, agreement or otherwise) that
+contradict the conditions of this License, they do not excuse you from the
+conditions of this License.  If you cannot distribute so as to satisfy
+simultaneously your obligations under this License and any other pertinent
+obligations, then as a consequence you may not distribute the Program at all.
+For example, if a patent license would not permit royalty-free redistribution
+of the Program by all those who receive copies directly or indirectly through
+you, then the only way you could satisfy both it and this License would be to
+refrain entirely from distribution of the Program.
+
+If any portion of this section is held invalid or unenforceable under any
+particular circumstance, the balance of the section is intended to apply and
+the section as a whole is intended to apply in other circumstances.
+
+It is not the purpose of this section to induce you to infringe any patents or
+other property right claims or to contest validity of any such claims; this
+section has the sole purpose of protecting the integrity of the free software
+distribution system, which is implemented by public license practices.  Many
+people have made generous contributions to the wide range of software
+distributed through that system in reliance on consistent application of that
+system; it is up to the author/donor to decide if he or she is willing to
+distribute software through any other system and a licensee cannot impose that
+choice.
+
+This section is intended to make thoroughly clear what is believed to be a
+consequence of the rest of this License.
+
+8. If the distribution and/or use of the Program is restricted in certain
+countries either by patents or by copyrighted interfaces, the original
+copyright holder who places the Program under this License may add an explicit
+geographical distribution limitation excluding those countries, so that
+distribution is permitted only in or among countries not thus excluded.  In
+such case, this License incorporates the limitation as if written in the body
+of this License.
+
+9. The Free Software Foundation may publish revised and/or new versions of the
+General Public License from time to time.  Such new versions will be similar in
+spirit to the present version, but may differ in detail to address new problems
+or concerns.
+
+Each version is given a distinguishing version number.  If the Program
+specifies a version number of this License which applies to it and "any later
+version", you have the option of following the terms and conditions either of
+that version or of any later version published by the Free Software Foundation.
+If the Program does not specify a version number of this License, you may
+choose any version ever published by the Free Software Foundation.
+
+10. If you wish to incorporate parts of the Program into other free programs
+whose distribution conditions are different, write to the author to ask for
+permission.  For software which is copyrighted by the Free Software Foundation,
+write to the Free Software Foundation; we sometimes make exceptions for this.
+Our decision will be guided by the two goals of preserving the free status of
+all derivatives of our free software and of promoting the sharing and reuse of
+software generally.
+
+NO WARRANTY
+
+11. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY FOR
+THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN OTHERWISE
+STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE
+PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND
+PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE,
+YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+12. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL
+ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR REDISTRIBUTE THE
+PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR
+INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA
+BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
+FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF SUCH HOLDER
+OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+END OF TERMS AND CONDITIONS
+
+How to Apply These Terms to Your New Programs
+
+If you develop a new program, and you want it to be of the greatest possible
+use to the public, the best way to achieve this is to make it free software
+which everyone can redistribute and change under these terms.
+
+To do so, attach the following notices to the program.  It is safest to attach
+them to the start of each source file to most effectively convey the exclusion
+of warranty; and each file should have at least the "copyright" line and a
+pointer to where the full notice is found.
+
+    One line to give the program's name and a brief idea of what it does.
+
+    Copyright (C) <year> <name of author>
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation; either version 2 of the License, or (at your option)
+    any later version.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+    more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+Also add information on how to contact you by electronic and paper mail.
+
+If the program is interactive, make it output a short notice like this when it
+starts in an interactive mode:
+
+    Gnomovision version 69, Copyright (C) year name of author Gnomovision comes
+    with ABSOLUTELY NO WARRANTY; for details type 'show w'.  This is free
+    software, and you are welcome to redistribute it under certain conditions;
+    type 'show c' for details.
+
+The hypothetical commands 'show w' and 'show c' should show the appropriate
+parts of the General Public License.  Of course, the commands you use may be
+called something other than 'show w' and 'show c'; they could even be
+mouse-clicks or menu items--whatever suits your program.
+
+You should also get your employer (if you work as a programmer) or your school,
+if any, to sign a "copyright disclaimer" for the program, if necessary.  Here
+is a sample; alter the names:
+
+    Yoyodyne, Inc., hereby disclaims all copyright interest in the program
+    'Gnomovision' (which makes passes at compilers) written by James Hacker.
+
+    signature of Ty Coon, 1 April 1989
+
+    Ty Coon, President of Vice
+
+This General Public License does not permit incorporating your program into
+proprietary programs.  If your program is a subroutine library, you may
+consider it more useful to permit linking proprietary applications with the
+library.  If this is what you want to do, use the GNU Library General Public
+License instead of this License.
+
+
+"CLASSPATH" EXCEPTION TO THE GPL
+
+Certain source files distributed by Oracle America and/or its affiliates are
+subject to the following clarification and special exception to the GPL, but
+only where Oracle has expressly included in the particular source file's header
+the words "Oracle designates this particular file as subject to the "Classpath"
+exception as provided by Oracle in the LICENSE file that accompanied this code."
+
+    Linking this library statically or dynamically with other modules is making
+    a combined work based on this library.  Thus, the terms and conditions of
+    the GNU General Public License cover the whole combination.
+
+    As a special exception, the copyright holders of this library give you
+    permission to link this library with independent modules to produce an
+    executable, regardless of the license terms of these independent modules,
+    and to copy and distribute the resulting executable under terms of your
+    choice, provided that you also meet, for each linked independent module,
+    the terms and conditions of the license of that module.  An independent
+    module is a module which is not derived from or based on this library.  If
+    you modify this library, you may extend this exception to your version of
+    the library, but you are not obligated to do so.  If you do not wish to do
+    so, delete this exception statement from your version.
+~~~~
+
+~~~~text
+
+OPENJDK ASSEMBLY EXCEPTION
+
+The OpenJDK source code made available by Oracle America, Inc. (Oracle) at
+openjdk.org ("OpenJDK Code") is distributed under the terms of the GNU
+General Public License <https://www.gnu.org/copyleft/gpl.html> version 2
+only ("GPL2"), with the following clarification and special exception.
+
+    Linking this OpenJDK Code statically or dynamically with other code
+    is making a combined work based on this library.  Thus, the terms
+    and conditions of GPL2 cover the whole combination.
+
+    As a special exception, Oracle gives you permission to link this
+    OpenJDK Code with certain code licensed by Oracle as indicated at
+    https://openjdk.org/legal/exception-modules-2007-05-08.html
+    ("Designated Exception Modules") to produce an executable,
+    regardless of the license terms of the Designated Exception Modules,
+    and to copy and distribute the resulting executable under GPL2,
+    provided that the Designated Exception Modules continue to be
+    governed by the licenses under which they were offered by Oracle.
+
+As such, it allows licensees and sublicensees of Oracle's GPL2 OpenJDK Code
+to build an executable that includes those portions of necessary code that
+Oracle could not provide under GPL2 (or that Oracle has provided under GPL2
+with the Classpath exception).  If you modify or add to the OpenJDK code,
+that new GPL2 code may still be combined with Designated Exception Modules
+if the new code is made subject to this exception by its copyright holder.
+~~~~
+
+### A.23 libvpx (BSD-3-Clause and the WebM patent grant)
+
+From `LICENSE` and `PATENTS` of libvpx 1.17.0.
+
+~~~~text
+Copyright (c) 2010, The WebM Project authors. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+  * Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+
+  * Neither the name of Google, nor the WebM Project, nor the names
+    of its contributors may be used to endorse or promote products
+    derived from this software without specific prior written
+    permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+~~~~
+
+~~~~text
+Additional IP Rights Grant (Patents)
+------------------------------------
+
+"These implementations" means the copyrightable works that implement the WebM
+codecs distributed by Google as part of the WebM Project.
+
+Google hereby grants to you a perpetual, worldwide, non-exclusive, no-charge,
+royalty-free, irrevocable (except as stated in this section) patent license to
+make, have made, use, offer to sell, sell, import, transfer, and otherwise
+run, modify and propagate the contents of these implementations of WebM, where
+such license applies only to those patent claims, both currently owned by
+Google and acquired in the future, licensable by Google that are necessarily
+infringed by these implementations of WebM. This grant does not include claims
+that would be infringed only as a consequence of further modification of these
+implementations. If you or your agent or exclusive licensee institute or order
+or agree to the institution of patent litigation or any other patent
+enforcement activity against any entity (including a cross-claim or
+counterclaim in a lawsuit) alleging that any of these implementations of WebM
+or any code incorporated within any of these implementations of WebM
+constitute direct or contributory patent infringement, or inducement of
+patent infringement, then any patent rights granted to you under this License
+for these implementations of WebM shall terminate as of the date such
+litigation is filed.
+~~~~
+
+### A.24 dav1d (BSD-2-Clause)
+
+From `COPYING` of dav1d 1.5.4.
+
+~~~~text
+Copyright © 2018-2025, VideoLAN and dav1d authors
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+~~~~
+
+### A.25 Opus (BSD-3-Clause)
+
+From `COPYING` of Opus 1.6.1.
+
+~~~~text
+Copyright 2001-2023 Xiph.Org, Skype Limited, Octasic,
+                    Jean-Marc Valin, Timothy B. Terriberry,
+                    CSIRO, Gregory Maxwell, Mark Borgerding,
+                    Erik de Castro Lopo, Mozilla, Amazon
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+- Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+- Neither the name of Internet Society, IETF or IETF Trust, nor the
+names of specific contributors, may be used to endorse or promote
+products derived from this software without specific prior written
+permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Opus is subject to the royalty-free patent licenses which are
+specified at:
+
+Xiph.Org Foundation:
+https://datatracker.ietf.org/ipr/1524/
+
+Microsoft Corporation:
+https://datatracker.ietf.org/ipr/1914/
+
+Broadcom Corporation:
+https://datatracker.ietf.org/ipr/1526/
+~~~~
+
+### A.26 SVT-AV1 (BSD-3-Clause-Clear and the Alliance for Open Media Patent License 1.0)
+
+From `LICENSE.md` and `PATENTS.md` of SVT-AV1 4.3.0.
+
+~~~~text
+BSD 3-Clause Clear License
+The Clear BSD License
+
+Copyright (c) 2021, Alliance for Open Media
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted (subject to the limitations in the disclaimer below)
+provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in
+   the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the Alliance for Open Media nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS LICENSE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+~~~~
+
+~~~~text
+**Alliance for Open Media Patent License 1.0**
+
+ 1. **License Terms.**
+
+    **Patent License.** Subject to the terms and conditions of this License, each
+     Licensor, on behalf of itself and successors in interest and assigns,
+     grants Licensee a non-sublicensable, perpetual, worldwide, non-exclusive,
+     no-charge, royalty-free, irrevocable (except as expressly stated in this
+     License) patent license to its Necessary Claims to make, use, sell, offer
+     for sale, import or distribute any Implementation.
+
+     **Conditions.**
+
+    *Availability.* As a condition to the grant of rights to Licensee to make,
+       sell, offer for sale, import or distribute an Implementation under
+       Section 1.1, Licensee must make its Necessary Claims available under
+       this License, and must reproduce this License with any Implementation
+       as follows:
+
+          a. For distribution in source code, by including this License in the
+          root directory of the source code with its Implementation.
+
+          b. For distribution in any other form (including binary, object form,
+          and/or hardware description code (e.g., HDL, RTL, Gate Level Netlist,
+          GDSII, etc.)), by including this License in the documentation, legal
+          notices, and/or other written materials provided with the
+          Implementation.
+
+    *Additional Conditions.* This license is directly from Licensor to
+       Licensee.  Licensee acknowledges as a condition of benefiting from it
+       that no rights from Licensor are received from suppliers, distributors,
+       or otherwise in connection with this License.
+
+    **Defensive Termination**. If any Licensee, its Affiliates, or its agents
+     initiates patent litigation or files, maintains, or voluntarily
+     participates in a lawsuit against another entity or any person asserting
+     that any Implementation infringes Necessary Claims, any patent licenses
+     granted under this License directly to the Licensee are immediately
+     terminated as of the date of the initiation of action unless 1) that suit
+     was in response to a corresponding suit regarding an Implementation first
+     brought against an initiating entity, or 2) that suit was brought to
+     enforce the terms of this License (including intervention in a third-party
+     action by a Licensee).
+
+    **Disclaimers.** The Reference Implementation and Specification are provided
+     "AS IS" and without warranty. The entire risk as to implementing or
+     otherwise using the Reference Implementation or Specification is assumed
+     by the implementer and user. Licensor expressly disclaims any warranties
+     (express, implied, or otherwise), including implied warranties of
+     merchantability, non-infringement, fitness for a particular purpose, or
+     title, related to the material. IN NO EVENT WILL LICENSOR BE LIABLE TO
+     ANY OTHER PARTY FOR LOST PROFITS OR ANY FORM OF INDIRECT, SPECIAL,
+     INCIDENTAL, OR CONSEQUENTIAL DAMAGES OF ANY CHARACTER FROM ANY CAUSES OF
+     ACTION OF ANY KIND WITH RESPECT TO THIS LICENSE, WHETHER BASED ON BREACH
+     OF CONTRACT, TORT (INCLUDING NEGLIGENCE), OR OTHERWISE, AND WHETHER OR
+     NOT THE OTHER PARTRY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+2. **Definitions.**
+
+     **Affiliate.**  "Affiliate" means an entity that directly or indirectly
+     Controls, is Controlled by, or is under common Control of that party.
+
+    **Control.** "Control" means direct or indirect control of more than 50% of
+     the voting power to elect directors of that corporation, or for any other
+     entity, the power to direct management of such entity.
+
+    **Decoder.**  "Decoder" means any decoder that conforms fully with all
+     non-optional portions of the Specification.
+
+    **Encoder.**  "Encoder" means any encoder that produces a bitstream that can
+     be decoded by a Decoder only to the extent it produces such a bitstream.
+
+    **Final Deliverable.**  "Final Deliverable" means the final version of a
+     deliverable approved by the Alliance for Open Media as a Final
+     Deliverable.
+
+    **Implementation.**  "Implementation" means any implementation, including the
+     Reference Implementation, that is an Encoder and/or a Decoder. An
+     Implementation also includes components of an Implementation only to the
+     extent they are used as part of an Implementation.
+
+    **License.** "License" means this license.
+
+    **Licensee.** "Licensee" means any person or entity who exercises patent
+     rights granted under this License.
+
+    **Licensor.**  "Licensor" means (i) any Licensee that makes, sells, offers
+     for sale, imports or distributes any Implementation, or (ii) a person
+     or entity that has a licensing obligation to the Implementation as a
+     result of its membership and/or participation in the Alliance for Open
+     Media working group that developed the Specification.
+
+    **Necessary Claims.**  "Necessary Claims" means all claims of patents or
+      patent applications, (a) that currently or at any time in the future,
+      are owned or controlled by the Licensor, and (b) (i) would be an
+      Essential Claim as defined by the W3C Policy as of February 5, 2004
+      (https://www.w3.org/Consortium/Patent-Policy-20040205/#def-essential)
+      as if the Specification was a W3C Recommendation; or (ii) are infringed
+      by the Reference Implementation.
+
+     **Reference Implementation.** "Reference Implementation" means an Encoder
+      and/or Decoder released by the Alliance for Open Media as a Final
+      Deliverable.
+
+     **Specification.** "Specification" means the specification designated by
+      the Alliance for Open Media as a Final Deliverable for which this
+      License was issued.
 ~~~~

@@ -40,7 +40,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('source', type=pathlib.Path)
     args = ap.parse_args()
-    target = pathlib.Path(__file__).resolve().parents[1] / 'app/src/main/assets/effects'
+    target = pathlib.Path(__file__).resolve().parents[1] / 'shared/assets/effects'
     raw = args.source.read_bytes()
     result = convert(raw)
     (target / 'true-grade.json').write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding='utf-8')

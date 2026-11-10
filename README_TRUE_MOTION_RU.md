@@ -1,3 +1,9 @@
+# True Motion Next 0.19.0
+
+База обновлена до [AbsentMotion 5.0.0](https://github.com/Comett1225/AbsentMotion/releases/tag/v5.0.0). Сохранены инструменты True Motion, эффекты AfterMotionZ+ и Classic, векторный редактор, риги, свободные значения размера/FPS/скорости/громкости и кэш до 2 ГиБ.
+
+Добавлены изменения новой базы: сортировка и разбиение 3D, световые слои, палитры, импорт FLA и новые нативные эффекты. Старый Parent Helper и новый Parenting Helper имеют разные ID, чтобы настройки сохранённых проектов не менялись. Исправлены обнаруженные при переносе конфликты траекторий, глубины, кэша и поворота камеры. [Проверки и ограничения](docs/TRUE_MOTION_019_VALIDATION.md).
+
 # Обновление 0.17.1
 
 Исправлены исчезающие слои при общей глубине, появление покадровых ключей при привязке и визуальный поворот костей. Отдельная вкладка «Моушн-графика» удалена: повторения — в эффектах, связь — у параметра, 3D — в просмотре/камере. [Описание и проверки](docs/RELEASE_0_17_1_RU.md).
@@ -42,7 +48,7 @@
 
 Главная точка входа новых инструментов — значок четырёх квадратов в верхней панели проекта. Векторный редактор находится в категории Слои; плагины включаются отдельно.
 
-Сборка Windows: JDK 21, Android SDK 37.0, затем `gradlew.bat -PtrueMotionNativePrebuilt=true :app:assembleCompatDebug`. Путь SDK задаётся локально через ANDROID_HOME или local.properties. Native binary лежит в app/native-prebuilt: libamengine.so пересобрана из текущих C++ исходников и pinned Skia, остальные библиотеки — matching upstream. Происхождение записано в docs/TRUE_MOTION_PROVENANCE.json; пересборка ядра описана в docs/NATIVE_AUDIO_BUILD_RU.md. Для изменений C++ нужен полный маршрут docs/BUILD.md.
+Сборка Windows: JDK 21, Android SDK 37.0, затем `gradlew.bat -PtrueMotionNativePrebuilt=true :app:assembleCompatDebug`. Путь SDK задаётся локально через ANDROID_HOME или local.properties. Native binary лежит в android/native-prebuilt: libamengine.so пересобрана из текущих C++ исходников и pinned Skia, остальные библиотеки — matching upstream. Происхождение записано в docs/TRUE_MOTION_PROVENANCE.json; пересборка ядра описана в docs/NATIVE_AUDIO_BUILD_RU.md. Для изменений C++ нужен полный маршрут docs/BUILD.md.
 
 Исходный AbsentMotion распространяется по Apache 2.0; исходные NOTICE, LICENSE и THIRD_PARTY_NOTICES.md сохранены. Rhino — MPL 2.0; его лицензия включена в app/src/main/assets/true-licenses. Свои инструменты адаптированы из существующего True Motion; прежние авторы Toji Motion / Alight Motion указаны в credits.
 

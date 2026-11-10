@@ -4,13 +4,13 @@ group: Interface
 order: 3
 summary: The top bar, the preview, the play bar and how the pieces fit together.
 ---
-The editor has four parts, from top to bottom: the **top bar**, the **preview**, the **play bar** and the **timeline** with its tools. On a wide tablet held sideways the preview keeps the whole width, and the tools of a selected clip open in a narrow column on the right edge.
+The editor has four parts, from top to bottom: the **top bar**, the **preview**, the **play bar** and the **timeline** with its tools. Tablets get their own layout: see **On a tablet** below.
 
 ![The four parts of the editor: the top bar (1), the preview (2), the play bar (3) and the timeline with its tools (4).](img/editor.webp)
 
 Changes are saved automatically a moment after each edit. A version of the project is also kept every two minutes while you edit (see [Projects, backup and import](@projects)). The top layer in the timeline is the front layer, and new layers are added at the front.
 
-The Back button of the phone steps back one level at a time: it closes the preview strip, clears a multi-selection, closes the easing graph, leaves an open effect, leaves a panel, deselects the layer and only then leaves the editor.
+The Back button of the phone steps back one level at a time: it closes the preview strip, clears a multi-selection, closes the easing graph, leaves an open effect, leaves a panel, deselects the layer, leaves an open group and only then leaves the editor.
 
 ## The top bar
 
@@ -34,6 +34,8 @@ What the top bar shows depends on what is selected.
 ![The top bar with a layer selected: Back (1), the layer name (2), the parent button (3), Delete layer (4) and Layer menu (5).](img/editor-top-bar.webp)
 
 **A panel open.** The top bar shows a back arrow and the panel's name, such as Transform, Fill & Color or Effects.
+
+**Inside a group.** After **Edit Group**, the top bar shows the path instead of the project name: the project name, then the name of each open group. Tap the project name to go back to the whole project, or a group's name to go back to that group. With a layer selected, a small pill with the group's name next to the layer name leaves the group. The gear is hidden inside a group. See [Shapes, drawing and masks](@shapes).
 
 ### Project settings
 
@@ -73,7 +75,7 @@ The last button of the play bar (**Preview mode**) opens a narrow strip at the r
 
 ![The preview strip: Pixel preview (1), Grid (2), Solo the selected layers (3), Camera View (4), the preview quality (5), the blur mode (6) and zoom (7).](img/editor-preview-strip.webp)
 
-**Pre-render**, between **Fast Blur** and **Zoom**, renders the project ahead from the playhead to the end (or as much as fits in memory and storage), so a heavy project plays smoothly. A note at the top of the preview shows the progress with a **Cancel** button. While playback uses the pre-rendered frames, a small **Pre-rendered** label shows at the top right of the preview. Any change to the project makes the pre-render out of date: the **Pre-render** button in the strip changes color and a note offers **Pre-render again**. When it is ready, tap **Pre-render** to see the time it covers, or press and hold it to remove it.
+**Pre-render**, between **Fast Blur** and **Zoom**, renders the project ahead from the playhead to the end (or as much as fits in memory and storage), so a heavy project plays smoothly. A note at the top of the preview shows the progress with a **Cancel** button. While playback uses the pre-rendered frames, a small **Pre-rendered** label shows at the top right of the preview. Any change to the project makes the pre-render out of date: the **Pre-render** button in the strip changes color and a note offers **Pre-render again**. When it is ready, tap **Pre-render** to see the time it covers, or press and hold it to remove it. Even without **Pre-render**, the app prepares frames around the playhead whenever you pause (see [Settings](@settings)); a thin green line at the bottom of the time ruler marks them.
 
 ### Other things on the preview
 
@@ -92,11 +94,21 @@ Seven buttons, left to right.
 
 ![The play bar: Undo (1), Redo (2), Skip back (3), Play (4), Skip forward (5), Copy and paste (6) and Preview mode (7).](img/editor-play-bar.webp)
 
-The thin line under the bar is a live level meter while the project plays: green, then yellow, then red as the sound gets louder. The whole line flashes red if the sound clips.
+The thin line under the bar is a live level meter while the project plays: the left half shows the left channel and the right half the right channel, green, then yellow, then red as the sound gets louder. A half flashes red if its side clips.
 
 ## Multi-select
 
 Press and hold the eye or the name area of a layer's row and then slide up or down to select several rows at once; afterwards a tap toggles rows. The top bar changes color and shows group, effects, delete and alignment buttons, and a bar appears at the bottom with clip-timing commands. They are all described in [Layer menus and multi-select](@layer-menus).
+
+## On a tablet
+
+A tablet uses a wider layout whenever its screen is wide enough, in portrait and in landscape (most 10 and 11 inch tablets both ways, smaller ones when held sideways).
+
+- The panels and the tools of a selected layer open in a column beside the preview, so they never cover the timeline.
+- The timeline gets the whole width under the preview. In portrait it takes the lower part of the screen, so many more layers fit.
+- The tools fit on one page, in two to four columns.
+
+On a smaller tablet held upright the editor looks like the phone's, and sheets such as the color picker, presets, About and Help open as a card in the middle instead of filling the screen. The home screen also gets a grid of projects and templates and puts the tools side by side: see [The home screen](@home).
 
 ## Next
 

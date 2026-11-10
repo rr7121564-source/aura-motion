@@ -1,17 +1,20 @@
 #!/bin/sh
 set -eu
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-SRC="${1:-$ROOT/app/src/main/cpp}"
+SRC="${1:-$ROOT/shared/cpp}"
 OUT="${2:-$ROOT/build/render_bench/current}"
 EXTRA=""
 grep -q "steady" "$SRC/scene.h" && EXTRA="-DRENDER_BENCH_STEADY"
+grep -q "SceneLights" "$SRC/scene.h" && EXTRA="$EXTRA -DRENDER_BENCH_DEPTH3D"
+grep -q "pieceOrder" "$SRC/scene.h" && EXTRA="$EXTRA -DRENDER_BENCH_PIECES"
+grep -q "SplitSeen" "$SRC/scene.h" && EXTRA="$EXTRA -DRENDER_BENCH_SPLIT"
 SKIA="$ROOT/third_party/skia"
 LIBS="$SKIA/out/mac-v2-2-arm64"
 mkdir -p "$OUT/obj"
 FLAGS="-std=c++20 -O2 -fno-rtti -fno-exceptions -w -DNDEBUG -DSK_DISABLE_TRACING -DXML_STATIC -DU_DISABLE_RENAMING=1 -DU_STATIC_IMPLEMENTATION -DU_USING_ICU_NAMESPACE=0 $EXTRA
  -I$SRC -I$SKIA -I$SKIA/third_party/externals/expat/expat/lib -I$SKIA/third_party/externals/icu/source/common"
 export FLAGS SRC OUT
-for f in camera drawing easing effects model motion legacy true_particles particles pieces3d spectrum scene shapes styles text textanim warp xml; do echo "$f"; done | xargs -P 8 -n 1 sh -c '
+for f in camera depth drawing easing effects model motion legacy true_particles particles pieces3d spectrum scene shapes styles text textanim warp xml; do echo "$f"; done | xargs -P 8 -n 1 sh -c '
   clang++ $FLAGS -c "$SRC/$0.cpp" -o "$OUT/obj/$0.o"'
 link() {
   clang++ -o "$1" "$2" "$OUT"/obj/*.o \
@@ -26,5 +29,9 @@ link "$OUT/render_bench" "$OUT/render_bench.o"
 if [ -n "$EXTRA" ]; then
   clang++ $FLAGS -c "$ROOT/tools/render_bench/steady_test.cpp" -o "$OUT/steady_test.o"
   link "$OUT/steady_test" "$OUT/steady_test.o"
+fi
+if grep -q "struct ValueLink" "$SRC/scene.h"; then
+  clang++ $FLAGS -c "$ROOT/tools/render_bench/link_test.cpp" -o "$OUT/link_test.o"
+  link "$OUT/link_test" "$OUT/link_test.o"
 fi
 echo "built $OUT/render_bench"

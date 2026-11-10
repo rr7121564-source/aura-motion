@@ -2,7 +2,7 @@
 title: Keyframes and easing
 group: Create
 order: 1
-summary: Animate any value over time, move and retime keyframes and shape the motion with easing curves.
+summary: Animate any value over time, move and retime keyframes, shape the motion with easing curves.
 ---
 A **keyframe** stores the value of one property at one moment. Between two keyframes the app calculates the values in between, which makes the animation. Almost every value can be animated: position, size, rotation, tilt, skew, opacity, colors, stroke, border and shadow settings, shape parameters, camera and model settings, volume, and the settings of effects.
 
