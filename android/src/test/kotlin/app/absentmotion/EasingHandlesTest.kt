@@ -12,7 +12,7 @@ import org.junit.Test
 class EasingHandlesTest {
     private val ranges: Map<String, List<ClosedFloatingPointRange<Float>?>> = mapOf(
         "cubicBezier" to listOf(0f..1f, -2f..3f, 0f..1f, -2f..3f),
-        "bounce" to listOf(0.02f..1f, 0f..0.95f),
+        "bounce" to listOf(0.02f..1f, 0f..1f),
         "elastic" to listOf(0.02f..0.98f, null, 0f..1f, 0f..1f),
         "cyclic" to listOf(0.02f..1f, 0f..1f, 0.02f..0.98f, 0f..1f, null),
         "random" to List(6) { 0f..1f },

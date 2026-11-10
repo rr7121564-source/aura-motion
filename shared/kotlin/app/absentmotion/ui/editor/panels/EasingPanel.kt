@@ -6,6 +6,8 @@ import androidx.compose.ui.semantics.semantics
 import app.absentmotion.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -300,12 +302,15 @@ private fun DrawScope.drawGraph(g: Geo, samples: FloatArray, handles: List<Easin
 
 @Composable
 private fun Presets(state: EditorState, easing: Easing, family: Int, modifier: Modifier) {
-    Column(modifier.background(Am.Field)) {
-        for (preset in EasingCatalog.families[family]) {
-            val lit = EasingCatalog.matches(preset.easing, easing.copy(prefixes = emptyList())) ||
-                (easing.type != "cubicBezier" && preset.easing.type == easing.type)
+    val base = easing.copy(prefixes = emptyList())
+    val presets = EasingCatalog.families[family]
+    val chosen = EasingCatalog.presetOf(base)
+    Column(modifier.background(Am.Field).verticalScroll(rememberScrollState())) {
+        for (preset in presets) {
+            val lit = preset == chosen
+            val label = stringResource(preset.label)
             Box(
-                Modifier.weight(1f).fillMaxWidth().clickable { state.setEasing(preset.easing) }
+                Modifier.height(54.dp).fillMaxWidth().semantics { contentDescription = label }.clickable { state.setEasing(preset.easing) }
                     .padding(start = 22.px, end = 22.px, top = 11.px, bottom = 12.px)
                     .then(if (lit) Modifier.clip(TileShape).background(PresetTile) else Modifier),
                 Alignment.Center,

@@ -2475,4 +2475,13 @@
     <string name="desk_reveal_finder">Показать в Finder</string>
     <string name="desk_reveal_explorer">Показать в Explorer</string>
     <string name="desk_reveal_folder">Показать в папке</string>
+    <string name="easing_snap">РЕЗКИЙ ПЕРЕХОД</string>
+    <string name="easing_back_out">ВЫЛЕТ С ВОЗВРАТОМ</string>
+    <string name="easing_back_in">ЗАМАХ</string>
+    <string name="easing_bounce_loop">ЦИКЛИЧНЫЙ ОТСКОК</string>
+    <string name="parent_picker_title">Родительский слой</string>
+    <string name="parent_picker_search">Найти слой</string>
+    <string name="parent_picker_empty">Подходящих слоёв нет</string>
+    <string name="parent_picker_hint">При привязке положение и размер сохраняются.</string>
+    <string name="parent_picker_layer_number">Слой %1$d</string>
 </resources>

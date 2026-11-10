@@ -174,9 +174,13 @@ object EasingCatalog {
             EasingPreset(BEZIER, Easing("cubicBezier", listOf(0.42f, 0f, 1f, 1f))),
             EasingPreset(BEZIER, Easing("cubicBezier", listOf(0f, 0f, 0.58f, 1f))),
             EasingPreset(BEZIER, Easing("cubicBezier", listOf(0.42f, 0f, 0.58f, 1f))),
+            EasingPreset(R.string.easing_snap, Easing("cubicBezier", listOf(0.8f, 0f, 0.2f, 1f))),
+            EasingPreset(R.string.easing_back_out, Easing("cubicBezier", listOf(0.175f, 0.885f, 0.32f, 1.275f))),
+            EasingPreset(R.string.easing_back_in, Easing("cubicBezier", listOf(0.6f, -0.28f, 0.735f, 0.045f))),
         ),
         listOf(
             EasingPreset(R.string.keyframe_easing_bounce, Easing("bounce", listOf(0.3f, 0.8f))),
+            EasingPreset(R.string.easing_bounce_loop, Easing("bounce", listOf(2f / 7f, 1f))),
             EasingPreset(R.string.keyframe_easing_elastic, Easing("elastic", listOf(0.25f, 1f, 0.5f, 1f))),
             EasingPreset(R.string.keyframe_easing_cyclic, Easing("cyclic", listOf(0.2857143f, 0f, 0.5f, 0f, 0f))),
             EasingPreset(R.string.keyframe_easing_random, Easing("random", listOf(0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0f))),
@@ -192,7 +196,9 @@ object EasingCatalog {
     fun presetOf(easing: Easing): EasingPreset {
         val family = families[familyOf(easing)]
         val base = easing.copy(prefixes = emptyList())
-        return family.firstOrNull { matches(it.easing, base) } ?: family.firstOrNull { it.easing.type == base.type } ?: family[0]
+        return family.firstOrNull { matches(it.easing, base) }
+            ?: family.firstOrNull { base.type == "bounce" && base.p.getOrNull(1) == 1f && it.easing.type == "bounce" && it.easing.p.getOrNull(1) == 1f }
+            ?: family.firstOrNull { it.easing.type == base.type } ?: family[0]
     }
 
     fun matches(a: Easing, b: Easing): Boolean = (a.isLinear && b.isLinear) ||
@@ -261,10 +267,10 @@ private fun Easing.bezierHandles(): List<EasingHandle> {
 
 private fun Easing.bounceHandles(): List<EasingHandle> {
     val length = param(0, 0.3f, SHORTEST, 1f)
-    val bounciness = param(1, 0.8f, 0f, 0.95f)
+    val bounciness = param(1, 0.8f, 0f, 1f)
     return listOf(
         EasingHandle(length * (1 + bounciness) / 2, 1 - bounciness, param = true, fromX = length / 2, fromY = 1f) { x, y ->
-            val b = legal(1 - y, 0f, 0.95f, bounciness)
+            val b = legal(1 - y, 0f, 1f, bounciness)
             copy(p = listOf(legal(2 * x / (1 + b), SHORTEST, 1f, length), b))
         },
     )

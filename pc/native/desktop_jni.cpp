@@ -417,6 +417,7 @@ JNIEXPORT jfloatArray JNICALL JNI(propertyNumbers)(JNIEnv* e, jobject, jlong h, 
 }
 JNIEXPORT jfloatArray JNICALL JNI(layerMatrix)(JNIEnv* e, jobject, jlong h, jlong id, jdouble t) {
     Desktop* d = ptr(h);
+    const am::SceneScope scope(d->scene);
     am::SetCameraView(d->cameraView);
     const auto* layer = d->scene.layer(id);
     if (!layer) return nullptr;

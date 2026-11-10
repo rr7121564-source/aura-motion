@@ -53,6 +53,15 @@ double Bounce(double L, double b, double u) {
     if (!(L > 0)) return u;
     const double drop = L / 2;
     if (u < drop) return (u / drop) * (u / drop);
+    // At full restitution the final arc must not disappear because its end is
+    // outside the key interval (or just above 1 after floating point rounding).
+    // Keep the original damped bounce curve unchanged for imported projects.
+    if (b == 1) {
+        if (u >= 1) return 1;
+        const double phase = (u - drop) / L;
+        const double x = phase - std::floor(phase);
+        return (2 * x - 1) * (2 * x - 1);
+    }
     double start = drop, length = L * b, height = b;
     for (int i = 0; i < 10000 && height >= kMinBounce && start + length <= 1; i++) {
         if (u < start + length) return 1 - 4 * height * (u - start) * (start + length - u) / (length * length);

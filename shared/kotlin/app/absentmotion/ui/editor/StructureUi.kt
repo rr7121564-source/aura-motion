@@ -473,11 +473,7 @@ internal fun ChoiceList(items: List<String>, onDismiss: () -> Unit, below: Boole
 @Composable
 internal fun ParentMenu(state: EditorState, below: Boolean = false, onDismiss: () -> Unit) {
     val layer = state.selected ?: return
-    val others = state.scene.layers.filter { it.id != layer.id }.reversed()
-    val current = layer.node["parent"]?.toLongOrNull()
-    ChoiceList(
-        listOf(stringResource(R.string.none)) + others.map { (if (it.id == current) "> " else "") + it.shownName() }, onDismiss, below,
-    ) { i -> state.setParent(if (i == 0) null else others[i - 1].id) }
+    ParentPicker(state, setOf(layer.id), layer.node["parent"]?.toLongOrNull(), below, onDismiss) { state.setParent(it) }
 }
 
 @Composable
@@ -485,9 +481,9 @@ internal fun MultiParentMenu(state: EditorState, below: Boolean = false, onDismi
     val context = LocalContext.current
     val skippedText = stringResource(R.string.structure_link_parent_skipped)
     val ids = MultiSelect.ids
-    val others = state.scene.layers.filter { it.id !in ids }.reversed()
-    ChoiceList(listOf(stringResource(R.string.none)) + others.map { it.shownName() }, onDismiss, below) { i ->
-        val skipped = state.setParentOfChosen(if (i == 0) null else others[i - 1].id)
+    val parents = ids.mapNotNull { state.scene.layer(it) }.map { it.node["parent"]?.toLongOrNull() }.distinct()
+    ParentPicker(state, ids, parents.singleOrNull(), below, onDismiss, mixed = parents.size > 1) { parent ->
+        val skipped = state.setParentOfChosen(parent)
         if (skipped > 0) Toast.makeText(context, skippedText, Toast.LENGTH_LONG).show()
     }
 }

@@ -2388,4 +2388,13 @@
     <string name="desk_reveal_finder">在Finder中显示</string>
     <string name="desk_reveal_explorer">在Explorer中显示</string>
     <string name="desk_reveal_folder">在文件夹中显示</string>
+    <string name="easing_snap">快速过渡</string>
+    <string name="easing_back_out">回弹结束</string>
+    <string name="easing_back_in">预备回弹</string>
+    <string name="easing_bounce_loop">循环弹跳</string>
+    <string name="parent_picker_title">父图层</string>
+    <string name="parent_picker_search">查找图层</string>
+    <string name="parent_picker_empty">没有匹配的图层</string>
+    <string name="parent_picker_hint">链接时保留位置和大小。</string>
+    <string name="parent_picker_layer_number">图层 %1$d</string>
 </resources>

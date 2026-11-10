@@ -1389,6 +1389,7 @@ bool EngineImpl::propertyNumbers(int64_t layerId, int effect, const std::string&
 }
 
 bool EngineImpl::layerMatrix(int64_t layerId, double timeMs, float m[18]) {
+    const SceneScope scope(fScene);
     SetCameraView(fCameraView);
     const Layer* layer = fScene.layer(layerId);
     if (!layer) return false;
@@ -1412,6 +1413,7 @@ bool EngineImpl::layerBounds(int64_t layerId, double timeMs, float ltrb[4]) {
 }
 
 bool EngineImpl::localBounds(int64_t layerId, double timeMs, float bounds[4]) {
+    const SceneScope scope(fScene);
     const Layer* layer = fScene.layer(layerId);
     if (!layer) return false;
     const SkRect rect = SelectionBounds(*layer, timeMs, SkMatrix::I());
@@ -1420,6 +1422,7 @@ bool EngineImpl::localBounds(int64_t layerId, double timeMs, float bounds[4]) {
 }
 
 bool EngineImpl::reanchor(int64_t layerId, double timeMs, float x, float y, float location[3]) {
+    const SceneScope scope(fScene);
     if (!std::isfinite(x) || !std::isfinite(y)) return false;
     const Layer* original = fScene.layer(layerId);
     if (!original) return false;

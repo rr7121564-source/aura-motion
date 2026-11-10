@@ -2420,4 +2420,13 @@
     <string name="desk_reveal_finder">Show in Finder</string>
     <string name="desk_reveal_explorer">Show in Explorer</string>
     <string name="desk_reveal_folder">Show in Folder</string>
+    <string name="easing_snap">SNAP</string>
+    <string name="easing_back_out">BACK OUT</string>
+    <string name="easing_back_in">BACK IN</string>
+    <string name="easing_bounce_loop">LOOPING BOUNCE</string>
+    <string name="parent_picker_title">Parent layer</string>
+    <string name="parent_picker_search">Find a layer</string>
+    <string name="parent_picker_empty">No matching layers</string>
+    <string name="parent_picker_hint">Position and size are preserved when linking.</string>
+    <string name="parent_picker_layer_number">Layer %1$d</string>
 </resources>

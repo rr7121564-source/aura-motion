@@ -27,6 +27,7 @@ import app.absentmotion.model.Scene
 import app.absentmotion.model.groupScene
 import app.absentmotion.model.validGroupPath
 import app.absentmotion.model.withGroupScene
+import app.absentmotion.model.withRigSpans
 import app.absentmotion.model.withGroupHolds
 import app.absentmotion.model.nestedTime
 import app.absentmotion.model.nestedHostTime
@@ -93,7 +94,7 @@ class EditorState(
     val settings: AppSettings,
     val saver: ProjectSaver,
 ) {
-    private var root by mutableStateOf(initial.withGroupHolds().withMattesFollowing())
+    private var root by mutableStateOf(initial.withGroupHolds().withRigSpans().withMattesFollowing())
 
     var groupPath by mutableStateOf<List<Long>>(emptyList())
         private set
@@ -394,7 +395,7 @@ class EditorState(
         visualPreview.clear()
         Glide.interrupt()
         val before = scene
-        history.edit(key, root.withFocused(groupPath, change(before).captureCopyTransformEdits(before, sampleMs).refreshMediaSwitches(before).withValueLinksFollowing(before).withMattesFollowing(before).withOutlinesFollowing(before)).withGroupHolds().refreshMotionTree())
+        history.edit(key, root.withFocused(groupPath, change(before).captureCopyTransformEdits(before, sampleMs).refreshMediaSwitches(before).withValueLinksFollowing(before).withMattesFollowing(before).withOutlinesFollowing(before)).withGroupHolds().withRigSpans().refreshMotionTree())
     }
 
     fun endGesture() {

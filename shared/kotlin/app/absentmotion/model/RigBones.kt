@@ -34,7 +34,8 @@ internal fun XmlNode.withMigratedBones(): XmlNode {
 
 /** Compatibility with the existing native transform evaluator, at the render boundary only. */
 fun XmlNode.withNativeBones(): XmlNode {
-    val children = children.map { it.withNativeBones() }
+    val source = if (name == "scene") Scene(this).withRigSpans(recursive = false).node else this
+    val children = source.children.map { it.withNativeBones() }
     if (name == "scene") {
         val used = children.mapNotNull { it["id"]?.toLongOrNull() }.toMutableSet()
         var next = -1L

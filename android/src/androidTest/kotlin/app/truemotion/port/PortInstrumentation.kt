@@ -27,6 +27,7 @@ class PortInstrumentation : Instrumentation() {
     private var next018 = false
     private var text018 = false
     private var parent018 = false
+    private var next020 = false
     private var next019 = false
     private var legacy = false
     private var legacyThumbs = false
@@ -43,6 +44,7 @@ class PortInstrumentation : Instrumentation() {
         text018 = arguments?.getString("text018") == "true"
         parent018 = arguments?.getString("parent018") == "true"
         next019 = arguments?.getString("next019") == "true"
+        next020 = arguments?.getString("next020") == "true"
         legacyThumbs = arguments?.getString("legacy") == "thumbs"
         legacy = arguments?.getString("legacy") in setOf("true", "thumbs")
         legacyGl = arguments?.getString("backend") == "gl"
@@ -52,6 +54,12 @@ class PortInstrumentation : Instrumentation() {
         val report = JSONObject()
         try {
             val context = targetContext
+            if(next020) {
+                val directory=File(context.filesDir,if(legacyGl) "next020-gl-validation" else "next020-validation").apply {mkdirs()}
+                NativeEngine(if(legacyGl) NativeEngine.Backend.GL else NativeEngine.Backend.GRAPHITE).use {engine->report.put("result",Next020Probe.run(context,engine,directory))}
+                report.put("ok",true); File(directory,"report.json").writeText(report.toString(2))
+                finish(0,Bundle().apply {putString("report",report.toString())});return
+            }
             if(next019) {
                 val directory=File(context.filesDir,if(legacyGl) "next019-gl-validation" else "next019-validation").apply {mkdirs()}
                 NativeEngine(if(legacyGl) NativeEngine.Backend.GL else NativeEngine.Backend.GRAPHITE).use {engine->report.put("result",Next019Probe.run(context,engine,directory))}
