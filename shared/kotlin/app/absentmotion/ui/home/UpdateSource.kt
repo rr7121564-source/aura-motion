@@ -35,7 +35,7 @@ internal object GitHubSource : UpdateSource {
     }
 }
 
-internal const val RELEASE_SIGNER = "5faf34792b681e8806a143e8a71c3cc550b4e5edd388ba292a46dc09cdb7e964"
+internal const val RELEASE_SIGNER = "efa5fda98c6c13c1e278b2f504cc6c003d2f262b4e54b4d7da8df09928d15455"
 
 internal val STORE_INSTALLERS = setOf("com.android.vending")
 

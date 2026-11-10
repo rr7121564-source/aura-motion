@@ -181,7 +181,7 @@ object CrashLogs {
 
     @RequiresApi(30)
     private fun recordExits(app: Context, prefs: SharedPreferences, dir: File) {
-        val infos = runCatching { app.getSystemService(ActivityManager::class.java).getHistoricalProcessExitReasons(app.packageName, 0, 0) }.getOrDefault(emptyList())
+        val infos = runCatching { app.getSystemService(ActivityManager::class.java).getHistoricalProcessExitReasons(app.packageName, 0, 0) }.getOrDefault(emptyList()).filter { it.processName == app.packageName }
         val nativeExport = infos.filter { it.reason == ApplicationExitInfo.REASON_CRASH_NATIVE &&
             it.processStateSummary?.decodeToString().orEmpty().startsWith("exporting video") }
             .maxOfOrNull { it.timestamp } ?: 0L

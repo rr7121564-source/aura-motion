@@ -2,6 +2,7 @@ package app.absentmotion.ui.editor
 
 import app.absentmotion.platform.Toast
 import app.absentmotion.editor.openFramePhoto
+import app.absentmotion.editor.deselectLayer
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,6 +46,7 @@ import app.absentmotion.editor.MultiSelect
 import app.absentmotion.editor.openCrop
 import app.absentmotion.editor.keepCopy
 import app.absentmotion.model.replaceMedia
+import app.absentmotion.model.outlineShape
 import app.absentmotion.audio.soundUri
 import app.absentmotion.editor.canClip
 import app.absentmotion.editor.markBeatsNote
@@ -190,7 +192,7 @@ internal fun LayerMenu(state: EditorState, onDismiss: () -> Unit) {
     val video = media?.takeIf { it.video }
     val mediaRecord = media?.let { state.scene.media(it.uri) }
     if (mediaInfo && mediaRecord != null) {
-        MediaInfoDialog(mediaRecord, onReplace = { picked -> val kept = state.keepCopy(context, picked); state.edit { s -> s.replaceMedia(mediaRecord.uri, kept) } }) { mediaInfo = false; onDismiss() }
+        MediaInfoDialog(mediaRecord, onReplace = { picked -> val kept = state.keepCopy(context, picked); state.edit { s -> s.replaceMedia(mediaRecord.uri, kept, dropMarks = true) } }) { mediaInfo = false; onDismiss() }
         return
     }
     val saveElement = rememberSaveToMyElements(state)
@@ -219,7 +221,7 @@ internal fun LayerMenu(state: EditorState, onDismiss: () -> Unit) {
                 onDismiss()
             }
             if (group) MenuRow(stringResource(R.string.layer_tool_ungroup), divider = true) { onDismiss(); state.askUngroup() }
-            MenuRow(stringResource(R.string.menu_convert_to_outline), enabled = state.selected?.let { it.kind == "text" || (it.kind == "shape" && it.shape.isNotEmpty()) } == true) {
+            MenuRow(stringResource(R.string.menu_convert_to_outline), enabled = state.selected?.let { it.kind == "text" || (it.kind == "shape" && (it.shape.isNotEmpty() || it.outlineShape != null)) } == true) {
                 scope.launch { state.convertToOutline(); onDismiss() }
             }
         }
@@ -268,8 +270,11 @@ internal class DropOrRiseSide(private val rose: androidx.compose.runtime.Mutable
 
 internal object AboveLeft : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize) =
-        IntOffset(0, anchorBounds.top - popupContentSize.height)
+        IntOffset(aboveLeftX(anchorBounds.left, windowSize.width, popupContentSize.width, app.absentmotion.platform.PlatformFeatures.desktop), anchorBounds.top - popupContentSize.height)
 }
+
+internal fun aboveLeftX(anchorLeft: Int, windowWidth: Int, popupWidth: Int, desktop: Boolean): Int =
+    if (desktop) anchorLeft.coerceIn(0, maxOf(0, windowWidth - popupWidth)) else 0
 
 @Composable
 internal fun TransformMenu(state: EditorState, tab: Int, turn: Turn?, onDismiss: () -> Unit) {
@@ -318,7 +323,7 @@ internal fun CopyPasteMenu(state: EditorState, below: Boolean = false, onDismiss
     saved?.let { PresetSavedDialog(it, PresetStore(context), onDismiss); return }
     MenuPopup(position, onDismiss) {
         MenuRow(stringResource(R.string.menu_select_all_layers), enabled = state.scene.layers.isNotEmpty(), icon = ChromeIcons.SelectAll) {
-            state.selectedId = null
+            state.deselectLayer()
             MultiSelect.ids = state.scene.layers.map { it.id }.toSet()
             MultiSelect.active = true
             onDismiss()

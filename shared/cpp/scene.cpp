@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <set>
@@ -531,10 +532,24 @@ void ParseGroup(const XmlNode& scene, int fps, Layer* group) {
     r.hostFps = fps;
     group->fixedPrecompose = StrAttr(scene, "precompose") == "fixedResolution";
     const int innerFps = FpsAttr(scene);
+    thread_local int depth = 0;
+    if (depth >= 64) return;
+    struct Nest {
+        Nest() { depth++; }
+        ~Nest() { depth--; }
+    } nest;
     for (const auto& n : scene.children) {
         Layer l;
         if (ParseLayer(*n, innerFps, &l)) group->children.push_back(std::move(l));
     }
+}
+
+std::string OutlineMark(const char* d) {
+    uint32_t h = 2166136261u;
+    for (const unsigned char* c = reinterpret_cast<const unsigned char*>(d); *c; c++) h = (h ^ *c) * 16777619u;
+    char out[9];
+    snprintf(out, sizeof out, "%08x", h);
+    return out;
 }
 
 bool ParseLayer(const XmlNode& node, int fps, Layer* out) {
@@ -559,6 +574,7 @@ bool ParseLayer(const XmlNode& node, int fps, Layer* out) {
     l.noiseId = noise ? strtoll(noise, nullptr, 10) : 0;
     l.label = StrAttr(*n, "label");
     l.shape = StrAttr(*n, "s");
+    l.outlineShape = StrAttr(*n, "outlineShape");
     l.fillType = StrAttr(*n, "fillType");
     l.mediaUri = StrAttr(*n, "fillImage");
     if (l.mediaUri.empty()) l.mediaUri = StrAttr(*n, "fillVideo");
@@ -602,7 +618,11 @@ bool ParseLayer(const XmlNode& node, int fps, Layer* out) {
     }
     l.fillColor = ParseAnim(n->child("fillColor"));
     if (l.kind == "camera") ParseCamera(*n, &l.camera);
-    if (const XmlNode* path = n->child("path")) ParseOutline(*path, &l);
+    if (const XmlNode* path = n->child("path")) {
+        ParseOutline(*path, &l);
+        const char* d = path->attr("d");
+        l.outlineEdited = !l.outlineShape.empty() && (!d || StrAttr(*n, "outlineMark") != OutlineMark(d));
+    }
     if (l.kind == "drawing") ParseStrokes(*n, &l);
     if (const XmlNode* stroke = n->child("path-stroke")) {
         l.stroke.present = true;
@@ -774,10 +794,27 @@ void DrawMedia(SkCanvas* canvas, const Layer& layer, const SkPath& path, float o
     canvas->restore();
 }
 
+static void ClipSceneToPixels(SkCanvas* canvas, float width, float height) {
+    const SkRect area = SkRect::MakeWH(width, height);
+    const SkMatrix matrix = canvas->getTotalMatrix();
+    if (!matrix.isScaleTranslate()) {
+        canvas->clipRect(area, true);
+        return;
+    }
+    const SkIRect snapped = matrix.mapRect(area).round();
+    if (snapped.isEmpty()) {
+        canvas->clipRect(area, true);
+        return;
+    }
+    canvas->resetMatrix();
+    canvas->clipRect(SkRect::Make(snapped), false);
+    canvas->setMatrix(matrix);
+}
+
 void DrawScene(SkCanvas* canvas, const Scene& scene, double timeMs, const MediaPictures& pictures,
                const LayerEffects* effects) {
     canvas->save();
-    canvas->clipRect(SkRect::MakeWH(scene.width, scene.height), true);
+    ClipSceneToPixels(canvas, scene.width, scene.height);
     canvas->drawColor(scene.bgColor);
     SetLayerEffects(effects, &scene);
     DrawLayerList(canvas, scene, scene.layers, timeMs, pictures);

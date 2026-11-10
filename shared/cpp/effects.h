@@ -25,6 +25,7 @@ public:
     bool active(const Layer& layer) const;
     bool lifted(const Layer& layer) const;
     bool spills(const Layer& layer) const;
+    bool wraps(const Layer& layer) const;
     bool behind(const Layer& layer) const;
     bool steady(const Layer& layer, float from, float to) const;
     bool grabs(const std::vector<Layer>& layers) const;
@@ -75,7 +76,8 @@ private:
     bool mayDiffuse(const LayerEffect& e, const Definition* d) const;
     sk_sp<SkImageFilter> chain(const Scene& scene, const Layer& layer, double timeMs, const SkRect& area, const SkRect& seen,
                                const SkRect& drawn, const SkMatrix& placed, sk_sp<SkImageFilter> content, sk_sp<SkImageFilter> below,
-                               int before = -1, int from = -1) const;
+                               int before = -1, int from = -1, const SkRect* window = nullptr) const;
+    bool reaches(const Layer& layer) const;
     mutable std::map<std::string, Definition> fDefinitions;
 };
 

@@ -1,3 +1,7 @@
+# True Motion Next 0.19.1
+
+База целиком обновлена до [AbsentMotion 5.0.3](https://github.com/Comett1225/AbsentMotion/releases/tag/v5.0.3). Сохранены инструменты, эффекты и форматы True Motion. Проверены границы размытия медиа, группы, риги, импорт проектов, крупный текст, кэш и экспорт. [Проверки и ограничения](docs/TRUE_MOTION_0191_VALIDATION.md). [План следующих версий](docs/ROADMAP_RU.md).
+
 # True Motion Next 0.19.0
 
 База обновлена до [AbsentMotion 5.0.0](https://github.com/Comett1225/AbsentMotion/releases/tag/v5.0.0). Сохранены инструменты True Motion, эффекты AfterMotionZ+ и Classic, векторный редактор, риги, свободные значения размера/FPS/скорости/громкости и кэш до 2 ГиБ.

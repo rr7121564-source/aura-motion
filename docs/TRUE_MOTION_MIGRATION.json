@@ -1,11 +1,11 @@
 {
   "base": {
     "repository": "https://github.com/Comett1225/AbsentMotion",
-    "tag": "v5.0.0",
-    "commit": "3ada9bc0af5641fd4bdc92863cb567261701ae26"
+    "tag": "v5.0.3",
+    "commit": "b9e07a5a17d3f4d6f176dbd05e0e1a7a80abd6df"
   },
-  "date": "2026-11-08",
-  "portVersion": "0.19.0",
+  "date": "2026-11-10",
+  "portVersion": "0.19.1",
   "complete": false,
   "features": [
     {
@@ -391,6 +391,12 @@
       "name": "База AbsentMotion 5.0.0",
       "status": "ported",
       "notes": "Общая структура исходников, глубина/разбиение 3D, световые слои, палитры, FLA и новые эффекты. Classic Parent Helper сохранён отдельно от нового Parenting Helper. Перенос Windows-сборки не проверялся. См. TRUE_MOTION_019_VALIDATION.md."
+    },
+    {
+      "id": "absent-503-base",
+      "name": "База AbsentMotion 5.0.3",
+      "status": "ported",
+      "notes": "Полное обновление базы с сохранением инструментов True Motion. Перенесены исправления границ эффектов, групп, импорта, фонового экспорта и безопасного выбора GPU. План 0.20.0 и следующих версий остаётся отдельным. См. TRUE_MOTION_0191_VALIDATION.md."
     }
   ],
   "baseHistory": [
@@ -398,6 +404,11 @@
       "repository": "https://github.com/Comett1225/AbsentMotion",
       "tag": "v4.4.0",
       "commit": "e3d562832a0071181a08945e6927ec4c44a5cbe7"
+    },
+    {
+      "repository": "https://github.com/Comett1225/AbsentMotion",
+      "tag": "v5.0.0",
+      "commit": "3ada9bc0af5641fd4bdc92863cb567261701ae26"
     }
   ]
 }

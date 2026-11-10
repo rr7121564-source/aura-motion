@@ -1,5 +1,8 @@
 package app.absentmotion.ui.home
 
+import app.absentmotion.media.MODEL_HIGH_DETAIL_BUDGET
+import app.absentmotion.media.MODEL_TRIANGLE_BUDGET
+import app.absentmotion.media.triangles
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.statusBars
@@ -189,6 +192,10 @@ internal fun PlaybackSettings(settings: AppSettings) {
     }
     Divider(10.dp)
     SwitchRow(stringResource(R.string.settings_background_preview), settings.backgroundPreview, enabled = true) { settings.backgroundPreview = it }
+    Divider(10.dp)
+    SwitchRow(stringResource(R.string.settings_model_detail), settings.highDetailModels, enabled = true) { settings.highDetailModels = it }
+    Text(stringResource(R.string.settings_model_detail_note, triangles(MODEL_HIGH_DETAIL_BUDGET), triangles(MODEL_TRIANGLE_BUDGET)), Modifier.padding(horizontal = 10.dp),
+        color = Am.HomeMid, fontSize = 12.sp, lineHeight = 16.sp)
     Divider(10.dp)
     if (!DESK) {
         val now = stringResource(R.string.settings_graphics_note, if (app.absentmotion.Tier.openGl) "OpenGL" else "Vulkan")
@@ -612,7 +619,7 @@ private fun Choices(labels: List<Int>, chosen: Int, onPick: (Int) -> Unit) {
                 Modifier.weight(1f).fillMaxHeight().background(if (selected) Am.Navy else Color.Transparent, shape).then(if (selected) Modifier else Modifier.deskPress(6.dp)).clickable { onPick(index) },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(stringResource(label).uppercase(java.util.Locale.getDefault()), Modifier.padding(horizontal = 2.dp), color = if (selected) Am.OnNavyAccent else Am.Navy,
+                Text(stringResource(label).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]), Modifier.padding(horizontal = 2.dp), color = if (selected) Am.OnNavyAccent else Am.Navy,
                     fontWeight = FontWeight.Medium, maxLines = 1, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(9.sp, 14.sp))
             }
         }

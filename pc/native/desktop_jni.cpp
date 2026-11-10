@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <atomic>
 #include <clocale>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -41,6 +42,7 @@ struct Desktop {
     am::Scene scene;
     am::EffectRuntime runtime;
     std::map<std::string, sk_sp<SkImage>> pictures;
+    std::map<std::string, sk_sp<SkImage>> masks;
     std::map<std::pair<std::string, int64_t>, sk_sp<SkImage>> layerPictures;
     std::map<std::pair<std::string, int64_t>, DesktopMosh> mosh;
     std::unique_ptr<DesktopGpu> gpu;
@@ -48,7 +50,13 @@ struct Desktop {
     bool accurateBlur = true;
     std::vector<uint8_t> frameBytes;
     Desktop() : gpu(std::getenv("AM_SOFTWARE_RENDER") ? nullptr : CreateDesktopGpu()) { DesktopGpuState = gpu && gpu->context() ? 1 : 0; }
-    ~Desktop() { mosh.clear(); layerPictures.clear(); pictures.clear(); }
+    ~Desktop() { mosh.clear(); layerPictures.clear(); masks.clear(); pictures.clear(); }
+    am::MediaPictures maskLookup() {
+        return [this](const std::string& uri, int64_t) -> sk_sp<SkImage> {
+            auto it = masks.find(uri);
+            return it == masks.end() ? nullptr : it->second;
+        };
+    }
     am::MediaPictures media() {
         return [this](const std::string& uri, int64_t layer) -> sk_sp<SkImage> {
             auto found = layerPictures.find({uri, layer});
@@ -63,6 +71,7 @@ struct Desktop {
         fx.lifted = [this](const am::Layer& l) { return runtime.lifted(l); };
         fx.spills = [this](const am::Layer& l) { return runtime.spills(l); };
         fx.behind = [this](const am::Layer& l) { return runtime.behind(l); };
+        fx.wraps = [this](const am::Layer& l) { return runtime.wraps(l); };
         fx.steady = [this](const am::Layer& l, float a, float b) { return runtime.steady(l, a, b); };
         fx.draw = [this](SkCanvas* c, const am::Scene& s, const am::Layer& l, double t, const SkRect& r, const SkMatrix& m, const std::function<void(SkCanvas*)>& src, const std::function<void(SkCanvas*)>& below) {
             return runtime.draw(c, s, l, t, r, m, src, below, [this](int w, int h, const std::function<void(SkCanvas*)>& paint, std::vector<uint8_t>* rgba) {
@@ -82,6 +91,9 @@ struct Desktop {
         if (!s) return false;
         s->getCanvas()->clear(SK_ColorTRANSPARENT);
         paint(s->getCanvas());
+        void* probe = std::malloc((size_t)width * height * 4);
+        if (!probe) return false;
+        std::free(probe);
         rgba->resize((size_t)width * height * 4);
         return s->readPixels(premultiplied ? info : info.makeAlphaType(kUnpremul_SkAlphaType), rgba->data(), (size_t)width * 4, 0, 0);
     }
@@ -89,12 +101,14 @@ struct Desktop {
 
 static jbyteArray bytes(JNIEnv* e, const std::vector<uint8_t>& v) {
     auto r = e->NewByteArray((jsize)v.size());
+    if (!r) return nullptr;
     e->SetByteArrayRegion(r, 0, (jsize)v.size(), (const jbyte*)v.data());
     return r;
 }
 
 static jfloatArray floats(JNIEnv* e, const float* v, int n) {
     auto r = e->NewFloatArray(n);
+    if (!r) return nullptr;
     e->SetFloatArrayRegion(r, 0, n, v);
     return r;
 }
@@ -153,10 +167,23 @@ JNIEXPORT jstring JNICALL JNI(setScene)(JNIEnv* e, jobject, jlong h, jstring xml
     return nullptr;
 }
 JNIEXPORT jboolean JNICALL JNI(setPicture)(JNIEnv* e, jobject, jlong h, jstring uri, jstring path) {
-    auto data = SkData::MakeFromFileName(str(e, path).c_str());
+    SkFILEStream stream(str(e, path).c_str());
+    auto data = stream.isValid() ? SkData::MakeFromStream(&stream, stream.getLength()) : nullptr;
     auto image = data ? SkImages::DeferredFromEncodedData(data) : nullptr;
     if (!image) return false;
-    ptr(h)->pictures[str(e, uri)] = image;
+    auto* d = ptr(h);
+    const auto key = str(e, uri);
+    d->masks.erase(key);
+    if (!image->isOpaque() && image->width() > 0 && image->height() > 0) {
+        const float scale = std::min(1.0f, 256.0f / std::max(image->width(), image->height()));
+        auto surface = SkSurfaces::Raster(SkImageInfo::MakeA8(std::max(1, (int)std::lround(image->width() * scale)), std::max(1, (int)std::lround(image->height() * scale))));
+        if (surface) {
+            surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+            surface->getCanvas()->drawImageRect(image, SkRect::MakeWH((float)surface->width(), (float)surface->height()), SkSamplingOptions(SkFilterMode::kLinear));
+            if (auto mask = surface->makeImageSnapshot()) d->masks[key] = std::move(mask);
+        }
+    }
+    d->pictures[key] = image;
     return true;
 }
 JNIEXPORT jboolean JNICALL JNI(setFrame)(JNIEnv* e, jobject, jlong h, jstring uri, jint w, jint height, jbyteArray bytes) {
@@ -164,6 +191,7 @@ JNIEXPORT jboolean JNICALL JNI(setFrame)(JNIEnv* e, jobject, jlong h, jstring ur
     auto data = SkData::MakeUninitialized((size_t)w * height * 4);
     e->GetByteArrayRegion(bytes, 0, e->GetArrayLength(bytes), (jbyte*)data->writable_data());
     auto info = SkImageInfo::Make(w, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    ptr(h)->masks.erase(str(e, uri));
     ptr(h)->pictures[str(e, uri)] = SkImages::RasterFromData(info, data, (size_t)w * 4);
     return true;
 }
@@ -180,6 +208,7 @@ JNIEXPORT void JNICALL JNI(dropVideo)(JNIEnv* e, jobject, jlong h, jstring uri) 
     const auto key = str(e, uri);
     std::erase_if(d->mosh, [&](const auto& item) { return item.first.first == key; });
     std::erase_if(d->layerPictures, [&](const auto& item) { return item.first.first == key; });
+    d->masks.erase(key);
     d->pictures.erase(key);
 }
 JNIEXPORT jboolean JNICALL JNI(setLayerFrame)(JNIEnv* e, jobject, jlong h, jstring uri, jlong layer, jint w, jint height, jbyteArray data) {
@@ -423,6 +452,19 @@ JNIEXPORT jbyteArray JNICALL JNI(shapeIcon)(JNIEnv* e, jobject, jlong h, jstring
     if (!am::ParseScene(str(e, xml), &scene, &error) || scene.layers.empty()) return nullptr;
     scene.layers.front().effects.clear();
     const am::Layer& layer = scene.layers.front();
+    std::vector<uint8_t> rgba;
+    SkRect content;
+    if (am::ContentIconBounds(layer, &content)) {
+        if (content.isEmpty()) return nullptr;
+        const bool drawn = d->offscreen(size, size, false, [&](SkCanvas* canvas) {
+            const float scale = size * 0.9f / std::max(content.width(), content.height());
+            canvas->translate(size / 2.0f, size / 2.0f);
+            canvas->scale(scale, scale);
+            canvas->translate(-content.centerX(), -content.centerY());
+            am::DrawContentIcon(canvas, layer, d->media());
+        }, &rgba);
+        return drawn ? bytes(e, rgba) : nullptr;
+    }
     const SkPath path = am::ShapePath(layer, 0);
     const SkPath stroke = am::StrokePath(layer, path, 0);
     SkMatrix orientation = SkMatrix::I();
@@ -434,7 +476,6 @@ JNIEXPORT jbyteArray JNICALL JNI(shapeIcon)(JNIEnv* e, jobject, jlong h, jstring
     if (layer.fillType != "none" && !stroke.isEmpty()) bounds.join(stroke.getBounds());
     bounds = orientation.mapRect(bounds);
     if (bounds.isEmpty()) return nullptr;
-    std::vector<uint8_t> rgba;
     const bool ok = d->offscreen(size, size, false, [&](SkCanvas* canvas) {
         const float scale = size * 0.9f / std::max(bounds.width(), bounds.height());
         canvas->translate(size / 2.0f, size / 2.0f);
@@ -456,7 +497,7 @@ JNIEXPORT jlong JNICALL JNI(hitTest)(JNIEnv*, jobject, jlong h, jfloat x, jfloat
     Desktop* d = ptr(h);
     const am::SceneScope scope(d->scene);
     am::SetCameraView(d->cameraView);
-    return am::TopLayerAt(d->scene, t, x, y, d->media());
+    return am::TopLayerAt(d->scene, t, x, y, d->maskLookup());
 }
 JNIEXPORT jfloatArray JNICALL JNI(layerQuad)(JNIEnv* e, jobject, jlong h, jlong id, jdouble t) {
     Desktop* d = ptr(h);
@@ -465,18 +506,24 @@ JNIEXPORT jfloatArray JNICALL JNI(layerQuad)(JNIEnv* e, jobject, jlong h, jlong 
     const auto* layer = d->scene.layer(id);
     if (!layer || !layer->activeAt(t)) return nullptr;
     SkPoint p[4];
-    am::SelectionBounds(*layer, t, SkMatrix::I()).toQuad(p);
-    am::WorldMatrix(d->scene, *layer, t).mapPoints(p);
+    if (!am::SelectionQuad(d->scene, *layer, t, p)) return nullptr;
     float values[8];
     for (int i = 0; i < 4; ++i) { values[2*i] = p[i].x(); values[2*i+1] = p[i].y(); }
     auto result = e->NewFloatArray(8);
+    if (!result) return nullptr;
     e->SetFloatArrayRegion(result, 0, 8, values);
     return result;
+}
+JNIEXPORT jstring JNICALL JNI(shapeOutline)(JNIEnv* e, jobject, jstring scene, jfloat t, jboolean rounded) {
+    std::string svg;
+    if (!am::ShapeOutlineSvg(str(e, scene), t, rounded, &svg)) return nullptr;
+    return e->NewStringUTF(svg.c_str());
 }
 JNIEXPORT jfloat JNICALL JNI(ease)(JNIEnv* e, jobject, jstring easing, jfloat u) { return am::Ease(am::ParseEasing(str(e, easing).c_str()), u); }
 JNIEXPORT jfloatArray JNICALL JNI(blipTimes)(JNIEnv* e, jobject, jstring text, jfloat speed, jfloat pause, jint every) {
     auto times = am::textanim::BlipTimes(str(e, text), speed, pause, every);
     auto result = e->NewFloatArray((jsize)times.size());
+    if (!result) return nullptr;
     e->SetFloatArrayRegion(result, 0, (jsize)times.size(), times.data());
     return result;
 }

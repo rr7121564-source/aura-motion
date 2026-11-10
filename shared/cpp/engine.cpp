@@ -291,6 +291,7 @@ private:
         fx.lifted = [this](const Layer& layer) { return fEffects.lifted(layer); };
         fx.spills = [this](const Layer& layer) { return fEffects.spills(layer); };
         fx.behind = [this](const Layer& layer) { return fEffects.behind(layer); };
+        fx.wraps = [this](const Layer& layer) { return fEffects.wraps(layer); };
         fx.steady = [this](const Layer& layer, float from, float to) { return fEffects.steady(layer, from, to); };
         fx.upload = [this](const sk_sp<SkImage>& image, bool mipmapped) {
             return fRecorder ? SkImages::TextureFromImage(fRecorder.get(), image.get(), {mipmapped}) : image;
@@ -1374,13 +1375,7 @@ bool EngineImpl::layerQuad(int64_t layerId, double timeMs, float xy[8]) {
     const Layer* layer = fScene.layer(layerId);
     if (!layer || !layer->activeAt(timeMs)) return false;
     SkPoint corners[4];
-    if (TrueHasWorldParticles(*layer,timeMs)) {
-        TrueParticleViewBounds(fScene,*layer,timeMs).toQuad(corners);
-        for(int i=0;i<4;i++) { xy[2*i]=corners[i].fX;xy[2*i+1]=corners[i].fY; }
-        return true;
-    }
-    SelectionBounds(*layer, timeMs, SkMatrix::I()).toQuad(corners);
-    WorldMatrix(fScene, *layer, timeMs).mapPoints(corners);
+    if (!SelectionQuad(fScene, *layer, timeMs, corners)) return false;
     for (int i = 0; i < 4; i++) {
         xy[2 * i] = corners[i].fX;
         xy[2 * i + 1] = corners[i].fY;
@@ -1515,6 +1510,17 @@ bool EngineImpl::shapeIcon(const std::string& xml, int size, uint32_t color, std
     if (!ParseScene(xml, &scene, &error) || scene.layers.empty()) return false;
     scene.layers.front().effects.clear();
     const Layer& layer = scene.layers.front();
+    SkRect content;
+    if (ContentIconBounds(layer, &content)) {
+        if (content.isEmpty()) return false;
+        return this->offscreen(size, size, true, [&](SkCanvas* canvas) {
+            const float scale = size * 0.9f / std::max(content.width(), content.height());
+            canvas->translate(size / 2.0f, size / 2.0f);
+            canvas->scale(scale, scale);
+            canvas->translate(-content.centerX(), -content.centerY());
+            DrawContentIcon(canvas, layer, this->pictures());
+        }, rgba);
+    }
     const SkPath path = ShapePath(layer, 0);
     const SkPath stroke = StrokePath(layer, path, 0);
     SkMatrix orientation = SkMatrix::I();

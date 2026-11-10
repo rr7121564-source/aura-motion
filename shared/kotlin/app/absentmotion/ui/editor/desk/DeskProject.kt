@@ -44,6 +44,7 @@ import app.absentmotion.editor.rename
 import app.absentmotion.editor.setElementOption
 import app.absentmotion.editor.toggleHidden
 import app.absentmotion.model.Layer
+import app.absentmotion.model.shownName
 import app.absentmotion.ui.home.handCursor
 import app.absentmotion.ui.home.hoverFill
 import app.absentmotion.ui.theme.Am
@@ -77,7 +78,7 @@ internal fun DeskProjectPanel(state: EditorState, modifier: Modifier = Modifier)
         items(layers, key = { it.id }) { layer ->
             Row(Modifier.fillMaxWidth().height(36.dp).clip(RoundedCornerShape(6.dp)).hoverFill(6.dp, Am.Field).handCursor().clickable { state.selectedId = layer.id; state.panel = EditorPanel.Tools }.padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(deskLayerIcon(layer), null, Modifier.size(18.dp), tint = Am.OnDarkDim)
-                Text(layer.label, Modifier.weight(1f).padding(horizontal = 8.dp), color = if (layer.hidden) Am.OnDarkDim else Am.OnDark, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(layer.shownName(), Modifier.weight(1f).padding(horizontal = 8.dp), color = if (layer.hidden) Am.OnDarkDim else Am.OnDark, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val label = stringResource(if (layer.hidden) R.string.a11y_show_layer else R.string.a11y_hide_layer)
                 BarButton(if (layer.hidden) TimelineIcons.EyeOff else TimelineIcons.Eye, label, Modifier.size(32.dp), iconSize = androidx.compose.ui.unit.DpSize(18.dp, 18.dp)) { state.toggleHidden(layer.id) }
             }
@@ -92,7 +93,7 @@ internal fun deskLayerIcon(layer: Layer) = when {
     layer.kind == "light" -> PanelIcons.Brightness
     layer.kind == "drawing" -> ChromeIcons.Freehand
     layer.kind == "embedScene" -> SelectionIcons.Group
-    layer.kind == "null" -> ChromeIcons.NullObject
+    layer.kind == "nullobj" -> ChromeIcons.NullObject
     layer.mediaFill != null -> ChromeIcons.MediaTab
     else -> ChromeIcons.ShapeTab
 }
@@ -243,6 +244,8 @@ private fun DeskNumber(value: Int, modifier: Modifier, commit: (Int) -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
     fun save() { val number = text.toIntOrNull()?.coerceIn(MIN_SIDE, MAX_SIDE); if (number != null && number != value) commit(number); text = (number ?: value).toString() }
+    val saveNow by rememberUpdatedState(::save)
+    DisposableEffect(Unit) { onDispose { saveNow() } }
     BasicTextField(text, { if (it.length <= 4 && it.all(Char::isDigit)) text = it }, modifier.height(32.dp).clip(RoundedCornerShape(6.dp)).background(Am.Field).padding(horizontal = 8.dp)
         .onFocusChanged { if (focused && !it.isFocused) save(); focused = it.isFocused },
         textStyle = TextStyle(color = Am.OnDark, fontSize = 13.sp, textAlign = TextAlign.Center), singleLine = true, cursorBrush = SolidColor(Am.Accent),

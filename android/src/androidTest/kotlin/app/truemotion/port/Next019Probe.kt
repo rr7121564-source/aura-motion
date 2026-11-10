@@ -54,6 +54,7 @@ internal object Next019Probe {
             check(w>100 && r>100) {"5.0 ambient light did not shade the model: white=$w red=$r"}
             JSONObject().put("whitePixels",w).put("redPixels",r)
         }
+        test("mediaBlurEdges") { Edges0191Probe.run(context,engine,directory) }
         test("sameFramePinnedTarget") {
             val base="""<scene width="256" height="256" fps="30" totalTime="999"><bone id="10" length="60" startTime="0" endTime="999"><transform><location value="60,60,0"/><rotation value="25"/></transform></bone><bone id="11" parent="10" length="55" startTime="0" endTime="999"><transform><location value="60,0,0"/><rotation value="40"/></transform></bone><bone id="12" parent="11" length="45" startTime="0" endTime="999"><transform><location value="55,0,0"/><rotation value="20"/></transform><trueRigTarget><point value="%s"/></trueRigTarget></bone></scene>"""
             var worst=0f

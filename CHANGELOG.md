@@ -6,6 +6,83 @@ All notable changes to AbsentMotion are listed here, newest first. The format fo
 Versions before 2.0.0 were never published or numbered. The entry for 1.0.0 stands for the feature set as it stood on
 2026-10-12.
 
+## [5.0.3] - 2026-11-09
+
+### Added
+
+- One-step updates on the desktop apps: Settings > Updates > Download update > Install and restart saves the project, closes, installs the new version and opens it again. It works for the Windows MSI, the macOS app (a new `-update.zip` next to the DMG), the Linux user install, AppImage and `.deb` (the system asks for the password once); a protected macOS folder still opens the installer.
+- Desktop updates are only installed when the release carries a signed list of its files (`update-manifest.json` and its signature).
+- Android 12 and newer install an update without a confirmation dialog when nothing is open in the app (otherwise it waits for a tap on Install), and a notification opens the app afterwards.
+
+### Fixed
+
+- Tiles (Blocks) now fill the whole screen when the layer or group is moved or only partly on the canvas, including with Mirror: the part of the layer outside the screen is used for the repeats instead of leaving black gaps.
+- Audio effects: Add Audio Effect opens the Audio page of Effects, Voice filters shows as a folder, Back leaves the panel after an effect is removed, and the eye button has its normal size.
+- Crop: dragging a crop handle no longer closes the app when the other side is cropped to 99%.
+- Background export: keeps running with the screen off and when the app is swiped away from recent apps.
+- Effects at the edge: Blur, Glow, Drop Shadow, Flip and Tiles use the part of a layer just outside the screen, and Tiles on a big layer use far less memory.
+- Editor: Edit Points and the Pen Tool hit the right spot on tablets, Paste style keeps the timing of audio and groups, and Ungroup keeps every layer of a sped-up group.
+- Desktop: menus follow the app language, Reverse keeps all of its sound, HDR videos are tone-mapped, and opening several projects at once uses one window.
+- Compatible build: starts with OpenGL and only switches to Vulkan after a safe test in the background shows that Vulkan draws correctly on that phone.
+- And more: over 100 other fixes from a full check of the code.
+
+## [5.0.2] - 2026-11-08
+
+### Added
+
+- Round Corners on every shape, including shapes drawn or edited point by point.
+- Options for the newer shapes: gear teeth, depth, width and hole, heart notch and point, ring thickness and sweep, sun rays, cloud bumps, crown points, ticket holes, arrow and outline thickness and more. They can all be animated, and the less common ones sit behind Advanced.
+- Phone and Panel shapes with border, camera, header, columns and rows.
+- Edit Points on a shape with options turns it into points; Undo brings the options back.
+- Multi-select bar: Trim start, Split and Trim end next to the move-to-playhead button.
+
+### Changed
+
+- Edit Points and Pen Tool open inside the editor: the top bar, the play bar and the timeline stay and only the bottom panel changes; the preview keeps its size.
+- Dragging a point trails the finger a little and hides the other point markers while it moves, like Alight Motion.
+- The effects actions of the multi-select bar moved into its More menu; Stretch Timing stays in the clip's long-press menu.
+
+### Fixed
+
+- Pinching several selected layers follows the fingers and stays put when you let go.
+- Desktop: the Transform inspector showed only Rotate; all six tabs show again. Cut-off captions and labels, blank names of unnamed layers and stretched Crop rows are fixed, and a layout test now checks every panel at four window sizes.
+- Windows: overlay, multiply, hard-light, darken and soft-light blending drew hard diagonal blocks in the preview on Vulkan graphics when the view was not on whole pixels.
+- Tilted layers: the selection frame no longer stretches into a long band, tapping beyond a tilted layer does not select it, Align, Distribute, Fit and Group no longer throw it far away, and point markers and motion path dots are not mirrored behind the camera.
+- Parent chains longer than 16 layers are placed the same way by the editor and the engine.
+- Project packages no longer report the app's own shape attributes as unknown parts, a medium named like the import marker is not deleted, and 3D model file names stay valid on Windows.
+- Phone and Panel line up with the other shapes on the last page of the shape menu; the zoom button is hidden where the view is fixed.
+
+## [5.0.1] - 2026-11-08
+
+### Added
+
+- Move several selected layers together: with two or more layers selected, a box goes around all of them; drag anywhere in the preview to move them, and its corner dots make them bigger or smaller together. A pinch does the same.
+- High-detail 3D models (Settings, Playback): 3D models can keep up to 100,000 triangles instead of 50,000. Adding a model with more than 50,000 asks first; the setting turns it back down.
+
+### Changed
+
+- A new group's anchor point sits in the middle of what is in it, so a new group rotates and scales in place.
+
+### Fixed
+
+- Projects, templates and presets brought back by Android's own backup after a reinstall showed the date 21 January 1970.
+- Group corner and side dots grew and shrank a group around the middle of the canvas instead of the middle of the group.
+- A group's thumbnail in the timeline was a white rectangle; it shows what is in the group now. Drawing layers had an empty thumbnail.
+- Desktop: the effects "..." menu (Copy and Paste Effects), the Transform reset menu, the multi-selection Effects and More menus and the audio effect menu opened at the far left of the window instead of at their button.
+- Updating from 4.x straight to 5.0.1 shows the 5.0 What's new.
+- Groups no longer cut off what is inside them at the canvas edge: a group made smaller or moved shows the parts that were outside, and its box goes around all of it, as in Alight Motion.
+- Ungroup no longer makes layers that followed the group (parented to it) jump; they keep its movement.
+- Restoring a backup: a project whose imported font had to be renamed comes back as a copy that uses the backed-up font instead of being skipped. On the desktop, AI cut-outs, enhanced clips and other AI files point at the restored copies when the backup is restored in another folder or on another computer.
+- Exporting an image sequence again under the same name puts it in a new folder, Name (2), instead of mixing the frames of both.
+- Desktop: a video whose sound starts later than its picture keeps the sound in its place in playback, waveforms and exports.
+- Desktop: a long sound mix no longer stops a video export as stalled before the picture starts, and the export checks for room for the sound first.
+- Desktop: bit rates Opus and AAC cannot make in mono are no longer offered.
+- Desktop: exporting a big project does less work for each frame when no text in it animates.
+- 3D models over the triangle limit were simplified far more than needed (a 237,000-triangle phone kept only 5,600 triangles) and lost their sharp edges; they now stay close to the limit and keep hard edges.
+- 3D model faces with many corners, such as a phone's notched screen, are split into triangles that stay inside the face.
+- Inside a group, 3D layers and tilted pictures keep the project's depth order, so a picture placed on a phone model no longer goes behind it.
+- The import report no longer lists settings the app writes itself, such as the Scale lock, as not recognized.
+
 ## [5.0.0] - 2026-11-07
 
 ### Added

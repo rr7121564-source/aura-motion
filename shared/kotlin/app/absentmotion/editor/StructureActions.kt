@@ -18,6 +18,7 @@ import app.absentmotion.model.retimedVideo
 import app.absentmotion.model.canAnimate
 import app.absentmotion.model.cutBetween
 import app.absentmotion.model.withAnimation
+import app.absentmotion.model.withEdgeMotions
 import app.absentmotion.model.withTransition
 import app.absentmotion.model.bones
 import app.absentmotion.model.rigBinding
@@ -159,14 +160,27 @@ fun EditorState.addEmptyGroup() {
     addAndSelect(scene.groupNode(attrs, emptyList(), attrs.getValue("endTime").toInt() - attrs.getValue("startTime").toInt()))
 }
 
-fun EditorState.groupLayers(ids: Set<Long>, blend: String? = null) {
+fun EditorState.groupLayers(ids: Set<Long>, blend: String? = null, anchor: Pair<Float, Float>? = null) {
     val id = Layer.newId()
     val label = numbered(AppText.get(R.string.model_layer_group))
-    edit { it.grouped(ids, blend, id, label, sampleMs) }
+    edit { s -> s.grouped(ids, blend, id, label, sampleMs).let { g -> anchor?.let { (x, y) -> g.withAnchorAt(id, x, y) } ?: g } }
     if (scene.layer(id) == null) return
     MultiSelect.clear()
     selectedId = id
     panel = EditorPanel.Tools
+}
+
+suspend fun EditorState.groupLayersCentred(ids: Set<Long>, blend: String? = null) {
+    val before = scene
+    val boxes = ids.mapNotNull { engine.layerBounds(it, sampleMs) }
+    if (scene.node !== before.node) return
+    val anchor = if (boxes.isEmpty()) null else ((boxes.minOf { it[0] } + boxes.maxOf { it[2] }) / 2f) to ((boxes.minOf { it[1] } + boxes.maxOf { it[3] }) / 2f)
+    groupLayers(ids, blend, anchor)
+}
+
+internal fun Scene.withAnchorAt(id: Long, x: Float, y: Float): Scene = update(id) { group ->
+    val inner = group.nested ?: return@update group
+    group.withTransform("location", x, y, group.location[2]).withTransform("pivot", x - inner.width / 2f, y - inner.height / 2f)
 }
 
 internal fun Scene.grouped(ids: Set<Long>, blend: String?, id: Long, label: String, atMs: Int? = null): Scene {
@@ -299,7 +313,7 @@ internal fun Scene.place(layer: Layer, timeMs: Int, depth: Int = 0): Place =
 private fun Scene.pose(layer: Layer, timeMs: Int, depth: Int = 0): Pose {
     val own = ownPlace(layer, timeMs, fps)
     val turn = turnOf(own.rot, layer.at(timeMs, fps).tilt)
-    val parent = parentOf(layer)?.takeIf { depth <= 16 }?.let { pose(it, timeMs, depth + 1) } ?: return Pose(own, turn)
+    val parent = parentOf(layer)?.takeIf { depth < 16 }?.let { pose(it, timeMs, depth + 1) } ?: return Pose(own, turn)
     return Pose(lifted(own, parent), mul(parent.turn, turn))
 }
 
@@ -523,6 +537,16 @@ internal fun Scene.shiftedInWorld(moves: List<Pair<Layer, Float>>, horizontal: B
         acc.update(l.id, timeMs) { layer -> acc.withWorldLocation(layer, timeMs) { _, _ -> if (horizontal) w.x + d to w.y else w.x to w.y + d } }
     }
 
+private val NotPlaced = setOf("camera", "light", "audio")
+
+internal fun Scene.movedTogether(ids: Set<Long>, timeMs: Int, aboutX: Float, aboutY: Float, factor: Float, dx: Float, dy: Float): Scene =
+    layers.filter { l -> l.id in ids && l.kind !in NotPlaced && chain(l).drop(1).none { it.id in ids } }.fold(this) { acc, l ->
+        acc.update(l.id, timeMs) { layer ->
+            val placed = acc.withWorldLocation(layer, timeMs) { x, y -> aboutX + (x - aboutX) * factor + dx to aboutY + (y - aboutY) * factor + dy }
+            if (factor == 1f) placed else placed.withTransform("scale", layer.scale[0] * factor, layer.scale[1] * factor)
+        }
+    }
+
 suspend fun EditorState.distributeSelection(horizontal: Boolean) {
     val document = scene
     val at = sampleMs
@@ -541,6 +565,8 @@ suspend fun EditorState.distributeSelection(horizontal: Boolean) {
     edit { it.shiftedInWorld(moves, horizontal, at) }
 }
 
+private val NO_FILL_KINDS = setOf("audio", "camera", "nullobj", "light", "embedScene")
+
 enum class StylePart { ColorFill, BorderShadow, Blending }
 
 fun EditorState.pasteStyle(parts: Set<StylePart>) {
@@ -556,7 +582,7 @@ internal fun Scene.withPastedStyle(id: Long, timeMs: Int, from: Layer, media: Li
             node = node.copy(children = node.children.filterNot { it.name in names } + from.node.children.filter { it.name in names })
             for (a in attrs) node = node.with(a, from.node[a])
         }
-        if (StylePart.ColorFill in parts) {
+        if (StylePart.ColorFill in parts && l.kind !in NO_FILL_KINDS && from.kind !in NO_FILL_KINDS) {
             take(listOf("fillColor", "gradient", "speedMap", "gain"), listOf("fillType", "fillImage", "fillVideo", "mediaFillMode", "inTime", "outTime", "speed", "loop", "loopIn"))
         }
         if (StylePart.BorderShadow in parts) take(listOf("border", "shadow", "path-stroke"), emptyList())
@@ -620,8 +646,8 @@ internal fun Scene.withClipEdgesAt(ids: List<Long>, frame: Int, end: Boolean, ex
         val layer = acc.layer(id) ?: return@fold acc
         when {
             !extend -> acc.update(id) { movedClip(it, if (end) target - (it.endTime - it.startTime) else target, keepEnd = end) }
-            end && target > layer.endTime && showsAnyFrame(layer.startTime, target) -> acc.withClip(id, acc.trimmedClip(layer, layer.startTime, target))
-            !end && target < layer.startTime && showsAnyFrame(target, layer.endTime) -> acc.withClip(id, acc.trimmedClip(layer, target, layer.endTime))
+            end && target > layer.endTime && showsAnyFrame(layer.startTime, target) -> acc.withClip(id, acc.withEdgeMotions(layer, acc.trimmedClip(layer, layer.startTime, target)))
+            !end && target < layer.startTime && showsAnyFrame(target, layer.endTime) -> acc.withClip(id, acc.withEdgeMotions(layer, acc.trimmedClip(layer, target, layer.endTime)))
             else -> acc
         }
     }

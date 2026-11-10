@@ -1,5 +1,6 @@
 package app.absentmotion.platform
 
+import app.absentmotion.R
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,7 +58,24 @@ val LocalContext get() = androidx.compose.ui.platform.LocalContext
 
 fun Bitmap.asImageBitmap(): ImageBitmap = image.toComposeImageBitmap()
 
-fun xmlParser(): org.xmlpull.v1.XmlPullParser = org.xmlpull.v1.XmlPullParserFactory.newInstance().newPullParser()
+private val astralReference = Regex("&#(?:[xX]([0-9A-Fa-f]{1,8})|([0-9]{1,8}));")
+
+internal fun decodeAstralReferences(xml: String): String {
+    if (!xml.contains("&#")) return xml
+    return astralReference.replace(xml) { m ->
+        val code = m.groupValues[1].takeIf { it.isNotEmpty() }?.toIntOrNull(16) ?: m.groupValues[2].toIntOrNull()
+        if (code != null && code in 0x10000..0x10FFFF) String(Character.toChars(code)) else m.value
+    }
+}
+
+private class AstralXmlParser : org.kxml2.io.KXmlParser() {
+    override fun setInput(reader: java.io.Reader?) = super.setInput(reader?.let { java.io.StringReader(decodeAstralReferences(it.readText())) })
+}
+
+fun xmlParser(): org.xmlpull.v1.XmlPullParser = AstralXmlParser().apply {
+    runCatching { setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_PROCESS_NAMESPACES, true) }
+    runCatching { setFeature(org.xmlpull.v1.XmlPullParser.FEATURE_PROCESS_DOCDECL, false) }
+}
 
 @Composable
 fun BackHandler(enabled: Boolean = true, onBack: () -> Unit) = app.absentmotion.desk.DeskBack.Handler(enabled, onBack)
@@ -70,9 +88,11 @@ fun appVersion(): String = app.absentmotion.desk.DeskInfo.version
 @Composable
 fun SceneSurface(engine: app.absentmotion.engine.EngineThread, divisor: Int, size: IntSize, modifier: Modifier, onView: (Any) -> Unit = {}) {
     remember(engine) { onView(engine); 0 }
-    androidx.compose.runtime.DisposableEffect(engine, divisor, size) {
-        engine.attachDesktop(divisor, size)
-        onDispose { engine.detach() }
+    val token = remember { Any() }
+    androidx.compose.runtime.DisposableEffect(engine, token) { onDispose { engine.detachDesktop(token) } }
+    androidx.compose.runtime.DisposableEffect(engine, token, divisor, size) {
+        engine.attachDesktop(token, divisor, size)
+        onDispose {}
     }
     Box(modifier.drawBehind {
         val frame = engine.frame ?: return@drawBehind
@@ -219,15 +239,20 @@ fun Modifier.resizeCursor(horizontal: Boolean = true): Modifier =
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun Hint(text: String, content: @Composable () -> Unit) = androidx.compose.foundation.TooltipArea(
+fun Hint(text: String, content: @Composable () -> Unit) = Hint(text, Modifier, content)
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun Hint(text: String, modifier: Modifier, content: @Composable () -> Unit) = androidx.compose.foundation.TooltipArea(
     tooltip = {
         androidx.compose.material3.Text(text, color = app.absentmotion.ui.theme.Am.OnDark, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
             modifier = Modifier.background(app.absentmotion.ui.theme.Am.Field, androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
     },
+    modifier = modifier,
     delayMillis = 450,
 ) { content() }
 
-fun linkFolderLabel(): String = "Link folder"
+fun linkFolderLabel(): String = app.absentmotion.i18n.AppText.get(R.string.desk_link_folder)
 
 fun libraryFolderName(uri: android.net.Uri): String? = app.absentmotion.desk.DeskLibrary.folderOf(uri)?.let { it.name.ifEmpty { it.path } }
 

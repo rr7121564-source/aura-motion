@@ -730,7 +730,6 @@ void DrawList(SkCanvas* canvas, const std::vector<Layer>& layers, int width, int
 
 void DrawGroup(SkCanvas* canvas, const Layer& l, double timeMs, const MediaPictures& pictures) {
     canvas->translate(-l.innerWidth / 2.0f, -l.innerHeight / 2.0f);
-    canvas->clipRect(SkRect::MakeWH((float)l.innerWidth, (float)l.innerHeight), true);
     const double inner = NestedTime(l, timeMs);
     if (inner < 0) return;
     struct Context {
@@ -740,6 +739,8 @@ void DrawGroup(SkCanvas* canvas, const Layer& l, double timeMs, const MediaPictu
             scene.width = group.innerWidth;
             scene.height = group.innerHeight;
             scene.fps = std::max(1, (int)group.retiming.fps);
+            scene.depthOrder = previous && previous->depthOrder;
+            scene.pieceOrder = previous && previous->pieceOrder;
             if (previous) {
                 for (const double beat : previous->beats) {
                     const double inner = NestedTime(group, beat * 1000);
@@ -760,8 +761,18 @@ void DrawGroup(SkCanvas* canvas, const Layer& l, double timeMs, const MediaPictu
             return;
         }
     }
-    if (l.innerBackground >> 24) canvas->drawColor((SkColor)l.innerBackground);
+    const bool framed = l.fixedPrecompose && l.innerWidth > 0 && l.innerHeight > 0;
+    if (framed) {
+        canvas->save();
+        canvas->clipRect(SkRect::MakeIWH(l.innerWidth, l.innerHeight));
+    }
+    if (l.innerBackground >> 24) {
+        SkPaint background;
+        background.setColor((SkColor)l.innerBackground);
+        canvas->drawRect(SkRect::MakeWH((float)l.innerWidth, (float)l.innerHeight), background);
+    }
     DrawList(canvas, l.children, l.innerWidth, l.innerHeight, false, inner, pictures);
+    if (framed) canvas->restore();
 }
 
 SkPaint FillPaint(SkColor4f color) {
@@ -1475,7 +1486,12 @@ void DrawContent(SkCanvas* canvas, const std::vector<Layer>& siblings, const Lay
         plain.unitOpacity = true;
         DrawOne(canvas, siblings, *under, timeMs, pictures, plain);
     };
-    if (!effects || !gEffects->draw(canvas, *gScene, l, timeMs, scenePath.getBounds(), m, picture, below)) picture(canvas);
+    SkRect effectArea = scenePath.getBounds();
+    if (effects && l.kind == "embedScene" && gEffects->wraps && gEffects->wraps(l)) {
+        const SkRect content = DrawnBounds(l, timeMs, m);
+        if (content.isFinite() && !content.isEmpty()) effectArea = content;
+    }
+    if (!effects || !gEffects->draw(canvas, *gScene, l, timeMs, effectArea, m, picture, below)) picture(canvas);
     if (effects && gEffects->lifted(l) && !(gEffects->spills && gEffects->spills(l)) && !scenePath.isEmpty()) {
         SkPaint mask;
         mask.setAntiAlias(true);
@@ -2042,6 +2058,7 @@ static bool ContainsOne(const std::vector<Layer>& siblings, const Layer& l, doub
     if (TrueHasWorldParticles(l,timeMs)) return TrueParticleSceneBounds(l,timeMs,matrix).contains(p.fX,p.fY);
     SkMatrix inverse;
     if (!matrix.invert(&inverse)) return false;
+    if (matrix.hasPerspective() && !(inverse.mapPointToHomogeneous(p).fZ > 0)) return false;
     const SkPoint local = inverse.mapPoint(p);
     if (l.kind == "drawing") return DrawingContains(l, local);
     if (l.kind != "embedScene") {
@@ -2054,20 +2071,31 @@ static bool ContainsOne(const std::vector<Layer>& siblings, const Layer& l, doub
         return DrawStroke(nullptr, l, StrokeGeometry(l, path, t).makeTransform(matrix), t, 1).contains(p.fX, p.fY);
     }
     const SkPoint inner = {local.fX + l.innerWidth / 2.0f, local.fY + l.innerHeight / 2.0f};
-    if (!SkRect::MakeWH(l.innerWidth, l.innerHeight).contains(inner.fX, inner.fY)) return false;
     const double innerTime = NestedTime(l, timeMs);
-    if (innerTime >= 0 && (l.innerBackground >> 24) != 0) return true;
+    if (innerTime >= 0 && (l.innerBackground >> 24) != 0 && SkRect::MakeWH(l.innerWidth, l.innerHeight).contains(inner.fX, inner.fY)) return true;
     for (auto it = l.children.rbegin(); innerTime >= 0 && it != l.children.rend(); ++it) {
         if (Contains(l.children, *it, innerTime, inner, l.innerWidth, l.innerHeight, masks)) return true;
     }
     return false;
 }
 
-static bool ContentRect(const Layer& l, double timeMs, const SkMatrix& matrix, SkRect* out) {
+static float DrawnOutset(const Layer& l, float t) {
+    float most = 0;
+    for (const Edge& e : l.borders) {
+        if (!e.enabled) continue;
+        const float size = std::max(e.size.get(0, t, e.direction == "centered" ? 4 : 6), 0.0f);
+        most = std::max(most, e.direction == "outside" ? size : e.direction == "centered" ? size / 2 : 0.0f);
+    }
+    if (l.stroke.present && l.stroke.enabled) most = std::max(most, std::max(l.stroke.size.get(0, t, 0), 0.0f) * std::max(l.stroke.endSize, 1.0f) / 2);
+    return std::isfinite(most) ? most : 0;
+}
+
+static bool ContentRect(const Layer& l, double timeMs, const SkMatrix& matrix, SkRect* out, bool drawn = false) {
     if (TrueHasWorldParticles(l,timeMs)) { *out=TrueParticleSceneBounds(l,timeMs,matrix); return !out->isEmpty(); }
     const SkPath shape = ShapePath(l, l.localTime(timeMs));
     if (shape.isEmpty()) return false;
-    *out = matrix.mapRect(shape.getBounds());
+    const float grow = drawn ? DrawnOutset(l, l.localTime(timeMs)) : 0;
+    *out = matrix.mapRect(shape.getBounds().makeOutset(grow, grow));
     if (l.kind != "embedScene") return true;
     const double innerTime = NestedTime(l, timeMs);
     if (innerTime >= 0 && (l.innerBackground >> 24) != 0) return true;
@@ -2076,24 +2104,57 @@ static bool ContentRect(const Layer& l, double timeMs, const SkMatrix& matrix, S
     SkRect child;
     for (const Layer& c : l.children) {
         if (innerTime < 0 || !c.activeAt(innerTime) || c.kind == "nullobj" || c.kind == "camera" || c.kind == "light") continue;
-        if (!ContentRect(c, innerTime, SkMatrix::Concat(origin, SiblingMatrix(l.children, c, innerTime)), &child)) continue;
+        if (!ContentRect(c, innerTime, SkMatrix::Concat(origin, SiblingMatrix(l.children, c, innerTime)), &child, drawn)) continue;
         left = std::min(left, child.fLeft);
         top = std::min(top, child.fTop);
         right = std::max(right, child.fRight);
         bottom = std::max(bottom, child.fBottom);
     }
-    const SkRect seen = SkRect::MakeLTRB(std::max(left, out->fLeft), std::max(top, out->fTop), std::min(right, out->fRight), std::min(bottom, out->fBottom));
-    if (seen.fLeft <= seen.fRight && seen.fTop <= seen.fBottom) *out = seen;
+    if (left <= right && top <= bottom) *out = SkRect::MakeLTRB(left, top, right, bottom);
     return true;
 }
 
 SkRect SelectionBounds(const Layer& layer, double timeMs, const SkMatrix& matrix) {
     if (TrueHasWorldParticles(layer,timeMs)) return TrueParticleSceneBounds(layer,timeMs,matrix);
+    if (matrix.hasPerspective()) {
+        SkPoint corners[4];
+        SelectionBounds(layer, timeMs, SkMatrix::I()).toQuad(corners);
+        for (int i = 0; i < 4; i++) {
+            const SkPoint3 h = matrix.mapPointToHomogeneous(corners[i]);
+            if (!(h.fZ >= 1)) return SkRect::MakeEmpty();
+            corners[i] = {h.fX / h.fZ, h.fY / h.fZ};
+        }
+        SkRect bounds;
+        bounds.setBounds({corners, 4});
+        return bounds.isFinite() ? bounds : SkRect::MakeEmpty();
+    }
     if (layer.kind != "embedScene") return ShapePath(layer, layer.localTime(timeMs)).makeTransform(matrix).getBounds();
     SkRect bounds = SkRect::MakeEmpty();
     ContentRect(layer, timeMs, matrix, &bounds);
     return bounds;
 }
+
+SkRect DrawnBounds(const Layer& layer, double timeMs, const SkMatrix& matrix) {
+    if (matrix.hasPerspective() || layer.kind != "embedScene") return SelectionBounds(layer, timeMs, matrix);
+    SkRect bounds = SkRect::MakeEmpty();
+    ContentRect(layer, timeMs, matrix, &bounds, true);
+    return bounds;
+}
+
+bool ContentIconBounds(const Layer& layer, SkRect* bounds) {
+    if (layer.kind == "drawing") *bounds = DrawingBounds(layer).getBounds();
+    else if (layer.kind == "embedScene") *bounds = SelectionBounds(layer, 0, SkMatrix::I());
+    else return false;
+    return true;
+}
+
+void DrawContentIcon(SkCanvas* canvas, const Layer& layer, const MediaPictures& pictures) {
+    canvas->saveLayer(nullptr, nullptr);
+    if (layer.kind == "drawing") DrawDrawing(canvas, layer, 1, 0);
+    else DrawGroup(canvas, layer, 0, pictures);
+    canvas->restore();
+}
+
 
 static std::mutex gOrientedLock;
 static std::set<std::string> gOrientedIds;
@@ -2140,6 +2201,44 @@ SkMatrix WorldMatrix(const Scene& scene, const Layer& layer, double timeMs) {
     const std::vector<Layer>& list = SeenProject(scene, timeMs, &storage);
     for (const Layer& l : list) if (l.id == layer.id) return SiblingMatrix(list, l, timeMs);
     return SiblingMatrix(scene.layers, layer, timeMs);
+}
+
+bool SelectionQuad(const Scene& scene, const Layer& layer, double timeMs, SkPoint corners[4]) {
+    if (TrueHasWorldParticles(layer,timeMs)) { TrueParticleViewBounds(scene,layer,timeMs).toQuad(corners); return true; }
+    SelectionBounds(layer, timeMs, SkMatrix::I()).toQuad(corners);
+    const SkMatrix m = WorldMatrix(scene, layer, timeMs);
+    if (!m.hasPerspective()) {
+        m.mapPoints({corners, 4});
+        return true;
+    }
+    constexpr float kNear = 1;
+    SkPoint3 h[4], out[4];
+    bool placed[4] = {};
+    for (int i = 0; i < 4; i++) h[i] = m.mapPointToHomogeneous(corners[i]);
+    for (int i = 0; i < 4; i++) {
+        if (h[i].fZ >= kNear) {
+            out[i] = h[i];
+            placed[i] = true;
+            continue;
+        }
+        SkPoint3 sum{0, 0, 0};
+        int n = 0;
+        for (const int j : {(i + 3) % 4, (i + 1) % 4}) {
+            if (h[j].fZ < kNear) continue;
+            sum += h[i] + ((kNear - h[i].fZ) / (h[j].fZ - h[i].fZ)) * (h[j] - h[i]);
+            n++;
+        }
+        if (n > 0) {
+            out[i] = (1.0f / n) * sum;
+            placed[i] = true;
+        }
+    }
+    if (std::none_of(placed, placed + 4, [](bool b) { return b; })) return false;
+    for (int i = 0; i < 4; i++) {
+        if (!placed[i]) out[i] = 0.5f * (out[(i + 3) % 4] + out[(i + 1) % 4]);
+        corners[i] = {out[i].fX / out[i].fZ, out[i].fY / out[i].fZ};
+    }
+    return std::all_of(corners, corners + 4, [](const SkPoint& c) { return c.isFinite(); });
 }
 
 Placement EffectivePlacement(const std::vector<Layer>& siblings, const Layer& layer, double timeMs) {
@@ -2277,9 +2376,9 @@ void DrawList(SkCanvas* canvas, const std::vector<Layer>& listed, int width, int
               const MediaPictures& pictures) {
     std::vector<Layer> inherited, storage;
     const std::vector<Layer>& source = InheritEffects(listed, &inherited) ? inherited : listed;
-    const bool pieces = top && gScene && gScene->depthOrder && gScene->pieceOrder;
+    const bool pieces = gScene && gScene->depthOrder && gScene->pieceOrder;
     const bool compatDepth = top && gScene && gScene->depth3D && !gScene->depthOrder;
-    const bool seen = SeeLayers(source, width, height, top, gScene ? gScene->fps : 30, timeMs, top && gScene && (gScene->depthOrder || gScene->depth3D), &storage, pieces);
+    const bool seen = SeeLayers(source, width, height, top, gScene ? gScene->fps : 30, timeMs, gScene && (gScene->depthOrder || (top && gScene->depth3D)), &storage, pieces);
     if (seen) FaceForward(&storage);
     // The retained pixel-depth compositor already resolves intersecting planes.
     // BSP cuts from the v5 plane compositor would rasterize them a second time.

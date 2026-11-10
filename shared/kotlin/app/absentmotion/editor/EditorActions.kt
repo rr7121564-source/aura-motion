@@ -55,6 +55,7 @@ fun EditorState.addShape(def: ShapeDef) {
         "fillType" to def.fillType, "mediaFillMode" to "fill",
     )
     if (def.id.isNotEmpty()) attrs["s"] = def.id
+    if (def.outline.isNotEmpty()) attrs["outlineShape"] = def.outline
     val node = XmlNode(
         "shape",
         attrs,
@@ -76,6 +77,7 @@ fun EditorState.stepBack(): Boolean {
         rigEditing -> { endGesture(); rigEditing = false; keyTarget = null }
         motionPathOpen -> { endGesture(); motionPathOpen = false }
         framePhotoOpen -> framePhotoOpen = false
+        drawing is PointMode -> leaveDrawing()
         MultiSelect.active -> MultiSelect.clear()
         selectedId == null -> return leaveGroup()
         easingOpen -> easingOpen = false
@@ -106,6 +108,7 @@ fun EditorState.deleteSelected() {
     val id = selectedId ?: return
     val related = scene.boneAncestors(setOf(id)).map { it.id }.toSet()
     edit { it.unparentChildrenOf(setOf(id),sampleMs).remove(id).pruneBones(related) }
+    deselectLayer()
 }
 
 fun EditorState.duplicateSelected() {
@@ -127,11 +130,27 @@ fun EditorState.trimEnd() {
     editSelected { trimmed }
 }
 
+fun EditorState.trimChosen(start: Boolean) {
+    val next = scene.withTrims(chosenLayers.map { it.id }, frame, sampleMs, start) ?: return
+    edit { next }
+}
+
+internal fun Scene.withTrims(ids: List<Long>, frame: Int, sampleMs: Int, start: Boolean): Scene? {
+    var changed = false
+    val next = ids.fold(this) { acc, id ->
+        val layer = acc.layerAt(id, sampleMs) ?: return@fold acc
+        val trimmed = (if (start) acc.trimStartAt(layer, frame) else acc.trimEndAt(layer, frame)) ?: return@fold acc
+        changed = true
+        acc.update(id, sampleMs) { trimmed }
+    }
+    return next.takeIf { changed }
+}
+
 fun EditorState.split() {
     val next = scene.withSplits(chosenLayers.map { it.id }, frame, sampleMs) ?: return
     edit { next }
     MultiSelect.clear()
-    selectedId = null
+    deselectLayer()
 }
 
 internal fun Scene.withSplits(ids: List<Long>, frame: Int, sampleMs: Int): Scene? {
@@ -314,7 +333,7 @@ internal fun Scene.layersToCopy(ids: Set<Long>): List<Layer> {
     val outsideParents = layers.filter { it.id in ids }.mapNotNull { it.node["parent"]?.toLongOrNull() }.filter { it !in ids }.toSet()
     val list = unparentChildrenOf(outsideParents).layers
     return list.indices.filter { list[it].id in ids }.map { i ->
-        val layer = list[i]
+        val layer = pinnedPath(list[i])
         val base = (i - 1 downTo 0).firstOrNull { !list.isMask(it) }
         if (layer.node["clippingMask"] == "true" && (base == null || list[base].id !in ids)) layer.copy(node = layer.node.with("clippingMask", null)) else layer
     }
@@ -322,7 +341,7 @@ internal fun Scene.layersToCopy(ids: Set<Long>): List<Layer> {
 
 fun EditorState.duplicateChosen() {
     if (!MultiSelect.active) return duplicateSelected()
-    val copies = chosenLayers.zip(copyLayers(chosenLayers, preserveOutsideParents = true))
+    val copies = chosenLayers.zip(copyLayers(chosenLayers.map { scene.pinnedPath(it) }, preserveOutsideParents = true))
         .associate { (source, copy) -> source.id to copy.withLabel(AppText.get(R.string.edit_layer_copy_name, source.label)) }
     if (copies.isEmpty()) return
     edit { it.withCopiesAbove(copies) }

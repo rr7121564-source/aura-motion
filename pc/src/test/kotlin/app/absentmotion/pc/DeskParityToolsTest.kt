@@ -94,7 +94,7 @@ class DeskParityToolsTest {
         while (!check()) { check(System.currentTimeMillis() < until) { "timed out waiting for $what, step ${Updater.step}" }; Thread.sleep(25) }
     }
 
-    @Test fun anUpdateIsDownloadedCheckedAndOnlyThenOffered() {
+    @Test fun anUpdateWithoutTheSignedListIsRefusedBeforeItIsDownloaded() {
         prepare("updater")
         val name = "AbsentMotion-9.0.0.dmg"
         val good = local(name, honest = true)
@@ -102,23 +102,11 @@ class DeskParityToolsTest {
             Updates.source = good.source
             val release = Release("9.0.0", "https://github.com/Comett1225/AbsentMotion/releases/tag/v9.0.0", ApkAsset(name, "http://127.0.0.1:${good.port}/$name", good.payload.size.toLong(), null, "http://127.0.0.1:${good.port}/SHA256SUMS.txt"))
             Updater.start(android.content.Desk.context, release)
-            waitFor("the verified download") { Updater.step is DeskStep.Ready }
-            val ready = Updater.step as DeskStep.Ready
-            assertEquals(name, ready.file.name)
-            assertTrue(good.payload.contentEquals(ready.file.readBytes()))
+            waitFor("the refusal") { Updater.step is DeskStep.Failed }
+            assertEquals(UpdateFailure.Unsigned, (Updater.step as DeskStep.Failed).failure)
             Updater.later()
-            assertTrue(DeskStep.Idle == Updater.step)
-        } finally { good.server.stop(0) }
-        val bad = local(name, honest = false)
-        try {
-            Updates.source = bad.source
-            val release = Release("9.0.1", "https://github.com/Comett1225/AbsentMotion/releases/tag/v9.0.1", ApkAsset(name, "http://127.0.0.1:${bad.port}/$name", bad.payload.size.toLong(), null, "http://127.0.0.1:${bad.port}/SHA256SUMS.txt"))
-            Updater.start(android.content.Desk.context, release)
-            waitFor("the checksum failure") { Updater.step is DeskStep.Failed }
-            assertEquals(UpdateFailure.Checksum, (Updater.step as DeskStep.Failed).failure)
-            Updater.later()
-            assertTrue(File(android.content.Desk.context.cacheDir, "updates").listFiles().orEmpty().none { it.name.startsWith("update.apk") })
-        } finally { bad.server.stop(0); Updates.source = app.absentmotion.ui.home.GitHubSource }
+            assertTrue(File(android.content.Desk.context.cacheDir, "updates").listFiles().orEmpty().none { it.name == name || it.name.startsWith("update.apk") })
+        } finally { good.server.stop(0); Updates.source = app.absentmotion.ui.home.GitHubSource }
     }
 
     @Test fun pluralFormsFollowEachLanguage() {
@@ -135,9 +123,10 @@ class DeskParityToolsTest {
         assertEquals("AbsentMotion-5.0.0-macos-arm64.dmg", installerName(names, "5.0.0", "Mac OS X", "aarch64"))
         assertEquals("AbsentMotion-5.0.0-macos-x64.dmg", installerName(names, "5.0.0", "Mac OS X", "x86_64"))
         assertEquals("AbsentMotion-5.0.0.msi", installerName(names, "5.0.0", "Windows 11", "amd64"))
-        assertEquals("absentmotion_5.0.0-1_amd64.deb", installerName(names, "5.0.0", "Linux", "amd64", deb = true))
-        assertNull(installerName(names + "AbsentMotion-5.0.0-linux-x64.AppImage", "5.0.0", "Linux", "amd64", deb = false))
-        assertNull(installerName(listOf("AbsentMotion-5.0.0-foss.apk"), "5.0.0", "Linux", "amd64", deb = true))
+        val deb = app.absentmotion.ui.home.InstallSite(app.absentmotion.ui.home.InstallKind.Deb, File("/opt/absentmotion"))
+        assertEquals("absentmotion_5.0.0-1_amd64.deb", installerName(names, "5.0.0", "Linux", "amd64", deb))
+        assertNull(installerName(names + "AbsentMotion-5.0.0-linux-x64.AppImage", "5.0.0", "Linux", "amd64", null))
+        assertNull(installerName(listOf("AbsentMotion-5.0.0-foss.apk"), "5.0.0", "Linux", "amd64", deb))
         val json = """{"tag_name":"v5.0.0","html_url":"https://github.com/Comett1225/AbsentMotion/releases/tag/v5.0.0","assets":[
             {"name":"AbsentMotion-5.0.0-macos-arm64.dmg","browser_download_url":"https://github.com/Comett1225/AbsentMotion/releases/download/v5.0.0/AbsentMotion-5.0.0-macos-arm64.dmg","size":123456789},
             {"name":"SHA256SUMS.txt","browser_download_url":"https://github.com/Comett1225/AbsentMotion/releases/download/v5.0.0/SHA256SUMS.txt","size":300}]}"""

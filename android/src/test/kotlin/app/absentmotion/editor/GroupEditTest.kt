@@ -1,7 +1,10 @@
 package app.absentmotion.editor
 
 import app.absentmotion.model.Layer
+import app.absentmotion.model.NumberRef
+import app.absentmotion.model.PropRef
 import app.absentmotion.model.Scene
+import app.absentmotion.model.NativeValueLink
 import app.absentmotion.model.XmlNode
 import app.absentmotion.sceneOf
 import app.absentmotion.shapeNode
@@ -95,10 +98,48 @@ class GroupEditTest {
         assertEquals(group.startTime, back.layers.filter { it.id in setOf(1L, 2L) }.minOf { it.startTime })
     }
 
+    @Test fun ungroupKeepsALayerThatFollowedTheGroupMovingWithItAndDropsLinksToTheGroup() {
+        val sliding = XmlNode("transform", children = listOf(XmlNode("location", children = listOf(
+            XmlNode("kf", linkedMapOf("t" to "0", "v" to "100,50,0")), XmlNode("kf", linkedMapOf("t" to "1", "v" to "400,50,0"))))))
+        val linked = XmlNode("transform", children = listOf(XmlNode("opacity", mapOf("value" to "1"), listOf(
+            NativeValueLink(100, NumberRef(PropRef.Opacity)).node(0)))))
+        val grouped = start.grouped(setOf(1, 2), null, 100, "G").update(100) { Layer(it.node.withChild("transform", sliding)) }
+        val before = Scene(grouped.node.copy(children = grouped.node.children +
+            shapeNode(id = 4, start = 0, end = 3000, parent = 100, children = listOf(at(10f, 10f))) +
+            shapeNode(id = 5, start = 0, end = 3000, children = listOf(linked))))
+        val back = before.ungroupFlattened(100)!!
+        assertNull(back.layer(4)!!.node["parent"])
+        for (ms in listOf(0, 750, 1500, 3000)) {
+            val was = before.place(before.layer(4)!!, ms)
+            val now = back.place(back.layer(4)!!, ms)
+            assertEquals("x at $ms", was.x, now.x, 0.5f)
+            assertEquals("y at $ms", was.y, now.y, 0.5f)
+        }
+        assertNull(back.layer(5)!!.node.child("transform")!!.child("opacity")!!.child("valueLink"))
+    }
+
     @Test fun ungroupOfAStyledGroupAsksFirstAndStillWorks() {
         val grouped = start.grouped(setOf(1, 2), null, 100, "G").update(100) { Layer(it.node.with("opacity", "0.5")) }
         assertTrue(grouped.layer(100)!!.ungroupLosesStyle())
         val back = grouped.ungroupFlattened(100)!!
         assertEquals(listOf(1L, 2L, 3L), back.layers.map { it.id })
+    }
+
+    @Test fun ungroupOfAFastGroupKeepsEveryLayerAndShortensIt() {
+        val fast = start.grouped(setOf(1, 2), null, 100, "G").update(100) { Layer(it.node.with("speed", "2").with("endTime", "1500")) }
+        val back = fast.ungroupFlattened(100)!!
+        assertEquals(0 to 1500, back.layer(1)!!.let { it.startTime to it.endTime })
+        assertEquals(500 to 1250, back.layer(2)!!.let { it.startTime to it.endTime })
+        assertEquals(back.layers.maxOf { it.endTime }, back.totalTime)
+    }
+
+    @Test fun ungroupOfAFastGroupKeepsKeyframesAtTheSameShareOfTheLayer() {
+        val keyed = start.update(1) { l ->
+            val spin = app.absentmotion.model.XmlNode.parse("""<rotation value="0"><kf t="0" v="0"/><kf t="1" v="90"/></rotation>""")
+            Layer(l.node.withChild("transform", (l.node.child("transform") ?: app.absentmotion.model.XmlNode("transform")).withChild("rotation", spin)))
+        }
+        val fast = keyed.grouped(setOf(1, 2), null, 100, "G").update(100) { Layer(it.node.with("speed", "2").with("endTime", "1500")) }
+        val keys = fast.ungroupFlattened(100)!!.layer(1)!!.node.child("transform")!!.child("rotation")!!.children.filter { it.name == "kf" }.map { it["t"]!!.toFloat() }
+        assertEquals(listOf(0f, 1f), keys)
     }
 }

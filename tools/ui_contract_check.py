@@ -95,9 +95,9 @@ class UiContracts(unittest.TestCase):
 
     def test_crop_mode_owns_the_canvas_without_scale_handles(self):
         text = source('ui/editor/Preview.kt')
-        self.assertIn('state.panel == EditorPanel.Crop -> HIDDEN', text)
-        self.assertIn('} else if (moved && state.panel == EditorPanel.Crop) {', text)
-        self.assertIn('state.panel != EditorPanel.EditText && state.panel != EditorPanel.Crop', text)
+        self.assertIn('state.livePanel == EditorPanel.Crop -> HIDDEN', text)
+        self.assertIn('} else if (moved && state.livePanel == EditorPanel.Crop) {', text)
+        self.assertIn('state.livePanel != EditorPanel.EditText && state.livePanel != EditorPanel.Crop', text)
         self.assertIn('"crop-drag"', text)
         self.assertIn('state.openCrop()', source('ui/editor/LayerTools.kt'))
         self.assertEqual('Crop', english('layer_tool_crop'))
@@ -308,8 +308,12 @@ class UiContracts(unittest.TestCase):
         bar = text.split('internal fun MultiBar', 1)[1].split('private val AlignNames', 1)[0]
         self.assertNotIn('PanelIcons.Effects', text.split('internal fun MultiTopBar', 1)[1].split('private fun pasteEffectsOnSelection', 1)[0])
         self.assertNotIn('structure_extend', text)
-        self.assertIn('BarButton(PanelIcons.Effects, stringResource(R.string.layer_tool_effects)', bar)
-        self.assertIn('MenuPopup(AboveLeft, { effectsMenu = false }, TransformOrigin(0f, 1f))', bar)
+        self.assertNotIn('BarButton(PanelIcons.Effects', bar)
+        self.assertIn('BarButton(PanelIcons.More, stringResource(R.string.structure_more_actions)', bar)
+        self.assertIn('MenuRow(stringResource(R.string.effects_add_to_all))', bar)
+        self.assertIn('BarButton(PanelIcons.TrimLeft, stringResource(R.string.a11y_trim_start)', bar)
+        self.assertIn('BarButton(PanelIcons.Split, stringResource(R.string.timeline_split)', bar)
+        self.assertIn('BarButton(PanelIcons.TrimRight, stringResource(R.string.a11y_trim_end)', bar)
         self.assertIn('MenuRow(stringResource(R.string.effects_paste_all), enabled = copied.isNotEmpty()', bar)
         self.assertIn('pasteEffectsOnSelection(state, context)', bar)
         self.assertEqual('Paste All Effects', english('effects_paste_all'))

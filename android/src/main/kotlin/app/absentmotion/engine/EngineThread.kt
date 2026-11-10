@@ -63,6 +63,7 @@ internal data class AudioEffectState(val pending: Boolean = false, val error: St
 
 class EngineThread(private val background: Int, context: Context? = null, private val preferOpenGl: () -> Boolean = { false }) {
     private val gpuCheck = context?.let { GpuCheck(it.applicationContext) }
+    private val appContext = context?.applicationContext
     private val gpuCache = context?.cacheDir
     private val thread = HandlerThread("am-engine").apply { start() }
     private val handler = Handler(thread.looper)
@@ -271,7 +272,8 @@ class EngineThread(private val background: Int, context: Context? = null, privat
             EngineDebug.failStart?.let { throw IllegalStateException(it) }
             gpuCheck?.recover()
             gpuCache?.let { dir -> runCatching { NativeEngine.usePipelineCache(dir, app.absentmotion.BuildConfig.VERSION_CODE) } }
-            val order = GpuCheck.startOrder(EngineDebug.forceGl || preferOpenGl() || gpuCheck?.preferSafeBackend()==true, gpuCheck?.state(gl = true), gpuCheck?.state(gl = false), ::riskyVulkan)
+            val waitForProof = app.absentmotion.Tier.compatible && appContext != null && !VulkanProbe.proven(appContext)
+            val order = GpuCheck.startOrder(EngineDebug.forceGl || preferOpenGl() || gpuCheck?.preferSafeBackend()==true || waitForProof, gpuCheck?.state(gl = true), gpuCheck?.state(gl = false), ::riskyVulkan)
                 .map { if (it) NativeEngine.Backend.GL else NativeEngine.Backend.GRAPHITE }
             if (order.isEmpty()) throw IllegalStateException(GpuCheck.BOTH_CLOSED)
             gpuCheck?.trying(order[0] == NativeEngine.Backend.GL)
@@ -289,6 +291,7 @@ class EngineThread(private val background: Int, context: Context? = null, privat
                 }
             }).let(::checked).also {
                 app.absentmotion.Tier.openGl = it.openGl
+                if (waitForProof && it.openGl) VulkanProbe.startOnce(appContext)
                 gpuCheck?.trying(it.openGl)
                 handler.postDelayed({ if (engine?.failed != true && watchedFrames < 0) gpuCheck?.survived() }, SURVIVE_MS)
             }
@@ -359,7 +362,7 @@ class EngineThread(private val background: Int, context: Context? = null, privat
             mediaScene = next
             audio?.setScene(next)
             videos?.update(next, requestedView?.timeMs ?: 0, playing)
-            val key = listOf(next.node.imageUris(), next.node.modelUris(), next.media)
+            val key = listOf(next.node.imageUris(), next.node.modelUris(), next.media, app.absentmotion.media.ModelDetail.budget.value)
             if (previous == null || key != mediaKey) {
                 mediaKey = key
                 val serial = refreshes.get()

@@ -1,5 +1,6 @@
 package app.absentmotion.ui.editor
 
+import kotlinx.coroutines.flow.drop
 import app.absentmotion.platform.Log
 import app.absentmotion.platform.BackHandler
 import androidx.compose.foundation.background
@@ -96,13 +97,15 @@ private fun EditorBody(state: EditorState, onExit: () -> Unit) {
         PhoneScreen(plain = true) { TextEditor(state) }
         return
     }
-    if (!app.absentmotion.platform.PlatformFeatures.desktop && state.drawing != null) {
+    if (!app.absentmotion.platform.PlatformFeatures.desktop && state.drawing != null && state.drawing !is app.absentmotion.editor.PointMode) {
         PhoneScreen(fillWidth = Dp.Infinity) { DrawingEditor(state) }
         return
     }
+    PointSession(state)
     val addLibrary = rememberAddLibrary(state.settings.demoMode)
     Playback(state)
     LaunchedEffect(state.playing) { state.engine.setPlaying(state.playing) }
+    LaunchedEffect(state) { app.absentmotion.media.ModelDetail.budget.drop(1).collect { state.engine.refreshMedia() } }
     LaunchedEffect(state.panel, state.selectedId) {
         state.easingOpen = false
         state.keypad = null
@@ -121,6 +124,15 @@ private fun EditorBody(state: EditorState, onExit: () -> Unit) {
         dismissButton = { androidx.compose.material3.TextButton({ state.ungroupAsk = false }) { Text(stringResource(R.string.cancel), color = Am.Accent) } },
         containerColor = Am.Field,
     )
+    state.pointsAsk?.let { go ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { state.pointsAsk = null },
+            text = { Text(stringResource(R.string.shape_points_lose_animation), color = Am.OnDark) },
+            confirmButton = { androidx.compose.material3.TextButton({ state.pointsAsk = null; go() }) { Text(stringResource(R.string.action_continue), color = Am.Accent) } },
+            dismissButton = { androidx.compose.material3.TextButton({ state.pointsAsk = null }) { Text(stringResource(R.string.cancel), color = Am.Accent) } },
+            containerColor = Am.Field,
+        )
+    }
     if (app.absentmotion.platform.PlatformFeatures.desktop) {
         DeskWorkspace(state, onExit, addLibrary)
         return
@@ -145,6 +157,7 @@ private fun EditorBody(state: EditorState, onExit: () -> Unit) {
             GroupBreadcrumb(state)
             Box(Modifier.fillMaxWidth().weight(1f).tutorialTarget("preview")) {
                 Preview(state, Modifier.fillMaxSize())
+                (state.drawing as? app.absentmotion.editor.PointMode)?.let { PointOverlay(state, it, Modifier.fillMaxSize()) }
                 Presence(state.previewPanelOpen) { PreviewModePanel(state, Modifier.align(Alignment.CenterEnd).presence(slideX = 0.4f).tutorialGuard(any = true)) }
                 AnimateButton(state, Modifier.align(Alignment.BottomEnd))
                 if (state.settings.transitionInPreview) TransitionButton(state, Modifier.align(Alignment.BottomStart).padding(12.dp).tutorialTarget("transition"))
@@ -195,6 +208,7 @@ internal fun LowerPanels(state: EditorState, addLibrary: AddLibrary, top: Boolea
         when {
             state.motionPathOpen && state.selectedId != null -> "motionPath"
             state.framePhotoOpen -> "framePhoto"
+            state.drawing is app.absentmotion.editor.PointMode -> "points"
             state.addOpen -> "add"
             MultiSelect.active -> "multi"
             state.selectedId == null -> "button"
@@ -208,6 +222,7 @@ internal fun LowerPanels(state: EditorState, addLibrary: AddLibrary, top: Boolea
         when {
             state.motionPathOpen && state.selectedId != null -> MotionPathPanel(state, if (top) lower.fillMaxHeight() else lower.height(420.dp))
             state.framePhotoOpen -> FramePhotoPanel(state, if (top) lower.fillMaxHeight() else lower.height(260.dp))
+            state.drawing is app.absentmotion.editor.PointMode -> Box(lower.height(PanelHeight).background(Am.Panel).tutorialTarget("panel")) { (state.drawing as? app.absentmotion.editor.PointMode)?.let { PointPanel(state, it) } }
             state.addOpen -> AddPopup(state, lower.height(AddPopupHeight).tutorialTarget("add_panel"), addLibrary)
             MultiSelect.active -> MultiBar(state, lower.height(48.dp))
             state.selectedId == null -> {

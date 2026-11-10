@@ -10,6 +10,7 @@ import app.absentmotion.engine.EngineThread
 import app.absentmotion.library.CrashLogs
 import app.absentmotion.library.CrashReason
 import app.absentmotion.library.crashReason
+import app.absentmotion.library.ImportLimits
 import app.absentmotion.library.MediaAccess
 import app.absentmotion.library.modelFolder
 import app.absentmotion.model.Scene
@@ -210,20 +211,21 @@ class Exporter(context: Context, private val engine: EngineThread, private val s
         val frames = frameCount(scene, s.fps)
         imageProblem(s.image, android.os.Build.VERSION.SDK_INT)?.let { throw ExportError(it) }
         checkPicture(width, height)
+        val folder = withContext(Dispatchers.IO) { store.sequenceFolder(name, s.image.mime) }
         val bitmap = app.absentmotion.platform.makeBitmap(width, height)
         try {
             engine.exportSession(xml, s.smoothing, s.fps) {
                 for (k in 0 until frames) {
                     currentCoroutineContext().ensureActive()
                     val pixels = still(frameTimeMs(scene, s.fps, k), width, height) ?: throw ExportError(txt(R.string.export_error_draw_frame, k.toString()))
-                    save(saved, name, sequenceFrameName(k, s.image.ext), s.image.mime) { encode(pixels, width, height, s, bitmap, it) }
+                    save(saved, folder, sequenceFrameName(k, s.image.ext), s.image.mime) { encode(pixels, width, height, s, bitmap, it) }
                     progress((k + 1f) / frames)
                 }
             }
         } finally {
             app.absentmotion.platform.recycleBitmap(bitmap)
         }
-        return ExportResult(saved, s.image.mime, store.location("Pictures/$AppFolder/$name"))
+        return ExportResult(saved, s.image.mime, store.location("Pictures/$AppFolder/$folder"))
     }
 
     private suspend fun pack(scene: Scene, xml: String, out: OutputStream, alight: Boolean, progress: (Float) -> Unit) = withContext(Dispatchers.IO) {
@@ -267,6 +269,14 @@ internal suspend fun <T> watched(stallMs: Long = StallMs, block: suspend (alive:
     }
 }
 
+internal fun Scene.packageBytes(): Long = node.storedMediaUris().sumOf { uri ->
+    modelFolder(uri)?.listFiles { f -> f.isFile }?.sumOf { it.length() }
+        ?: media(uri)?.size?.takeIf { it > 0 }
+        ?: runCatching { File(URI(uri)).length() }.getOrDefault(0L)
+}
+
+private const val PACKAGE_MARGIN = 64L shl 20
+
 internal suspend fun writeProjectPackage(
     scene: Scene, xml: String, out: OutputStream, access: MediaAccess, open: (String) -> InputStream?, progress: (Float) -> Unit,
 ) = writePackedProject(scene, xml, out, access, open, false, progress)
@@ -278,7 +288,13 @@ internal suspend fun writeAlightPackage(
 private suspend fun writePackedProject(
     scene: Scene, xml: String, out: OutputStream, access: MediaAccess, open: (String) -> InputStream?, alight: Boolean, progress: (Float) -> Unit,
 ) {
+    val allowed = ImportLimits().unpacked - PACKAGE_MARGIN
+    if (scene.packageBytes() > allowed) throw ExportError(txt(R.string.export_package_too_large, (allowed shr 20).toString()))
     val uris = scene.node.storedMediaUris().toList()
+    val limit = ImportLimits().entries
+    val entries = 2 + scene.fontNames().mapNotNull { access.importedFont(it) }.toSet().size +
+        uris.sumOf { uri -> if (access.allows(uri)) modelFolder(uri)?.listFiles { f -> f.isFile }?.size ?: 1 else 0 }
+    if (entries > limit) throw ExportError(txt(R.string.library_err_too_many_files, limit.toString()))
     val projectEntry = if (alight) "scene.xml" else "project.xml"
     val manifest = JSONObject().put("format", if (alight) "true-motion-project" else "absentmotion-package").put("version", 1)
         .put("title", scene.title).put("project", projectEntry)

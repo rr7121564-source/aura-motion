@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +24,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,6 +37,9 @@ import app.absentmotion.editor.alignClipTimes
 import app.absentmotion.editor.moveClipEdges
 import app.absentmotion.editor.split
 import app.absentmotion.model.canSplitAt
+import app.absentmotion.model.trimEndAt
+import app.absentmotion.model.trimStartAt
+import app.absentmotion.editor.trimChosen
 import app.absentmotion.model.cutBetween
 import app.absentmotion.model.shownName
 import androidx.compose.runtime.Composable
@@ -66,7 +72,7 @@ import app.absentmotion.editor.addModel
 import app.absentmotion.editor.addNull
 import app.absentmotion.editor.alignSelection
 import app.absentmotion.editor.distributeSelection
-import app.absentmotion.editor.groupLayers
+import app.absentmotion.editor.groupLayersCentred
 import app.absentmotion.editor.pasteStyle
 import app.absentmotion.editor.setParent
 import app.absentmotion.editor.setParentOfChosen
@@ -97,7 +103,10 @@ import app.absentmotion.R
 import app.absentmotion.editor.addSvg
 import app.absentmotion.library.ProjectStore
 import app.absentmotion.media.MAX_MODEL_BYTES
+import app.absentmotion.media.MODEL_HIGH_DETAIL_BUDGET
 import app.absentmotion.media.MODEL_TRIANGLE_BUDGET
+import app.absentmotion.media.ModelDetail
+import app.absentmotion.media.triangles
 import app.absentmotion.media.modelFiles
 import app.absentmotion.media.modelFileName
 import app.absentmotion.media.parseModel
@@ -130,11 +139,13 @@ internal fun rememberObjectImport(state: EditorState): ObjectImport {
     var reading by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var asking by remember { mutableStateOf<Int?>(null) }
     val models = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) scope.launch {
             reading = true
-            val note = try { importModel(context, state, uris) } finally { reading = false }
-            note?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+            val (note, count) = try { importModel(context, state, uris) } finally { reading = false }
+            if (count > MODEL_TRIANGLE_BUDGET && !ModelDetail.high) asking = count
+            else note?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
         }
     }
     val psd = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -142,6 +153,22 @@ internal fun rememberObjectImport(state: EditorState): ObjectImport {
             reading = true
             try { state.importPsdFile(context, uri) } finally { reading = false }
         }
+    }
+    asking?.let { count ->
+        val simplified = stringResource(R.string.model_simplified, "$count", "$MODEL_HIGH_DETAIL_BUDGET")
+        AlertDialog(
+            onDismissRequest = { asking = null }, title = { Text(stringResource(R.string.model_detail_ask_title)) },
+            text = { Text(stringResource(R.string.model_detail_ask_body, triangles(count), triangles(MODEL_TRIANGLE_BUDGET), triangles(MODEL_HIGH_DETAIL_BUDGET))) },
+            dismissButton = { TextButton({ asking = null }) { Text(stringResource(R.string.model_detail_keep, triangles(MODEL_TRIANGLE_BUDGET)), color = Am.Accent) } },
+            confirmButton = {
+                TextButton({
+                    asking = null
+                    state.settings.highDetailModels = true
+                    if (count > MODEL_HIGH_DETAIL_BUDGET) Toast.makeText(context, simplified, Toast.LENGTH_LONG).show()
+                }) { Text(stringResource(R.string.model_detail_allow, triangles(MODEL_HIGH_DETAIL_BUDGET)), color = Am.Accent) }
+            },
+            containerColor = Am.Field, titleContentColor = Am.OnDark, textContentColor = Am.OnDark,
+        )
     }
     val svg = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
@@ -217,7 +244,7 @@ internal suspend fun EditorState.importSvgFile(context: Context, uri: Uri) {
     if (result.skipped.isNotEmpty()) say(context.resources.getQuantityString(R.plurals.structure_svg_imported, result.shapes, result.shapes.toString(), result.skipped.joinToString(", ") { it.resolve(context) }))
 }
 
-private suspend fun importModel(context: Context, state: EditorState, picked: List<Uri>): String? =
+private suspend fun importModel(context: Context, state: EditorState, picked: List<Uri>): Pair<String?, Int> =
     withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         val names = picked.map { uri ->
@@ -225,7 +252,7 @@ private suspend fun importModel(context: Context, state: EditorState, picked: Li
                 ?: uri.lastPathSegment ?: "model")
         }
         val main = names.indexOfFirst { it.substringAfterLast('.').lowercase() in setOf("obj", "glb", "gltf") }
-        if (main < 0) return@withContext context.getString(R.string.model_choose_file)
+        if (main < 0) return@withContext context.getString(R.string.model_choose_file) to 0
         val folder = File(ProjectStore(context).mediaDir(state.projectId), "model-${System.currentTimeMillis()}")
         var added = false
         try {
@@ -249,19 +276,20 @@ private suspend fun importModel(context: Context, state: EditorState, picked: Li
             val (bytes, open) = modelFiles(resolver, uri)
             val count = parseModel(names[main], bytes, open).triangleCount
             withContext(Dispatchers.Main) { state.addModel(uri, names[main]); added = true }
-            if (count > MODEL_TRIANGLE_BUDGET) context.getString(R.string.model_simplified, "$count", "$MODEL_TRIANGLE_BUDGET") else null
+            val budget = ModelDetail.budget.value
+            (if (count > budget) context.getString(R.string.model_simplified, "$count", "$budget") else null) to count
         } catch (e: kotlinx.coroutines.CancellationException) {
             if (!added) folder.deleteRecursively()
             throw e
         } catch (_: ModelTooLarge) {
             folder.deleteRecursively()
-            context.getString(R.string.model_too_large)
+            context.getString(R.string.model_too_large) to 0
         } catch (e: Exception) {
             folder.deleteRecursively()
-            context.getString(R.string.model_unreadable, e.message.orEmpty())
+            context.getString(R.string.model_unreadable, e.message.orEmpty()) to 0
         } catch (_: OutOfMemoryError) {
             folder.deleteRecursively()
-            context.getString(R.string.model_too_large)
+            context.getString(R.string.model_too_large) to 0
         }
     }
 
@@ -274,48 +302,31 @@ internal fun MultiBar(state: EditorState, modifier: Modifier) {
     val cuts = if (layers.size == 2) listOfNotNull(cut?.let { it.first.id to it.second.id }) else state.scene.selectedCuts(layers.map { it.id }.toSet())
     var transition by remember { mutableStateOf<List<Pair<Long, Long>>?>(null) }
     var animation by remember { mutableStateOf<Set<Long>?>(null) }
-    var stretch by remember { mutableStateOf<Set<Long>?>(null) }
     transition?.let { TransitionSheet(state, it) { transition = null } }
     animation?.let { AnimationSheet(state, it) { animation = null } }
-    stretch?.let { StretchSheet(state, it) { stretch = null } }
-    Row(modifier.padding(6.dp).clip(RoundedCornerShape(3.dp)).background(Am.PanelInset), verticalAlignment = Alignment.CenterVertically) {
+    BoxWithConstraints(modifier.padding(6.dp)) {
+    val cell = minOf(40.dp, maxWidth / 8.7f)
+    Row(Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)).background(Am.PanelInset), verticalAlignment = Alignment.CenterVertically) {
         val end = layers.isNotEmpty() && state.timeMs >= layers.maxOf { it.endTime }
         val context = LocalContext.current
         val copied = EffectClipboard.effects
-        var effectsMenu by remember { mutableStateOf(false) }
-        Box(Modifier.width(60.dp).fillMaxHeight()) {
-            BarButton(PanelIcons.Effects, stringResource(R.string.layer_tool_effects), Modifier.fillMaxSize(), layers.isNotEmpty()) { effectsMenu = true }
-            Presence(effectsMenu) {
-                MenuPopup(AboveLeft, { effectsMenu = false }, TransformOrigin(0f, 1f)) {
+        var moreMenu by remember { mutableStateOf(false) }
+        Box(Modifier.width(cell).fillMaxHeight()) {
+            BarButton(PanelIcons.More, stringResource(R.string.structure_more_actions), Modifier.fillMaxSize(), layers.isNotEmpty()) { moreMenu = true }
+            Presence(moreMenu) {
+                MenuPopup(AboveLeft, { moreMenu = false }, TransformOrigin(0f, 1f)) {
                     val note = if (copied.isEmpty()) stringResource(R.string.effects_none_copied)
                         else pluralStringResource(R.plurals.effects_count, copied.size, copied.size.toString())
                     MenuRow(stringResource(R.string.effects_add_to_all)) {
-                        effectsMenu = false
+                        moreMenu = false
                         state.playing = false
                         state.effectCategory = null
                         state.effectTargets = layers.map { it.id }.toSet()
                         state.effectBrowserOpen = true
                     }
                     MenuRow(stringResource(R.string.effects_paste_all), enabled = copied.isNotEmpty(), subText = note) {
-                        effectsMenu = false
+                        moreMenu = false
                         pasteEffectsOnSelection(state, context)
-                    }
-                }
-            }
-        }
-        var moreMenu by remember { mutableStateOf(false) }
-        Box(Modifier.width(48.dp).fillMaxHeight()) {
-            BarButton(PanelIcons.More, stringResource(R.string.structure_more_actions), Modifier.fillMaxSize(), layers.isNotEmpty()) { moreMenu = true }
-            Presence(moreMenu) {
-                MenuPopup(AboveLeft, { moreMenu = false }, TransformOrigin(0f, 1f)) {
-                    MenuRow(stringResource(R.string.timeline_split), layers.any { state.scene.canSplitAt(it, state.frame) }) {
-                        moreMenu = false
-                        state.split()
-                    }
-                    MenuRow(stringResource(R.string.multi_stretch_timing), layers.any { it.endTime > it.startTime }) {
-                        moreMenu = false
-                        state.playing = false
-                        stretch = layers.map { it.id }.toSet()
                     }
                     MenuRow(stringResource(R.string.multi_animation)) {
                         moreMenu = false
@@ -346,11 +357,14 @@ internal fun MultiBar(state: EditorState, modifier: Modifier) {
                 }
             }
         }
-        BarButton(if (end) ChromeIcons.SkipForward else ChromeIcons.SkipBack, stringResource(if (end) R.string.structure_move_ends else R.string.structure_move_starts), Modifier.width(60.dp).fillMaxHeight(), layers.isNotEmpty()) {
+        BarButton(if (end) ChromeIcons.SkipForward else ChromeIcons.SkipBack, stringResource(if (end) R.string.structure_move_ends else R.string.structure_move_starts), Modifier.width(cell).fillMaxHeight(), layers.isNotEmpty()) {
             state.moveClipEdges(end, false)
         }
+        BarButton(PanelIcons.TrimLeft, stringResource(R.string.a11y_trim_start), Modifier.width(cell).fillMaxHeight(), layers.any { state.scene.trimStartAt(it, state.frame) != null }) { state.trimChosen(true) }
+        BarButton(PanelIcons.Split, stringResource(R.string.timeline_split), Modifier.width(cell).fillMaxHeight(), layers.any { state.scene.canSplitAt(it, state.frame) }) { state.split() }
+        BarButton(PanelIcons.TrimRight, stringResource(R.string.a11y_trim_end), Modifier.width(cell).fillMaxHeight(), layers.any { state.scene.trimEndAt(it, state.frame) != null }) { state.trimChosen(false) }
         Spacer(Modifier.weight(1f))
-        BarButton(ChromeIcons.Transition, stringResource(R.string.transition_add_between), Modifier.width(48.dp).fillMaxHeight().alpha(if (cuts.isNotEmpty()) 1f else DimAlpha)) {
+        BarButton(ChromeIcons.Transition, stringResource(R.string.transition_add_between), Modifier.width(cell).fillMaxHeight().alpha(if (cuts.isNotEmpty()) 1f else DimAlpha)) {
             if (cuts.isNotEmpty()) { state.playing = false; transition = cuts }
             else Toast.makeText(context, context.getString(when {
                 layers.size > 2 -> R.string.multi_no_cut
@@ -360,9 +374,10 @@ internal fun MultiBar(state: EditorState, modifier: Modifier) {
             }), Toast.LENGTH_LONG).show()
         }
         Spacer(Modifier.weight(1f))
-        BarButton(SelectionIcons.Align[0], stringResource(R.string.structure_align_starts), Modifier.width(40.dp).fillMaxHeight(), layers.size > 1) { state.alignClipTimes(0) }
-        BarButton(SelectionIcons.DistributeHorizontal, stringResource(R.string.structure_distribute_starts), Modifier.width(40.dp).fillMaxHeight(), layers.size > 2) { state.alignClipTimes(1) }
-        BarButton(SelectionIcons.Align[2], stringResource(R.string.structure_align_ends), Modifier.width(40.dp).fillMaxHeight(), layers.size > 1) { state.alignClipTimes(2) }
+        BarButton(SelectionIcons.Align[0], stringResource(R.string.structure_align_starts), Modifier.width(cell * 0.9f).fillMaxHeight(), layers.size > 1) { state.alignClipTimes(0) }
+        BarButton(SelectionIcons.DistributeHorizontal, stringResource(R.string.structure_distribute_starts), Modifier.width(cell * 0.9f).fillMaxHeight(), layers.size > 2) { state.alignClipTimes(1) }
+        BarButton(SelectionIcons.Align[2], stringResource(R.string.structure_align_ends), Modifier.width(cell * 0.9f).fillMaxHeight(), layers.size > 1) { state.alignClipTimes(2) }
+    }
     }
 }
 
@@ -389,9 +404,9 @@ internal fun MultiTopBar(state: EditorState, modifier: Modifier) {
             Text(text, Modifier.weight(1f), color = tint, maxLines = 1, autoSize = TextAutoSize.StepBased(10.sp, 14.sp))
             val cell = Modifier.width(40.dp).fillMaxHeight()
             SelectionButton(ChromeIcons.Studio, stringResource(R.string.true_studio), cell, tint) { state.trueStudioOpen = true }
-            SelectionButton(SelectionIcons.Group, stringResource(R.string.structure_group), cell, tint, ids.isNotEmpty()) { state.groupLayers(ids) }
-            SelectionButton(SelectionIcons.Mask, stringResource(R.string.structure_group_mask), cell, tint, ids.size > 1) { state.groupLayers(ids, "mask") }
-            SelectionButton(SelectionIcons.Exclude, stringResource(R.string.structure_group_exclude), cell, tint, ids.size > 1) { state.groupLayers(ids, "exclude") }
+            SelectionButton(SelectionIcons.Group, stringResource(R.string.structure_group), cell, tint, ids.isNotEmpty()) { scope.launch { state.groupLayersCentred(ids) } }
+            SelectionButton(SelectionIcons.Mask, stringResource(R.string.structure_group_mask), cell, tint, ids.size > 1) { scope.launch { state.groupLayersCentred(ids, "mask") } }
+            SelectionButton(SelectionIcons.Exclude, stringResource(R.string.structure_group_exclude), cell, tint, ids.size > 1) { scope.launch { state.groupLayersCentred(ids, "exclude") } }
             var parentMenu by remember { mutableStateOf(false) }
             val linkLabel = stringResource(R.string.structure_link_parent)
             Box(

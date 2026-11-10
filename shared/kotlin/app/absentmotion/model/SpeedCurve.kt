@@ -128,11 +128,11 @@ fun Layer.normalSpeed(): Float {
 
 fun Layer.withNormalSpeed(speed: Float): Layer {
     val map = node.child("speedMap")
-    if (map?.isKeyframed != true) return withVideoSpeedMap(XmlNode("speedMap", mapOf("value" to speedText(speed))))
+    if (map?.isKeyframed != true) return withVideoSpeedMap(XmlNode("speedMap", mapOf("value" to speedText(speed))), keepContentEnd = true)
     val keys = map.keyframes
     val top = keys.maxOf { it.v.finiteFloat() ?: 0f }
     val factor = (speed / normalSpeed()).let { if (top > 0f) minOf(it, FASTEST_SPEED / top) else it }
-    return withVideoSpeedMap(map.withKeyframes(keys.map { key -> key.v.finiteFloat()?.let { key.copy(v = speedText(it * factor)) } ?: key }))
+    return withVideoSpeedMap(map.withKeyframes(keys.map { key -> key.v.finiteFloat()?.let { key.copy(v = speedText(it * factor)) } ?: key }), keepContentEnd = true)
 }
 
 private fun speedText(speed: Float): String = speed.toBigDecimal().stripTrailingZeros().toPlainString()

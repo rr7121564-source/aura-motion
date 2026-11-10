@@ -31,6 +31,7 @@ import app.absentmotion.model.withGroupHolds
 import app.absentmotion.model.nestedTime
 import app.absentmotion.model.nestedHostTime
 import app.absentmotion.model.withValueLinksFollowing
+import app.absentmotion.model.withOutlinesFollowing
 
 enum class EditorPanel(@StringRes val title: Int) {
     Tools(0), Speed(R.string.edit_panel_time_remapping), MoveTransform(R.string.edit_panel_transform), ColorFill(R.string.edit_panel_fill_color),
@@ -166,7 +167,7 @@ class EditorState(
         panel = EditorPanel.Tools
         enteredMs = enteredMs.take(groupPath.size) + hostMs
         groupPath = groupPath + id
-        frame = inner.frameAt(group.nestedTime(hostMs.toDouble(), hostFps, quantize = false).ms.toInt().coerceIn(0, inner.totalTime)).coerceIn(0, maxOf(scene.lastFrame, 0))
+        frame = inner.frameAt(group.nestedTime(hostMs.toDouble(), hostFps, quantize = false).ms.toInt().coerceIn(0, maxOf(inner.totalTime, 0))).coerceIn(0, maxOf(scene.lastFrame, 0))
         engine.setScene(scene)
         return true
     }
@@ -203,6 +204,8 @@ class EditorState(
     val premuteGain = HashMap<Long, Float>()
 
     var ungroupAsk by mutableStateOf(false)
+
+    var pointsAsk by mutableStateOf<(() -> Unit)?>(null)
 
     val exportFrame: Int
         get() {
@@ -391,7 +394,7 @@ class EditorState(
         visualPreview.clear()
         Glide.interrupt()
         val before = scene
-        history.edit(key, root.withFocused(groupPath, change(before).captureCopyTransformEdits(before, sampleMs).refreshMediaSwitches(before).withValueLinksFollowing(before).withMattesFollowing(before)).withGroupHolds().refreshMotionTree())
+        history.edit(key, root.withFocused(groupPath, change(before).captureCopyTransformEdits(before, sampleMs).refreshMediaSwitches(before).withValueLinksFollowing(before).withMattesFollowing(before).withOutlinesFollowing(before)).withGroupHolds().refreshMotionTree())
     }
 
     fun endGesture() {
@@ -426,7 +429,7 @@ class EditorState(
 
     val gestureOpen: Boolean get() = history.gesturing
 
-    fun amend(next: Scene) = history.amend(root.withFocused(groupPath, next.withValueLinksFollowing(scene).withMattesFollowing(scene)))
+    fun amend(next: Scene) = history.amend(root.withFocused(groupPath, next.withValueLinksFollowing(scene).withMattesFollowing(scene).withOutlinesFollowing(scene)))
 
     internal fun forgetEdit(after: Scene?): Boolean = after != null && scene.node === after.node && history.forget(root)
 
@@ -453,19 +456,23 @@ class EditorState(
     fun undo() {
         visualPreview.clear()
         Glide.interrupt()
-        val before = document
-        history.undo()?.let { note(true, it to before) }
+        val before = scene
+        val path = groupPath
+        history.undo()?.let { previous -> previous.focused(path)?.let { note(true, it to before) } }
     }
 
     fun redo() {
         visualPreview.clear()
         Glide.interrupt()
-        val before = document
-        history.redo()?.let { note(false, before to it) }
+        val before = scene
+        val path = groupPath
+        history.redo()?.let { next -> next.focused(path)?.let { note(false, before to it) } }
     }
 
     private fun apply(next: Scene, save: Boolean) {
         val previous = scene
+        val oldRoot = root
+        val oldPath = groupPath
         root = next
         groupPath = next.openablePath(groupPath)
         while(groupViews.size>groupPath.size) groupViews.removeAt(groupViews.lastIndex)
@@ -473,8 +480,13 @@ class EditorState(
         if (MultiSelect.active) MultiSelect.ids = MultiSelect.ids.filter { now.layer(it) != null }.toSet()
         canUndo = history.canUndo
         canRedo = history.canRedo
-        if (selectedId != null && now.layer(selectedId!!) == null) selectedId = null
-        frame = keptFrame(previous, now, frame)
+        if (selectedId != null && now.layer(selectedId!!) == null) {
+            selectedId = null
+            panel = EditorPanel.Tools
+            effectIndex = -1
+            keyTarget = null
+        }
+        frame = if (groupPath.size < oldPath.size) frameAfterLeaving(oldRoot, oldPath, previous, now, frame) else keptFrame(previous, now, frame)
         if (!save) {
             if (drafted == null) Choreographer.getInstance().postFrameCallback(sendDraft)
             drafted = document
@@ -484,6 +496,16 @@ class EditorState(
         val xml = lazy { next.toXml() }
         showCurrent(xml)
         saver.commit(xml)
+    }
+
+    private fun frameAfterLeaving(oldRoot: Scene, oldPath: List<Long>, previous: Scene, now: Scene, frame: Int): Int {
+        var ms = previous.frameStart(frame).toDouble()
+        for (i in oldPath.size - 1 downTo groupPath.size) {
+            val host = oldRoot.focused(oldPath.take(i)) ?: return keptFrame(previous, now, frame)
+            val group = host.layer(oldPath[i]) ?: return keptFrame(previous, now, frame)
+            ms = hostMsOf(group, host.fps, ms, enteredMs.getOrNull(i))
+        }
+        return now.frameAt(ms.toInt()).coerceIn(0, maxOf(now.lastFrame, 0))
     }
 
     private companion object {

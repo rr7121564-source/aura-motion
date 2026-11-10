@@ -1,5 +1,7 @@
 package app.absentmotion.pc
 
+import app.absentmotion.editor.place
+import app.absentmotion.editor.EditorPanel
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +35,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performMultiModalInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.rightClick
@@ -216,6 +219,101 @@ class DeskParityTest {
             mainClock.advanceTimeBy(300)
             onRoot().performMouseInput { moveTo(centre); press(MouseButton.Primary); moveTo(centre + Offset(60f, 30f), 200); release(MouseButton.Primary) }
             runOnIdle { assertNotEquals("dragging empty canvas pans", Offset.Zero, editor.canvasPan) }
+            runBlocking { app.closeEditor() }
+        }
+    }
+
+    @Test fun effectsMenuOpensAtItsButton() {
+        data("effects-menu")
+        runSkikoComposeUiTest(size = Size(1280f, 800f)) {
+            val app = DeskAppState()
+            setContent { DeskApp(app) }
+            open(app, "styles")
+            val editor = app.editor!!
+            runOnIdle { editor.selectedId = editor.scene.layers.last().id; editor.panel = EditorPanel.Effects }
+            mainClock.advanceTimeBy(500)
+            val more = onAllNodesWithContentDescription("More").filter(hasClickAction()).fetchSemanticsNodes().maxBy { it.boundsInRoot.left }
+            val button = more.boundsInRoot
+            onRoot().performMouseInput { click(button.center) }
+            mainClock.advanceTimeBy(500)
+            val menu = onAllNodesWithText("Copy Effects").onFirst().fetchSemanticsNode().boundsInRoot
+            assertTrue("menu at ${menu.left}, button at ${button.left}", menu.left > button.left - 60f && menu.left < button.right)
+            runBlocking { app.closeEditor() }
+        }
+    }
+
+    @Test fun draggingThePreviewMovesEverySelectedLayer() {
+        data("multi-move")
+        runSkikoComposeUiTest(size = Size(1280f, 800f)) {
+            val app = DeskAppState()
+            setContent { DeskApp(app) }
+            open(app, "styles")
+            val editor = app.editor!!
+            val chosen = editor.scene.layers.filter { it.kind != "camera" && it.kind != "audio" }.take(2).map { it.id }
+            val before = chosen.associateWith { editor.scene.place(editor.scene.layer(it)!!, 0) }
+            runOnIdle { editor.selectedId = null; MultiSelect.ids = chosen.toSet(); MultiSelect.active = true }
+            mainClock.advanceTimeBy(800)
+            val centre = DeskPreviewBounds.bounds.center
+            onRoot().performMouseInput { moveTo(centre); press(MouseButton.Primary); moveTo(centre + Offset(60f, 30f), 200); release(MouseButton.Primary) }
+            mainClock.advanceTimeBy(300)
+            runOnIdle {
+                val moved = chosen.map { editor.scene.place(editor.scene.layer(it)!!, 0).x - before.getValue(it).x }
+                assertTrue("moved $moved", moved.all { it > 1f })
+                assertEquals(moved[0], moved[1], 0.5f)
+                assertEquals(Offset.Zero, editor.canvasPan)
+                MultiSelect.clear()
+            }
+            runBlocking { app.closeEditor() }
+        }
+    }
+
+    @Test fun pinchingSeveralLayersFollowsTheFingersAndStaysOnRelease() {
+        data("multi-pinch")
+        runSkikoComposeUiTest(size = Size(1280f, 800f)) {
+            val app = DeskAppState()
+            setContent { DeskApp(app) }
+            open(app, "styles")
+            val editor = app.editor!!
+            val chosen = editor.scene.layers.filter { it.kind != "camera" && it.kind != "audio" }.take(2).map { it.id }
+            fun places() = chosen.map { editor.scene.place(editor.scene.layer(it)!!, 0).let { p -> Offset(p.x, p.y) } }
+            val before = runOnIdle { places() }
+            runOnIdle { editor.selectedId = null; MultiSelect.ids = chosen.toSet(); MultiSelect.active = true }
+            mainClock.advanceTimeBy(800)
+            val centre = DeskPreviewBounds.bounds.center
+            fun pinch(drift: Float): Pair<List<Offset>, List<Offset>> {
+                onRoot().performTouchInput {
+                    down(0, centre + Offset(-50f, 0f))
+                    down(1, centre + Offset(50f, 0f))
+                    for (i in 1..12) {
+                        val t = i / 12f
+                        updatePointerTo(0, centre + Offset(-50f - 100f * t, drift * t))
+                        updatePointerTo(1, centre + Offset(50f + 100f * t, drift * t))
+                        move()
+                    }
+                }
+                mainClock.advanceTimeBy(100)
+                val held = runOnIdle { places() }
+                onRoot().performTouchInput { up(0); up(1) }
+                mainClock.advanceTimeBy(300)
+                return held to runOnIdle { places() }
+            }
+            val (heldStill, leftStill) = pinch(0f)
+            val spread = heldStill[1] - heldStill[0]
+            val start = before[1] - before[0]
+            assertEquals(start.x * 3f, spread.x, 1f)
+            assertEquals(start.y * 3f, spread.y, 1f)
+            for (k in chosen.indices) assertTrue("layer $k after release: ${heldStill[k]} then ${leftStill[k]}", (heldStill[k] - leftStill[k]).getDistance() < 0.01f)
+            runOnIdle { editor.undo() }
+            mainClock.advanceTimeBy(100)
+            assertEquals(before, runOnIdle { places() })
+            val (heldDown, leftDown) = pinch(60f)
+            for (k in chosen.indices) {
+                val shift = heldDown[k] - heldStill[k]
+                assertEquals("layer $k sideways", 0f, shift.x, 0.5f)
+                assertTrue("layer $k follows the fingers down: $shift", shift.y > 1f)
+                assertTrue("layer $k after release: ${heldDown[k]} then ${leftDown[k]}", (heldDown[k] - leftDown[k]).getDistance() < 0.01f)
+            }
+            runOnIdle { MultiSelect.clear() }
             runBlocking { app.closeEditor() }
         }
     }

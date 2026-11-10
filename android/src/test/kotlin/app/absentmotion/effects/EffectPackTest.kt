@@ -141,7 +141,7 @@ class EffectPackTest {
         assertEquals(catalog.definitions.filter { it.since?.substringBefore('.')?.toInt() == major }.map { it.key }.toSet(), fresh)
         assertTrue(fresh.none { it in listOf("textpath", "puppet") })
         assertTrue(listOf("blur", "glow", "vhs", "oscillate", "timequant").none { it in fresh })
-        assertEquals("5.0.0", releases.last())
+        assertEquals("5.0.3", releases.last())
         val categories = EffectCatalog.Categories.keys.filter { (!it.startsWith("amz-") && !it.startsWith("legacy-")) || catalog.listed(it).isNotEmpty() }
         assertEquals(listOf("new") + categories + "ai", catalog.categories.map { it.first })
         val old = EffectCatalog(catalog.definitions.map { it.copy(since = null) }, newest = catalog.newest)
